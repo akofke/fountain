@@ -1,9 +1,8 @@
 use std::mem::size_of;
-use nalgebra::V
 
 mod math;
 
-use math::Vector3f;
+use math::{Vector3, Vector3f};
 
 fn main() {
     let v1 = Vector3::new(1.0, 2.0, 3.0);
