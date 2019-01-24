@@ -1,6 +1,6 @@
 use num::clamp;
 use num::traits::{Float};
-use std::ops::AddAssign;
+use std::ops::{AddAssign, Add, Div, Mul, Sub};
 use num::ToPrimitive;
 
 pub type Vector3f = Vector3<f32>;
@@ -31,6 +31,23 @@ impl<T: Float> Vector3<T> {
             (clamp::<T>(self.z, zero, one) * scale).to_u8().unwrap(),
         ]
     }
+
+    pub fn dot(&self, other: &Self) -> T {
+        self.x * other.x + self.y * other.y + self.z * other.z
+    }
+
+    /// L2 norm
+    pub fn norm(&self) -> T {
+        (self.dot(self)).sqrt()
+    }
+
+    pub fn norm_squared(&self) -> T {
+        self.dot(self)
+    }
+
+    pub fn normalize(&self) -> Self {
+        *self * (T::one() / self.norm())
+    }
 }
 
 impl<T: Float> AddAssign<T> for Vector3<T> {
@@ -50,5 +67,27 @@ impl<T: Float> AddAssign for Vector3<T> {
             y: self.y + rhs.y,
             z: self.z + rhs.z,
         };
+    }
+}
+
+impl<T: Float> Mul<T> for Vector3<T> {
+    type Output = Self;
+    fn mul(self, rhs: T) -> Self {
+        Vector3 {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs
+        }
+    }
+}
+
+impl<T: Float> Sub for Vector3<T> {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Vector3 {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z
+        }
     }
 }
