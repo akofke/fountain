@@ -81,6 +81,17 @@ impl<T: Float> Mul<T> for Vector3<T> {
     }
 }
 
+impl<T: Float> Add for Vector3<T> {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Vector3 {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z
+        }
+    }
+}
+
 impl<T: Float> Sub for Vector3<T> {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {

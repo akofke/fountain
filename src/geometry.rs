@@ -5,6 +5,12 @@ pub struct Sphere {
     pub radius: f32,
 }
 
+pub struct HitRecord {
+    pub dist: f32,
+    pub hit: Vector3f,
+    pub normal: Vector3f
+}
+
 impl Sphere {
     pub fn new(center: Vector3f, radius: f32) -> Self {
         Sphere {center, radius}
