@@ -18,9 +18,10 @@ fn main() {
     let sphere = Sphere::new(Vector3f::new(-3.0, 0.0, -16.0), 2.0);
     for j in 0..height {
         for i in 0..width {
-            let x = (2.0 * (i as f32 + 0.5) / width as f32 - 1.0) * f32::tan(fov / 2.0) * width as f32 / height as f32;
-            let y = (2.0 * (j as f32 + 0.5) / height as f32 - 1.0) * f32::tan(fov/2.0);
-            let dir = Vector3f::new(x, y, -1.0).normalize();
+            let x = (i as f32 + 0.5) - width as f32 / 2.0;
+            let y = -(j as f32 + 0.5) + height as f32 / 2.0;
+            let z = -(height as f32) / (2.0 * f32::tan(fov as f32 / 2.0));
+            let dir = Vector3f::new(x, y, z).normalize();
             framebuf.push(cast_ray(&Vector3f::new(0.0, 0.0, 0.0), &dir, &sphere));
         }
     }
