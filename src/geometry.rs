@@ -1,22 +1,24 @@
-use crate::math::Vector3f;
+use nalgebra::Vector3;
+
+pub type Vec3 = Vector3<f32>;
 
 pub struct Sphere {
-    pub center: Vector3f,
+    pub center: Vec3,
     pub radius: f32,
 }
 
 pub struct HitRecord {
     pub dist: f32,
-    pub hit: Vector3f,
-    pub normal: Vector3f
+    pub hit: Vec3,
+    pub normal: Vec3
 }
 
 impl Sphere {
-    pub fn new(center: Vector3f, radius: f32) -> Self {
+    pub fn new(center: Vec3, radius: f32) -> Self {
         Sphere {center, radius}
     }
 
-    pub fn ray_intersect(&self, orig: &Vector3f, dir: &Vector3f) -> Option<f32> {
+    pub fn ray_intersect(&self, orig: &Vec3, dir: &Vec3) -> Option<f32> {
         // get vector from origin to center of sphere
         let oc = self.center - *orig;
         let tca = oc.dot(dir);

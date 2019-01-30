@@ -1,6 +1,6 @@
-use crate::math::Vector3f;
+use crate::geometry::Vec3;
 
 pub struct PointLight {
-    pub position: Vector3f,
+    pub position: Vec3,
     pub intensity: f32,
 }
