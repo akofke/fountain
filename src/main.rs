@@ -24,6 +24,13 @@ pub fn to_rgb(v: Vec3) -> [u8; 3] {
     arr
 }
 
+fn background(dir: &Vec3) -> Vec3 {
+    // scale so t is between 0.0 and 1.0
+    let t = 0.5 * (dir[1] + 1.0);
+    // linear interpolation based on t
+    (1.0 - t) * Vec3::repeat(1.0) + t * Vec3::new(0.5, 0.7, 1.0)
+}
+
 fn main() {
     let width = 1024;
     let height = 768;
@@ -41,7 +48,7 @@ fn main() {
 
     let framebuf = render(width, height, fov, spheres, lights);
 
-    write_ppm(width, height, &framebuf, "test.ppm").expect("Failed to write file");
+    write_ppm_ascii(width, height, &framebuf, "test.ppm").expect("Failed to write file");
 }
 
 fn render(width: usize, height: usize, fov: f32, spheres: Vec<Sphere>, lights: Vec<PointLight>) -> Vec<Vec3> {
@@ -68,7 +75,7 @@ fn cast_ray(orig: &Vec3, dir: &Vec3, spheres: &[Sphere], lights: &[PointLight]) 
         }
         diffuse_color * diffuse_light_intensity
     } else {
-        Vec3::new(0.2, 0.7, 0.8)
+        background(dir)
     }
 }
 
@@ -103,6 +110,21 @@ fn write_ppm<P: AsRef<Path>>(width: usize, height: usize, framebuffer: &[Vec3], 
 
     for v in framebuffer.into_iter() {
         f.write_all(&to_rgb(*v))?;
+    }
+
+    Ok(())
+}
+
+fn write_ppm_ascii<P: AsRef<Path>>(width: usize, height: usize, framebuffer: &[Vec3], path: P) -> std::io::Result<()> {
+    assert_eq!(framebuffer.len(), width * height);
+
+    let mut f = BufWriter::new(File::create(path)?);
+
+    write!(&mut f, "P3\n{} {}\n255\n", width, height)?;
+
+    for v in framebuffer.into_iter() {
+        let arr = to_rgb(*v);
+        write!(&mut f, "{} {} {}\n", arr[0], arr[1], arr[2])?;
     }
 
     Ok(())
