@@ -7,9 +7,10 @@ mod light;
 use std::io::BufWriter;
 use std::io::Write;
 use std::f32;
-use crate::geometry::{Sphere, Vec3};
-use crate::geometry::HitRecord;
-use crate::light::PointLight;
+use crate::{
+    light::PointLight,
+    geometry::{Sphere, Vec3, HitRecord, Object, Ray}
+};
 use nalgebra::clamp;
 use num::cast::ToPrimitive;
 
@@ -39,6 +40,8 @@ fn main() {
         Sphere::new(Vec3::new(-1.0, -1.5, -12.0), 2.0),
         Sphere::new(Vec3::new(1.5, -0.5, -16.0), 3.0),
         Sphere::new(Vec3::new(7.0, 5.0, -18.0), 4.0),
+        Sphere::new(Vec3::new(0.0, 0.0, -3.0), 0.5),
+        Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0) // horizon-ish
     ];
     let lights = vec![PointLight {
         position: Vec3::new(-20.0, 20.0, 20.0),
@@ -47,10 +50,10 @@ fn main() {
 
     let framebuf = render(width, height, fov, spheres, lights);
 
-    write_ppm_ascii(width, height, &framebuf, "test.ppm").expect("Failed to write file");
+    write_ppm_ascii(width, height, &framebuf, "test2.ppm").expect("Failed to write file");
 }
 
-fn render(width: usize, height: usize, fov: f32, spheres: Vec<Sphere>, lights: Vec<PointLight>) -> Vec<Vec3> {
+fn render(width: usize, height: usize, fov: f32, scene: impl Object, lights: Vec<PointLight>) -> Vec<Vec3> {
     let mut framebuf: Vec<Vec3> = Vec::with_capacity(width * height);
     for j in 0..height {
         for i in 0..width {
@@ -58,47 +61,29 @@ fn render(width: usize, height: usize, fov: f32, spheres: Vec<Sphere>, lights: V
             let y = -(j as f32 + 0.5) + height as f32 / 2.0;
             let z = -(height as f32) / (2.0 * f32::tan(fov as f32 / 2.0));
             let dir = Vec3::new(x, y, z).normalize();
-            framebuf.push(cast_ray(&Vec3::new(0.0, 0.0, 0.0), &dir, &spheres, &lights));
+            let ray = Ray {origin: Vec3::zeros(), dir};
+            framebuf.push(cast_ray(&ray, &scene, &lights));
         }
     }
     return framebuf;
 }
 
-fn cast_ray(orig: &Vec3, dir: &Vec3, spheres: &[Sphere], lights: &[PointLight]) -> Vec3 {
-    if let Some(hit_record) = scene_intersect(orig, dir, spheres) {
-        let diffuse_color = Vec3::new(0.4, 0.4, 0.3);
-        let mut diffuse_light_intensity = 0.0;
-        for light in lights {
-            let light_dir = (light.position - hit_record.hit).normalize();
-            diffuse_light_intensity += light.intensity * f32::max(0.0, light_dir.dot(&hit_record.normal));
-        }
-        diffuse_color * diffuse_light_intensity
+fn cast_ray(ray: &Ray, scene: &impl Object, lights: &[PointLight]) -> Vec3 {
+    if let Some(hit_record) = scene.hit(ray, 0.0, f32::MAX) {
+        return (hit_record.normal + Vec3::repeat(1.0)) * 0.5; // normal map
+
+
+//        let diffuse_color = Vec3::new(0.4, 0.4, 0.3);
+//        let mut diffuse_light_intensity = 0.0;
+//        for light in lights {
+//            let light_dir = (light.position - hit_record.hit).normalize();
+//            diffuse_light_intensity += light.intensity * f32::max(0.0, light_dir.dot(&hit_record.normal));
+//        }
+//        diffuse_color * diffuse_light_intensity
     } else {
-        background(dir)
+        background(&ray.dir)
     }
 }
-
-fn scene_intersect(orig: &Vec3, dir: &Vec3, spheres: &[Sphere]) -> Option<HitRecord> {
-    let mut spheres_dist = f32::MAX;
-    let mut hit_record = None;
-    for sphere in spheres.iter() {
-        match sphere.ray_intersect(orig, dir) {
-            Some(dist) if dist < spheres_dist => {
-                spheres_dist = dist;
-                let hit = *orig + (*dir * dist);
-                let normal = (hit - sphere.center).normalize();
-                hit_record = Some(HitRecord {
-                    dist,
-                    hit,
-                    normal,
-                })
-            }
-            _ => {}
-        }
-    }
-    hit_record
-}
-
 
 fn write_ppm<P: AsRef<Path>>(width: usize, height: usize, framebuffer: &[Vec3], path: P) -> std::io::Result<()> {
     assert_eq!(framebuffer.len(), width * height);
