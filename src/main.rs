@@ -3,6 +3,7 @@ use std::path::Path;
 
 mod geometry;
 mod light;
+mod camera;
 
 use std::io::BufWriter;
 use std::io::Write;
@@ -14,6 +15,7 @@ use crate::{
 use nalgebra::clamp;
 use num::cast::ToPrimitive;
 use rand::prelude::*;
+use crate::camera::Camera;
 
 pub fn to_rgb(v: Vec3) -> [u8; 3] {
     let mut arr = [0u8; 3];
@@ -56,21 +58,28 @@ fn main() {
         intensity: 1.5
     }];
 
-    let framebuf = render(width, height, fov, spheres, lights);
+    let camera = Camera::new();
+    let framebuf = render(width, height, fov, spheres, &camera, lights);
 
     write_ppm_ascii(width, height, &framebuf, "test2.ppm").expect("Failed to write file");
 }
 
-fn render(width: usize, height: usize, fov: f32, scene: impl Object, lights: Vec<PointLight>) -> Vec<Vec3> {
+fn render(width: usize, height: usize, fov: f32, scene: impl Object, camera: &Camera, lights: Vec<PointLight>) -> Vec<Vec3> {
+    const AA_SAMPLES: usize = 32;
     let mut framebuf: Vec<Vec3> = Vec::with_capacity(width * height);
-    for j in 0..height {
+
+    for j in (0..height).rev() {
         for i in 0..width {
-            let x = (i as f32 + 0.5) - width as f32 / 2.0;
-            let y = -(j as f32 + 0.5) + height as f32 / 2.0;
-            let z = -(height as f32) / (2.0 * f32::tan(fov as f32 / 2.0));
-            let dir = Vec3::new(x, y, z).normalize();
-            let ray = Ray {origin: Vec3::zeros(), dir};
-            let mut color = cast_ray(&ray, &scene);
+
+            let mut color: Vec3 = (0..AA_SAMPLES).map(|_| {
+                let u = (i as f32 + random::<f32>()) / width as f32;
+                let v = (j as f32 + random::<f32>()) / height as f32;
+
+                let ray = camera.get_ray(u, v);
+                cast_ray(&ray, &scene)
+            }).sum();
+            color /= AA_SAMPLES as f32;
+
             color.apply(|x| x.sqrt()); // gamma correction
             framebuf.push(color);
         }
