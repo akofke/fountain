@@ -13,6 +13,7 @@ use crate::{
 };
 use nalgebra::clamp;
 use num::cast::ToPrimitive;
+use rand::prelude::*;
 
 pub fn to_rgb(v: Vec3) -> [u8; 3] {
     let mut arr = [0u8; 3];
@@ -22,6 +23,13 @@ pub fn to_rgb(v: Vec3) -> [u8; 3] {
     });
     arr.copy_from_slice(bytes.as_slice());
     arr
+}
+
+fn random_in_unit_sphere() -> Vec3 {
+    loop {
+        let p = 2.0 * Vec3::new(random(), random(), random()) - Vec3::repeat(1.0);
+        if p.norm_squared() < 1.0 { break p }
+    }
 }
 
 fn background(dir: &Vec3) -> Vec3 {
@@ -62,15 +70,19 @@ fn render(width: usize, height: usize, fov: f32, scene: impl Object, lights: Vec
             let z = -(height as f32) / (2.0 * f32::tan(fov as f32 / 2.0));
             let dir = Vec3::new(x, y, z).normalize();
             let ray = Ray {origin: Vec3::zeros(), dir};
-            framebuf.push(cast_ray(&ray, &scene, &lights));
+            let mut color = cast_ray(&ray, &scene);
+            color.apply(|x| x.sqrt()); // gamma correction
+            framebuf.push(color);
         }
     }
     return framebuf;
 }
 
-fn cast_ray(ray: &Ray, scene: &impl Object, lights: &[PointLight]) -> Vec3 {
-    if let Some(hit_record) = scene.hit(ray, 0.0, f32::MAX) {
-        return (hit_record.normal + Vec3::repeat(1.0)) * 0.5; // normal map
+fn cast_ray(ray: &Ray, scene: &impl Object) -> Vec3 {
+    if let Some(hit_record) = scene.hit(ray, 0.001, f32::MAX) {
+//        return (hit_record.normal + Vec3::repeat(1.0)) * 0.5; // normal map
+        let target = hit_record.normal + random_in_unit_sphere();
+        return 0.5 * cast_ray(&Ray {origin: hit_record.hit, dir: target.normalize()}, scene)
 
 
 //        let diffuse_color = Vec3::new(0.4, 0.4, 0.3);
