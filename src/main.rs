@@ -4,6 +4,7 @@ use std::path::Path;
 mod geometry;
 mod light;
 mod camera;
+mod material;
 
 use std::io::BufWriter;
 use std::io::Write;
