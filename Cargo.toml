@@ -8,3 +8,7 @@ edition = "2018"
 num = "0.2.0"
 nalgebra = "0.16.0"
 rand = "0.6.5"
+
+[profile.release]
+lto=true
+codegen-units=1

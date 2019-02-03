@@ -1,5 +1,6 @@
 use nalgebra::{Vector3};
 use std::ops::Deref;
+use crate::material::Material;
 
 pub type Vec3 = Vector3<f32>;
 
@@ -17,24 +18,27 @@ impl Ray {
 }
 
 #[derive(Copy, Clone)]
-pub struct HitRecord {
+pub struct HitRecord<'a> {
     pub dist: f32,
     pub hit: Vec3,
-    pub normal: Vec3
+    pub normal: Vec3,
+    pub material: &'a dyn Material
 }
 
 pub trait Object {
-    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord>;
+    // lifetimes: 'a lives at least as long as 'b
+    fn hit<'a: 'b, 'b>(&'a self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord<'b>>;
 }
 
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
+    pub material: Box<dyn Material>
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f32) -> Self {
-        Sphere {center, radius}
+    pub fn new(center: Vec3, radius: f32, material: Box<dyn Material>) -> Self {
+        Sphere {center, radius, material}
     }
 
 //    pub fn ray_intersect(&self, orig: &Vec3, dir: &Vec3) -> Option<f32> {
@@ -50,7 +54,7 @@ impl Sphere {
 }
 
 impl Object for Sphere {
-    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
+    fn hit<'a: 'b, 'b>(&'a self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord<'b>> {
         let oc = ray.origin - self.center;
         let a = ray.dir.norm_squared();
         let b = oc.dot(&ray.dir);
@@ -62,7 +66,12 @@ impl Object for Sphere {
                     return Some(HitRecord {
                         dist: t,
                         hit: ray.at_param(t),
-                        normal: (ray.at_param(t) - self.center) / self.radius
+                        normal: (ray.at_param(t) - self.center) / self.radius,
+
+                        // return a reference to the owned Material trait object.
+                        // The HitRecord has a lifetime of 'b which is <= a, the lifetime
+                        // of the sphere struct (&self?)
+                        material: self.material.as_ref()
                     });
                 }
             }
@@ -73,9 +82,11 @@ impl Object for Sphere {
 
 // Implementation for homogeneous collection of objects
 // Don't know exactly what Deref will cover but it works for Vec
-impl<T, O: Object> Object for T where T: Deref<Target = [O]>
+// lifetimes: O: 'static means if O contains any references (which Objects probably won't),
+// they have to have static lifetime
+impl<T, O: Object + 'static> Object for T where T: Deref<Target = [O]>
 {
-    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
+    fn hit<'a: 'b, 'b>(&'a self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord<'b>> {
         let mut hit_record: Option<HitRecord> = None;
         let mut closest_so_far = t_max;
         for obj in self.iter() {
