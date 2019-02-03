@@ -52,7 +52,7 @@ fn main() {
 //        Sphere::new(Vec3::new(-1.0, -1.5, -12.0), 2.0),
         Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, Box::new(Lambertian {albedo: Vec3::new(0.8, 0.8, 0.0)})),
         Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5, Box::new(Lambertian {albedo: Vec3::new(0.8, 0.3, 0.3)})),
-        Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5, Box::new(Metal {albedo: Vec3::new(0.8, 0.6, 0.2)})),
+        Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5, Box::new(Metal {albedo: Vec3::new(0.8, 0.6, 0.2), fuzz: 0.3})),
         Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, Box::new(Lambertian {albedo: Vec3::new(0.3, 0.3, 0.8)})) // horizon-ish
     ];
     let lights = vec![PointLight {
