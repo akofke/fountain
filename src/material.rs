@@ -2,6 +2,7 @@ use crate::geometry::Ray;
 use crate::geometry::Vec3;
 use crate::geometry::HitRecord;
 use crate::random_in_unit_sphere;
+use rand::random;
 
 #[derive(Clone, Copy)]
 pub struct Scatter {
@@ -42,6 +43,66 @@ impl Material for Metal {
             Some(Scatter {attenuation: self.albedo, scattered})
         } else {
             None
+        }
+    }
+}
+
+pub struct Dielectric {
+    pub refractive_index: f32
+}
+
+fn sclick(cosine: f32, refract_idx: f32) -> f32 {
+    let r0 = (1.0 - refract_idx) / (1.0 + refract_idx);
+    let r0 = r0 * r0;
+    r0 + (1.0 - r0) * (1.0-cosine).powf(5.0)
+}
+
+fn refract(v: &Vec3, n: &Vec3, refract_idx_ratio: f32) -> Option<Vec3> {
+    let dt = v.dot(n);
+    let discriminant = 1.0 - refract_idx_ratio * refract_idx_ratio * (1.0 - dt*dt);
+    if discriminant > 0.0 {
+        let refracted = refract_idx_ratio * (v - n*dt) - n*discriminant.sqrt();
+        Some(refracted)
+    } else { None }
+}
+
+impl Material for Dielectric {
+    fn scatter(&self, ray_in: &Ray, hit: &HitRecord) -> Option<Scatter> {
+        let attenuation = Vec3::repeat(1.0);
+        let (outward_normal, refract_idx_ratio, cosine) = if ray_in.dir.dot(&hit.normal) > 0.0{
+            (
+                -hit.normal,
+                self.refractive_index,
+                self.refractive_index * ray_in.dir.dot(&hit.normal)
+            )
+        } else {
+            (
+                hit.normal,
+                1.0 / self.refractive_index,
+                -(ray_in.dir.dot(&hit.normal))
+            )
+        };
+
+        if let Some(refracted) = refract(&ray_in.dir, &outward_normal, refract_idx_ratio) {
+            let reflect_prob = sclick(cosine, self.refractive_index);
+            if random::<f32>() < reflect_prob {
+                let reflected = reflect(&ray_in.dir, &hit.normal);
+                Some(Scatter {
+                    attenuation,
+                    scattered: Ray {origin: hit.hit, dir: reflected.normalize()}
+                })
+            } else {
+                Some(Scatter {
+                    attenuation,
+                    scattered: Ray {origin: hit.hit, dir: refracted.normalize()}
+                })
+            }
+        } else {
+            let reflected = reflect(&ray_in.dir, &hit.normal);
+            Some(Scatter {
+                attenuation,
+                scattered: Ray {origin: hit.hit, dir: reflected.normalize()}
+            })
         }
     }
 }

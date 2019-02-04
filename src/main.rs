@@ -11,13 +11,14 @@ use std::io::Write;
 use std::f32;
 use crate::{
     light::PointLight,
-    geometry::{Sphere, Vec3, HitRecord, Object, Ray},
+    geometry::{Sphere, Vec3, Object, Ray},
     material::{Lambertian, Metal}
 };
 use nalgebra::clamp;
 use num::cast::ToPrimitive;
 use rand::prelude::*;
 use crate::camera::Camera;
+use crate::material::Dielectric;
 
 pub fn to_rgb(v: Vec3) -> [u8; 3] {
     let mut arr = [0u8; 3];
@@ -50,9 +51,10 @@ fn main() {
     let spheres: Vec<Sphere> = vec![
 //        Sphere::new(Vec3::new(-3.0, 0.0, -16.0), 2.0),
 //        Sphere::new(Vec3::new(-1.0, -1.5, -12.0), 2.0),
-        Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5, Box::new(Lambertian {albedo: Vec3::new(0.8, 0.8, 0.0)})),
-        Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5, Box::new(Lambertian {albedo: Vec3::new(0.8, 0.3, 0.3)})),
-        Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5, Box::new(Metal {albedo: Vec3::new(0.8, 0.6, 0.2), fuzz: 0.3})),
+        Sphere::new(Vec3::new(0.0, 0.0, -2.0), 0.5, Box::new(Lambertian {albedo: Vec3::new(0.8, 0.8, 0.0)})),
+        Sphere::new(Vec3::new(1.0, 0.0, -2.0), 0.5, Box::new(Dielectric {refractive_index: 1.5})),
+        Sphere::new(Vec3::new(1.0, 0.5, -4.0), 1.0, Box::new(Lambertian {albedo: Vec3::new(0.3, 0.8, 0.3)})),
+        Sphere::new(Vec3::new(-1.0, 0.0, -2.0), 0.5, Box::new(Metal {albedo: Vec3::new(0.8, 0.6, 0.2), fuzz: 0.3})),
         Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, Box::new(Lambertian {albedo: Vec3::new(0.3, 0.3, 0.8)})) // horizon-ish
     ];
     let lights = vec![PointLight {
@@ -103,6 +105,7 @@ fn cast_ray(ray: &Ray, scene: &impl Object, depth: usize) -> Vec3 {
     }
 }
 
+#[allow(dead_code)]
 fn write_ppm<P: AsRef<Path>>(width: usize, height: usize, framebuffer: &[Vec3], path: P) -> std::io::Result<()> {
     assert_eq!(framebuffer.len(), width * height);
 
@@ -117,6 +120,7 @@ fn write_ppm<P: AsRef<Path>>(width: usize, height: usize, framebuffer: &[Vec3], 
     Ok(())
 }
 
+#[allow(dead_code)]
 fn write_ppm_ascii<P: AsRef<Path>>(width: usize, height: usize, framebuffer: &[Vec3], path: P) -> std::io::Result<()> {
     assert_eq!(framebuffer.len(), width * height);
 
