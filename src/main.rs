@@ -47,7 +47,7 @@ fn background(dir: &Vec3) -> Vec3 {
 fn main() {
     let width = 1000;
     let height = 500;
-    let fov = f32::consts::PI / 3.0;
+    let aspect = width as f32 / height as f32;
     let spheres: Vec<Sphere> = vec![
 //        Sphere::new(Vec3::new(-3.0, 0.0, -16.0), 2.0),
 //        Sphere::new(Vec3::new(-1.0, -1.5, -12.0), 2.0),
@@ -62,14 +62,21 @@ fn main() {
         intensity: 1.5
     }];
 
-    let camera = Camera::new();
-    let framebuf = render(width, height, fov, spheres, &camera, lights);
+    let camera = Camera::new(
+        Vec3::new(-2., 2., 1.),
+        Vec3::new(0., 0., -1.5),
+        Vec3::new(0., 1., 0.),
+        60.0f32.to_radians(),
+        aspect
+    );
+//    let camera = Camera::with_aspect(aspect);
+    let framebuf = render(width, height, spheres, &camera, lights);
 
     write_ppm_ascii(width, height, &framebuf, "test2.ppm").expect("Failed to write file");
 }
 
-fn render(width: usize, height: usize, fov: f32, scene: impl Object, camera: &Camera, lights: Vec<PointLight>) -> Vec<Vec3> {
-    const AA_SAMPLES: usize = 128;
+fn render(width: usize, height: usize, scene: impl Object, camera: &Camera, lights: Vec<PointLight>) -> Vec<Vec3> {
+    const AA_SAMPLES: usize = 16;
     let mut framebuf: Vec<Vec3> = Vec::with_capacity(width * height);
 
     for j in (0..height).rev() {

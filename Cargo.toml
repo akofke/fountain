@@ -10,5 +10,6 @@ nalgebra = "0.16.0"
 rand = "0.6.5"
 
 [profile.release]
+debug=true
 lto=true
 codegen-units=1
