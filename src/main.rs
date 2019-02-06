@@ -19,6 +19,7 @@ use num::cast::ToPrimitive;
 use rand::prelude::*;
 use crate::camera::Camera;
 use crate::material::Dielectric;
+use crate::camera::Lens;
 
 pub fn to_rgb(v: Vec3) -> [u8; 3] {
     let mut arr = [0u8; 3];
@@ -62,12 +63,18 @@ fn main() {
         intensity: 1.5
     }];
 
+    let lookfrom = Vec3::new(3., 3., 2.);
+    let lookat = Vec3::new(0., 0., -2.);
+
+    let lens = Lens {focus_dist: (lookfrom - lookat).norm(), aperture: 0.5};
+
     let camera = Camera::new(
-        Vec3::new(-2., 2., 1.),
-        Vec3::new(0., 0., -1.5),
+        lookfrom,
+        lookat,
         Vec3::new(0., 1., 0.),
         60.0f32.to_radians(),
-        aspect
+        aspect,
+        Some(lens)
     );
 //    let camera = Camera::with_aspect(aspect);
     let framebuf = render(width, height, spheres, &camera, lights);
@@ -76,7 +83,7 @@ fn main() {
 }
 
 fn render(width: usize, height: usize, scene: impl Object, camera: &Camera, lights: Vec<PointLight>) -> Vec<Vec3> {
-    const AA_SAMPLES: usize = 16;
+    const AA_SAMPLES: usize = 32;
     let mut framebuf: Vec<Vec3> = Vec::with_capacity(width * height);
 
     for j in (0..height).rev() {
