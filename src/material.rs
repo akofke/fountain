@@ -1,5 +1,5 @@
 use crate::geometry::Ray;
-use crate::geometry::Vec3;
+use crate::Vec3;
 use crate::geometry::HitRecord;
 use crate::random_in_unit_sphere;
 use rand::random;

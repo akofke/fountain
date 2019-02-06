@@ -1,4 +1,4 @@
-use crate::geometry::Vec3;
+use crate::Vec3;
 use crate::geometry::Ray;
 use nalgebra::Vector2;
 use rand::prelude::random;

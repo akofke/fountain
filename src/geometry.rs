@@ -1,8 +1,7 @@
-use nalgebra::{Vector3};
+use crate::Vec3;
 use std::ops::Deref;
 use crate::material::Material;
 
-pub type Vec3 = Vector3<f32>;
 
 
 #[derive(Copy, Clone)]

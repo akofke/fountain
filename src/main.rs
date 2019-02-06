@@ -5,13 +5,16 @@ mod geometry;
 mod light;
 mod camera;
 mod material;
+mod math;
+
+pub use crate::math::Vec3;
 
 use std::io::BufWriter;
 use std::io::Write;
 use std::f32;
 use crate::{
     light::PointLight,
-    geometry::{Sphere, Vec3, Object, Ray},
+    geometry::{Sphere, Object, Ray},
     material::{Lambertian, Metal}
 };
 use nalgebra::clamp;
