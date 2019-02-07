@@ -77,7 +77,8 @@ fn main() {
         Vec3::new(0., 1., 0.),
         60.0f32.to_radians(),
         aspect,
-        Some(lens)
+        Some(lens),
+        None
     );
 //    let camera = Camera::with_aspect(aspect);
     let framebuf = render(width, height, spheres, &camera, lights);
@@ -96,7 +97,7 @@ fn render(width: usize, height: usize, scene: impl Object, camera: &Camera, ligh
                 let u = (i as f32 + random::<f32>()) / width as f32;
                 let v = (j as f32 + random::<f32>()) / height as f32;
 
-                let ray = camera.get_ray(u, v);
+                let (ray, time) = camera.get_ray(u, v);
                 cast_ray(&ray, &scene, 0)
             }).sum();
             color /= AA_SAMPLES as f32;
