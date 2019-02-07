@@ -5,6 +5,7 @@ mod geometry;
 mod light;
 mod camera;
 mod material;
+#[macro_use]
 mod math;
 
 pub use crate::math::Vec3;
@@ -49,17 +50,15 @@ fn background(dir: &Vec3) -> Vec3 {
 }
 
 fn main() {
-    let width = 1000;
-    let height = 500;
+    let width = 500;
+    let height = 250;
     let aspect = width as f32 / height as f32;
     let spheres: Vec<Sphere> = vec![
-//        Sphere::new(Vec3::new(-3.0, 0.0, -16.0), 2.0),
-//        Sphere::new(Vec3::new(-1.0, -1.5, -12.0), 2.0),
-        Sphere::new(Vec3::new(0.0, 0.0, -2.0), 0.5, Box::new(Lambertian {albedo: Vec3::new(0.8, 0.8, 0.0)})),
-        Sphere::new(Vec3::new(1.0, 0.0, -2.0), 0.5, Box::new(Dielectric {refractive_index: 1.5})),
-        Sphere::new(Vec3::new(1.0, 0.5, -4.0), 1.0, Box::new(Lambertian {albedo: Vec3::new(0.3, 0.8, 0.3)})),
-        Sphere::new(Vec3::new(-1.0, 0.0, -2.0), 0.5, Box::new(Metal {albedo: Vec3::new(0.8, 0.6, 0.2), fuzz: 0.3})),
-        Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0, Box::new(Lambertian {albedo: Vec3::new(0.3, 0.3, 0.8)})) // horizon-ish
+        Sphere::fixed(Vec3::new(0.0, 0.0, -2.0), 0.5, Box::new(Lambertian {albedo: Vec3::new(0.8, 0.8, 0.0)})),
+        Sphere::fixed(Vec3::new(1.0, 0.0, -2.0), 0.5, Box::new(Dielectric {refractive_index: 1.5})),
+        Sphere::new(Vec3::new(1.0, 0.5, -4.0), 1.0, Box::new(Lambertian {albedo: Vec3::new(0.3, 0.8, 0.3)}), Some(v3!(0.5, 0.5, -0.5))),
+        Sphere::fixed(Vec3::new(-1.0, 0.0, -2.0), 0.5, Box::new(Metal {albedo: Vec3::new(0.8, 0.6, 0.2), fuzz: 0.3})),
+        Sphere::fixed(Vec3::new(0.0, -100.5, -1.0), 100.0, Box::new(Lambertian {albedo: Vec3::new(0.3, 0.3, 0.8)})) // horizon-ish
     ];
     let lights = vec![PointLight {
         position: Vec3::new(-20.0, 20.0, 20.0),
@@ -78,7 +77,7 @@ fn main() {
         60.0f32.to_radians(),
         aspect,
         Some(lens),
-        None
+        Some((0.0, 1.0))
     );
 //    let camera = Camera::with_aspect(aspect);
     let framebuf = render(width, height, spheres, &camera, lights);
@@ -87,7 +86,7 @@ fn main() {
 }
 
 fn render(width: usize, height: usize, scene: impl Object, camera: &Camera, lights: Vec<PointLight>) -> Vec<Vec3> {
-    const AA_SAMPLES: usize = 32;
+    const AA_SAMPLES: usize = 128;
     let mut framebuf: Vec<Vec3> = Vec::with_capacity(width * height);
 
     for j in (0..height).rev() {
@@ -98,7 +97,7 @@ fn render(width: usize, height: usize, scene: impl Object, camera: &Camera, ligh
                 let v = (j as f32 + random::<f32>()) / height as f32;
 
                 let (ray, time) = camera.get_ray(u, v);
-                cast_ray(&ray, &scene, 0)
+                cast_ray(&ray, time, &scene, 0)
             }).sum();
             color /= AA_SAMPLES as f32;
 
@@ -109,12 +108,12 @@ fn render(width: usize, height: usize, scene: impl Object, camera: &Camera, ligh
     return framebuf;
 }
 
-fn cast_ray(ray: &Ray, scene: &impl Object, depth: usize) -> Vec3 {
-    if let Some(hit_record) = scene.hit(ray, 0.001, f32::MAX) {
+fn cast_ray(ray: &Ray, time: f32, scene: &impl Object, depth: usize) -> Vec3 {
+    if let Some(hit_record) = scene.hit(ray, 0.001, f32::MAX, time) {
 //        return (hit_record.normal + Vec3::repeat(1.0)) * 0.5; // normal map
         match hit_record.material.scatter(ray, &hit_record) {
             Some(scatter) if depth < 10 => {
-                scatter.attenuation.component_mul(&cast_ray(&scatter.scattered, scene, depth + 1))
+                scatter.attenuation.component_mul(&cast_ray(&scatter.scattered, time, scene, depth + 1))
             },
             _ => Vec3::zeros()
         }

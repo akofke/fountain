@@ -8,6 +8,7 @@ pub type Vec3 = Vector3<f32>;
 /// assert_eq!(vec3!(1, 2, 3), Vec3::new(1.0, 2.0, 3.0));
 /// ```
 ///
+#[macro_export]
 macro_rules! v3 {
     ($x:expr, $y:expr, $z:expr) => {
         Vec3::new($x as f32, $y as f32, $z as f32)

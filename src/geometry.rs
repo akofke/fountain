@@ -26,35 +26,39 @@ pub struct HitRecord<'a> {
 
 pub trait Object {
     // lifetimes: 'a lives at least as long as 'b
-    fn hit<'a: 'b, 'b>(&'a self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord<'b>>;
+    fn hit<'a: 'b, 'b>(&'a self, ray: &Ray, t_min: f32, t_max: f32, time: f32) -> Option<HitRecord<'b>>;
 }
 
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
-    pub material: Box<dyn Material>
+    pub material: Box<dyn Material>,
+    pub velocity: Option<Vec3>
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f32, material: Box<dyn Material>) -> Self {
-        Sphere {center, radius, material}
+
+    pub fn new(center: Vec3, radius: f32, material: Box<dyn Material>, velocity: Option<Vec3>) -> Self {
+        Sphere {center, radius, material, velocity}
     }
 
-//    pub fn ray_intersect(&self, orig: &Vec3, dir: &Vec3) -> Option<f32> {
-//        // get vector from origin to center of sphere
-//        let oc = self.center - *orig;
-//        let tca = oc.dot(dir);
-//        let d2 = oc.norm_squared() - tca * tca;
-//        if d2 > self.radius * self.radius { return None; }
-//        let thc = (self.radius * self.radius - d2).sqrt();
-//        let t0 = tca - thc;
-//        if t0 > 0.0  { Some(t0) } else { None }
-//    }
+
+    pub fn fixed(center: Vec3, radius: f32, material: Box<dyn Material>) -> Self {
+        Sphere {center, radius, material, velocity: None}
+    }
+
+    fn center(&self, time: f32) -> Vec3 {
+        self.velocity.map_or(self.center, |v| {
+            self.center + time*v
+        })
+    }
+
 }
 
 impl Object for Sphere {
-    fn hit<'a: 'b, 'b>(&'a self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord<'b>> {
-        let oc = ray.origin - self.center;
+    fn hit<'a: 'b, 'b>(&'a self, ray: &Ray, t_min: f32, t_max: f32, time: f32) -> Option<HitRecord<'b>> {
+        let center = self.center(time);
+        let oc = ray.origin - center;
         let a = ray.dir.norm_squared();
         let b = oc.dot(&ray.dir);
         let c = oc.norm_squared() - self.radius * self.radius;
@@ -65,7 +69,7 @@ impl Object for Sphere {
                     return Some(HitRecord {
                         dist: t,
                         hit: ray.at_param(t),
-                        normal: (ray.at_param(t) - self.center) / self.radius,
+                        normal: (ray.at_param(t) - center) / self.radius,
 
                         // return a reference to the owned Material trait object.
                         // The HitRecord has a lifetime of 'b which is <= a, the lifetime
@@ -85,11 +89,11 @@ impl Object for Sphere {
 // they have to have static lifetime
 impl<T, O: Object + 'static> Object for T where T: Deref<Target = [O]>
 {
-    fn hit<'a: 'b, 'b>(&'a self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord<'b>> {
+    fn hit<'a: 'b, 'b>(&'a self, ray: &Ray, t_min: f32, t_max: f32, time: f32) -> Option<HitRecord<'b>> {
         let mut hit_record: Option<HitRecord> = None;
         let mut closest_so_far = t_max;
         for obj in self.iter() {
-            if let Some(hit) = obj.hit(ray, t_min, closest_so_far) {
+            if let Some(hit) = obj.hit(ray, t_min, closest_so_far, time) {
                 hit_record = Some(hit);
                 closest_so_far = hit.dist;
             }
