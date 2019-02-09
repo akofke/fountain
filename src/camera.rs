@@ -3,6 +3,7 @@ use crate::geometry::Ray;
 use nalgebra::Vector2;
 use rand::prelude::*;
 use rand::distributions::Uniform;
+use crate::random::random_in_unit_disk;
 
 pub struct Camera {
     lower_left_corner: Vec3,
@@ -19,12 +20,6 @@ pub struct Lens {
     pub focus_dist: f32
 }
 
-fn random_in_unit_disk() -> Vector2<f32> {
-    loop {
-        let p: Vector2<f32> = 2.0 * Vector2::<f32>::new(random(), random()) - Vector2::repeat(1.0f32);
-        if p.norm_squared() < 1.0 { break p }
-    }
-}
 
 impl Camera {
     pub fn new(lookfrom: Vec3, lookat: Vec3, up: Vec3, vfov: f32, aspect: f32, lens: Option<Lens>, time_delta: Option<(f32, f32)>) -> Camera {

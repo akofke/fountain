@@ -1,7 +1,7 @@
 use crate::geometry::Ray;
 use crate::Vec3;
 use crate::geometry::HitRecord;
-use crate::random_in_unit_sphere;
+use crate::random::random_in_unit_sphere;
 use rand::random;
 
 #[derive(Clone, Copy)]
