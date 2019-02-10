@@ -38,7 +38,6 @@ impl Renderer {
         const AA_SAMPLES: usize = 128;
         (0..height).rev().flat_map(move |j| (0..width).map(move |i| (i, j)))
             .map(move |(i, j)| {
-
                 let mut color: Vec3 = (0..AA_SAMPLES).map(|_| {
                     let u = (i as f32 + random::<f32>()) / width as f32;
                     let v = (j as f32 + random::<f32>()) / height as f32;

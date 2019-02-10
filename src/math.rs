@@ -5,7 +5,8 @@ pub type Vec3 = Vector3<f32>;
 /// Convenience macro that allows creating a Vec3 without needing to use f32 literals
 ///
 /// ```
-/// assert_eq!(vec3!(1, 2, 3), Vec3::new(1.0, 2.0, 3.0));
+/// use raytracer::{v3, Vec3};
+/// assert_eq!(v3!(1, 2, 3), Vec3::new(1.0, 2.0, 3.0));
 /// ```
 ///
 #[macro_export]
