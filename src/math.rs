@@ -15,6 +15,12 @@ macro_rules! v3 {
     };
 }
 
+pub fn to_array(v: Vec3) -> [f32; 3] {
+    let mut arr = [0.0; 3];
+    arr.copy_from_slice(v.as_slice());
+    arr
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

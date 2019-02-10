@@ -3,10 +3,12 @@ use raytracer::material::*;
 use raytracer::camera::*;
 use raytracer::image::write_ppm_ascii;
 use raytracer::*;
+use raytracer::scene::Scene;
+use raytracer::renderer::Renderer;
 
 fn main() {
-    let width = 500;
-    let height = 250;
+    let width = 1000;
+    let height = 500;
     let aspect = width as f32 / height as f32;
     let spheres: Vec<Sphere> = vec![
         Sphere::fixed(Vec3::new(0.0, 0.0, -2.0), 0.5, Box::new(Lambertian {albedo: Vec3::new(0.8, 0.8, 0.0)})),
@@ -31,7 +33,9 @@ fn main() {
         Some((0.0, 1.0))
     );
 //    let camera = Camera::with_aspect(aspect);
-    let framebuf = render(width, height, spheres, &camera);
+//    let framebuf = render(width, height, spheres, &camera);
+    let scene = Scene::new(spheres);
+    let framebuf = Renderer::new(scene, camera).render(width, height);
 
     write_ppm_ascii(width, height, &framebuf, "test2.ppm").expect("Failed to write file");
 }
