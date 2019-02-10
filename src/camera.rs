@@ -3,7 +3,7 @@ use crate::geometry::Ray;
 use nalgebra::Vector2;
 use rand::prelude::*;
 use rand::distributions::Uniform;
-use crate::random::random_in_unit_disk;
+use crate::fast_rand::random_in_unit_disk;
 
 pub struct Camera {
     lower_left_corner: Vec3,

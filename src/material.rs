@@ -1,8 +1,7 @@
 use crate::geometry::Ray;
 use crate::Vec3;
 use crate::geometry::HitRecord;
-use crate::random::random_in_unit_sphere;
-use rand::random;
+use crate::fast_rand::{random_in_unit_sphere, rand};
 
 #[derive(Clone, Copy)]
 pub struct Scatter {
@@ -85,7 +84,7 @@ impl Material for Dielectric {
 
         if let Some(refracted) = refract(&ray_in.dir, &outward_normal, refract_idx_ratio) {
             let reflect_prob = sclick(cosine, self.refractive_index);
-            if random::<f32>() < reflect_prob {
+            if rand::<f32>() < reflect_prob {
                 let reflected = reflect(&ray_in.dir, &hit.normal);
                 Some(Scatter {
                     attenuation,

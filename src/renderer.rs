@@ -3,9 +3,10 @@ use crate::camera::Camera;
 use crate::Vec3;
 use crate::math::to_array;
 use crate::geometry::Ray;
-use rand::prelude::random;
+use crate::fast_rand::thread_rng;
 use std::f32;
 use crate::geometry::Object;
+use rand::Rng;
 
 pub struct Renderer {
     pub scene: Scene,
@@ -36,11 +37,14 @@ impl Renderer {
 
     pub fn iter_pixels(&self, width: usize, height: usize) -> impl Iterator<Item = [f32; 3]> + '_ {
         const AA_SAMPLES: usize = 128;
+
+        let rng = thread_rng(); // TODO: put this in the right place when we have threads
+
         (0..height).rev().flat_map(move |j| (0..width).map(move |i| (i, j)))
             .map(move |(i, j)| {
                 let mut color: Vec3 = (0..AA_SAMPLES).map(|_| {
-                    let u = (i as f32 + random::<f32>()) / width as f32;
-                    let v = (j as f32 + random::<f32>()) / height as f32;
+                    let u = (i as f32 + rng.gen::<f32>()) / width as f32;
+                    let v = (j as f32 + rng.gen::<f32>()) / height as f32;
 
                     let (ray, time) = self.camera.get_ray(u, v);
                     self.cast_ray(&ray, time, 0)

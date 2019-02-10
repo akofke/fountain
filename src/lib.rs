@@ -4,7 +4,7 @@ pub mod camera;
 pub mod material;
 #[macro_use]
 pub mod math;
-pub mod random;
+pub mod fast_rand;
 pub mod image;
 pub mod scene;
 pub mod renderer;
