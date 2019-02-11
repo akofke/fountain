@@ -9,12 +9,17 @@ num = "0.2.0"
 nalgebra = "0.16.0"
 rand = "0.6.5"
 rand_xoshiro = "0.1.0"
+rayon = "1.0.3"
 
 [dev-dependencies]
 criterion = "0.2.10"
 
 [profile.release]
 debug=true
+lto=true
+codegen-units=1
+
+[profile.bench]
 lto=true
 codegen-units=1
 

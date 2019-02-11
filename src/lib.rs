@@ -48,7 +48,7 @@ pub fn cover_example_scene(aspect: f32) -> (Scene, Camera) {
     spheres.push(Sphere::fixed(v3!(0, -1000, 0), 1000.0, Box::new(Lambertian{albedo: v3!(0.7, 0.6, 0.5)})));
     for a in -10..10 {
         for b in -10..10 {
-            let mat: Box<dyn Material> = {
+            let mat: Box<dyn Material + Sync> = {
                 let choose_mat: f32 = random();
 
                 if choose_mat < 0.8 {

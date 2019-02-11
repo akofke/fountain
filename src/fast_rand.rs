@@ -3,7 +3,7 @@ use crate::Vec3;
 use std::cell::UnsafeCell;
 use rand_xoshiro::Xoshiro256Plus;
 use rand::distributions::{Distribution, Standard};
-use rand::{Rng, FromEntropy};
+use rand::{Rng, FromEntropy, SeedableRng};
 
 thread_local!(static RNG: UnsafeCell<Xoshiro256Plus> = UnsafeCell::new(Xoshiro256Plus::from_entropy()));
 

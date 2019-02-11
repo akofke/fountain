@@ -35,7 +35,7 @@ fn main() {
 //    let camera = Camera::with_aspect(aspect);
 //    let framebuf = render(width, height, spheres, &camera);
     let scene = Scene::new(spheres);
-    let framebuf = Renderer::new(scene, camera).render(width, height);
+    let framebuf = Renderer::new(scene, camera).render_parallel(width, height);
 
     write_ppm_ascii(width, height, &framebuf, "test2.ppm").expect("Failed to write file");
 }

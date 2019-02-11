@@ -32,18 +32,18 @@ pub trait Object {
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
-    pub material: Box<dyn Material>,
+    pub material: Box<dyn Material + Sync>,
     pub velocity: Option<Vec3>
 }
 
 impl Sphere {
 
-    pub fn new(center: Vec3, radius: f32, material: Box<dyn Material>, velocity: Option<Vec3>) -> Self {
+    pub fn new(center: Vec3, radius: f32, material: Box<dyn Material + Sync>, velocity: Option<Vec3>) -> Self {
         Sphere {center, radius, material, velocity}
     }
 
 
-    pub fn fixed(center: Vec3, radius: f32, material: Box<dyn Material>) -> Self {
+    pub fn fixed(center: Vec3, radius: f32, material: Box<dyn Material + Sync>) -> Self {
         Sphere {center, radius, material, velocity: None}
     }
 
