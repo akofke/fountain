@@ -16,6 +16,13 @@ pub fn rand<T>() -> T where Standard: Distribution<T> {
     })
 }
 
+pub fn set_seed(seed: u64) {
+    RNG.with(|cell| {
+        let rng: *mut Xoshiro256Plus = cell.get();
+        unsafe { rng.write(Xoshiro256Plus::seed_from_u64(seed)); }
+    })
+}
+
 pub fn thread_rng() -> &'static mut Xoshiro256Plus {
     RNG.with(|cell| {
         unsafe {
