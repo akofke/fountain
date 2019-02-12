@@ -65,7 +65,7 @@ impl Renderer {
             let v = (j as f32 + rng.gen::<f32>()) / h as f32;
 
             let (ray, time) = self.camera.get_ray(u, v);
-            self.cast_ray(&ray, time, 0)
+            self.cast_ray(ray, time, 0)
         }).sum();
         color /= AA_SAMPLES as f32;
 
@@ -73,18 +73,34 @@ impl Renderer {
         to_array(color)
     }
 
-    fn cast_ray(&self, ray: &Ray, time: f32, depth: usize) -> Vec3 {
-        if let Some(hit_record) = self.scene.spheres.hit(ray, 0.001, f32::MAX, time) {
-//        return (hit_record.normal + Vec3::repeat(1.0)) * 0.5; // normal map
-            match hit_record.material.scatter(ray, &hit_record) {
-                Some(scatter) if depth < 10 => {
-                    scatter.attenuation.component_mul(&self.cast_ray(&scatter.scattered, time, depth + 1))
-                },
-                _ => Vec3::zeros()
+    fn cast_ray(&self, ray: Ray, time: f32, depth: usize) -> Vec3 {
+        let mut color = Vec3::repeat(1.0);
+        let mut ray = ray;
+        for _ in 0..10 {
+            if let Some(hit_record) = self.scene.spheres.hit(&ray, 0.001, f32::MAX, time) {
+                if let Some(scatter) = hit_record.material.scatter(&ray, &hit_record) {
+                    color = color.component_mul(&scatter.attenuation);
+                    ray = scatter.scattered;
+                } else {
+                    color = Vec3::zeros();
+                    break;
+                }
+            } else {
+                color = color.component_mul(&background(&ray.dir));
+                break;
             }
-        } else {
-            background(&ray.dir)
         }
+        color
+//        if let Some(hit_record) = self.scene.spheres.hit(ray, 0.001, f32::MAX, time) {
+//            match hit_record.material.scatter(ray, &hit_record) {
+//                Some(scatter) if depth < 10 => {
+//                    scatter.attenuation.component_mul(&self.cast_ray(&scatter.scattered, time, depth + 1))
+//                },
+//                _ => Vec3::zeros()
+//            }
+//        } else {
+//            background(&ray.dir)
+//        }
     }
 
 }
