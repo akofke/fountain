@@ -8,6 +8,8 @@ pub mod fast_rand;
 pub mod image;
 pub mod scene;
 pub mod renderer;
+pub mod aabb;
+pub mod bvh;
 
 pub use crate::math::Vec3;
 
