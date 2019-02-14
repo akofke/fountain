@@ -10,6 +10,7 @@ pub mod scene;
 pub mod renderer;
 pub mod aabb;
 pub mod bvh;
+pub mod morton;
 
 pub use crate::math::Vec3;
 

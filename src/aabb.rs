@@ -15,4 +15,12 @@ impl Aabb {
     pub fn with_bounds(min: Vec3, max: Vec3) -> Self {
         Self {min, max}
     }
+
+    pub fn size(&self) -> Vec3 {
+        self.max - self.min
+    }
+
+    pub fn centroid(&self) -> Vec3 {
+        self.min + (self.size() / 2.0)
+    }
 }
