@@ -12,7 +12,9 @@ pub struct Scene {
 impl Scene {
     pub fn new(spheres: Vec<Sphere>) -> Self {
         Self {
-            spheres
+            spheres,
+
+            prim_bounding_boxes: Vec::new()
         }
     }
 }
