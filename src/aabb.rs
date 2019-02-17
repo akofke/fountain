@@ -37,6 +37,33 @@ impl Aabb {
         )
     }
 
+    /// Produces a normalized Aabb whose coordinates all lie within [0, 1) with
+    /// the given world Aabb used as a scale.
+    ///
+    /// ```
+    /// use raytracer::math::Vec3;
+    /// use raytracer::aabb::Aabb;
+    ///
+    /// let world = Aabb::with_bounds(Vec3::new(-50.0, -50.0, -50.0), Vec3::new(50.0, 50.0, 50.0));
+    /// let bb = Aabb::with_bounds(Vec3::new(-20.0, 0.0, 10.0), Vec3::new(-10.0, 10.0, 30.0));
+    /// let scaled = bb.normalized_by(&world);
+    /// assert_eq!(scaled.min, Vec3::new(0.3, 0.5, 0.6));
+    /// assert_eq!(scaled.max, Vec3::new(0.4, 0.6, 0.8));
+    /// ```
+    pub fn normalized_by(&self, world: &Aabb) -> Self {
+        let size = world.size();
+        let norm = Self::with_bounds((self.min - world.min).component_div(&size), (self.max - world.min).component_div(&size));
+
+//        debug_assert!(norm.min.x >= 0.0 && norm.min.x < 1.0);
+//        debug_assert!(norm.min.y >= 0.0 && norm.min.y < 1.0);
+//        debug_assert!(norm.min.z >= 0.0 && norm.min.z < 1.0);
+//        debug_assert!(norm.max.x >= 0.0 && norm.max.x < 1.0);
+//        debug_assert!(norm.max.y >= 0.0 && norm.max.y < 1.0);
+//        debug_assert!(norm.max.z >= 0.0 && norm.max.z < 1.0);
+
+        norm
+    }
+
     pub fn size(&self) -> Vec3 {
         self.max - self.min
     }

@@ -3,6 +3,11 @@ use crate::aabb::Aabb;
 
 pub struct PrimId(usize);
 
+pub struct PrimRef {
+    pub aabb: Aabb,
+    pub idx: usize
+}
+
 pub struct Scene {
     pub spheres: Vec<Sphere>,
 
