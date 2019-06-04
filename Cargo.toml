@@ -10,6 +10,7 @@ nalgebra = "0.16.0"
 rand = "0.6.5"
 rand_xoshiro = "0.1.0"
 rayon = "1.0.3"
+bumpalo = "2.4.3"
 
 [dev-dependencies]
 criterion = "0.2.10"

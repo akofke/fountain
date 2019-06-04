@@ -12,6 +12,8 @@ pub trait Bounded {
     fn aabb(&self) -> Aabb;
 }
 
+pub enum Axis { X, Y, Z }
+
 impl Aabb {
     pub fn with_bounds(min: Vec3, max: Vec3) -> Self {
         Self {min, max}
@@ -34,6 +36,22 @@ impl Aabb {
                 self.max.z.max(other.max.z),
             )
 
+        )
+    }
+
+    pub fn join_point(&self, point: &Vec3) -> Self {
+        Self::with_bounds(
+            Vec3::new(
+                self.min.x.min(point.x),
+                self.min.y.min(point.y),
+                self.min.z.min(point.z),
+            ),
+
+            Vec3::new(
+                self.max.x.max(point.x),
+                self.max.y.max(point.y),
+                self.max.z.max(point.z),
+            )
         )
     }
 
@@ -70,5 +88,20 @@ impl Aabb {
 
     pub fn centroid(&self) -> Vec3 {
         self.min + (self.size() / 2.0)
+    }
+
+    pub fn diagonal(&self) -> Vec3 {
+        self.max - self.min
+    }
+
+    pub fn maximum_extent(&self) -> Axis {
+        let d = self.diagonal();
+        if d.x > d.y && d.x > d.z {
+            Axis::X
+        } else if d.y > d.z {
+            Axis::Y
+        } else {
+            Axis::Z
+        }
     }
 }
