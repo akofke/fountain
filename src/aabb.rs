@@ -12,7 +12,7 @@ pub trait Bounded {
     fn aabb(&self) -> Aabb;
 }
 
-pub enum Axis { X, Y, Z }
+pub enum Axis { X = 0, Y, Z }
 
 impl Aabb {
     pub fn with_bounds(min: Vec3, max: Vec3) -> Self {
@@ -103,5 +103,9 @@ impl Aabb {
         } else {
             Axis::Z
         }
+    }
+
+    pub fn is_point(&self) -> bool {
+        self.max == self.min
     }
 }
