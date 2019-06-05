@@ -42,6 +42,8 @@ impl BVH {
 
         let mut flat_nodes = Vec::<LinearBVHNode>::with_capacity(prims.len());
 
+        Self::flatten_tree(&mut flat_nodes, root, 0);
+
         BVH {
             prims,
             nodes: flat_nodes
