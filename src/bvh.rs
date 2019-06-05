@@ -14,11 +14,12 @@ pub enum SplitMethod {
 }
 
 pub struct BVH {
-
+    pub prims: Vec<Rc<dyn Primitive>>,
+    nodes: Vec<LinearBVHNode>
 }
 
 impl BVH {
-    pub fn build(prims: Vec<Rc<dyn Primitive>>) -> BVH {
+    pub fn build(mut prims: Vec<Rc<dyn Primitive>>) -> BVH {
         // TODO: figure out prims type. Rc or Box?
 
         let mut prim_info: Vec<BVHPrimInfo> = prims.iter().enumerate().map(|(i, p)| {
@@ -37,9 +38,14 @@ impl BVH {
             SplitMethod::Middle
         );
 
+        apply_permutation(&mut prims, &mut prim_ordering);
 
+        let mut flat_nodes = Vec::<LinearBVHNode>::with_capacity(prims.len());
 
-        unimplemented!()
+        BVH {
+            prims,
+            nodes: flat_nodes
+        }
     }
 
     fn recursive_build<'a>(
@@ -66,7 +72,7 @@ impl BVH {
             for prim in prim_info {
                 prim_ordering.push(prim.prim_id as isize)
             }
-            let node = arena.alloc(BVHBuildNode::new_leaf(first_prim_idx, n_prims, node_bounds));
+            let node = arena.alloc(BVHBuildNode::new_leaf(first_prim_idx as u32, n_prims as u16, node_bounds));
             return node;
         }
 
@@ -88,20 +94,45 @@ impl BVH {
         let child1 = Self::recursive_build(arena, part1, prim_ordering, split_method);
         let child2 = Self::recursive_build(arena, part1, prim_ordering, split_method);
 
-        arena.alloc(BVHBuildNode::new_interior([child1, child2], ax))
+        arena.alloc(BVHBuildNode::new_interior([child1, child2], ax as u8))
+    }
+
+    // Returns subtree length
+    fn flatten_tree(flat_nodes: &mut Vec<LinearBVHNode>, node: &BVHBuildNode, idx: usize) -> usize {
+        let subtree_len = match node {
+            &BVHBuildNode::Leaf {bounds, first_prim_idx, n_prims} => {
+                let leaf = LinearBVHNode::Leaf {bounds, first_prim_idx, n_prims};
+                flat_nodes.push(leaf);
+                1
+            },
+
+            &BVHBuildNode::Interior {bounds, children, split_axis} => {
+                let interior = LinearBVHNode::Interior {bounds, split_axis, second_child_idx: 0};
+                flat_nodes.push(interior);
+                let first_subtree_len = Self::flatten_tree(flat_nodes, children[0], idx + 1);
+                let second_idx = idx + first_subtree_len;
+                if let LinearBVHNode::Interior {ref mut second_child_idx, ..} = flat_nodes[idx] {
+                    *second_child_idx = second_idx as u32;
+                } else { unreachable!() } // unchecked?
+
+                first_subtree_len + Self::flatten_tree(flat_nodes, children[1], second_idx)
+            }
+        };
+        subtree_len
     }
 }
 
 // Should be 32 bytes
+#[derive(Copy, Clone)]
 pub enum LinearBVHNode {
     Leaf {
         bounds: Aabb,
-        primitives_offset: u32,
-        n_primitives: u16
+        first_prim_idx: u32,
+        n_prims: u16
     },
     Interior {
         bounds: Aabb,
-        second_child_offset: u32,
+        second_child_idx: u32,
         split_axis: u8
     }
 }
@@ -121,25 +152,25 @@ impl BVHPrimInfo {
 enum BVHBuildNode<'a> {
     Leaf {
         bounds: Aabb,
-        first_prim_idx: usize,
-        n_prims: usize,
+        first_prim_idx: u32,
+        n_prims: u16,
     },
 
     Interior {
         bounds: Aabb,
         children: [&'a BVHBuildNode<'a>; 2],
-        split_axis: usize
+        split_axis: u8
     }
 }
 
 impl<'a> BVHBuildNode<'a> {
-    fn new_leaf(first_prim_idx: usize, n_prims: usize, bounds: Aabb) -> Self {
+    fn new_leaf(first_prim_idx: u32, n_prims: u16, bounds: Aabb) -> Self {
         BVHBuildNode::Leaf {
             first_prim_idx, n_prims, bounds
         }
     }
 
-    fn new_interior(children: [&'a BVHBuildNode<'a>; 2], split_axis: usize) -> Self {
+    fn new_interior(children: [&'a BVHBuildNode<'a>; 2], split_axis: u8) -> Self {
         let bounds = children[0].bounds().join(&children[1].bounds());
         BVHBuildNode::Interior {
             children,
