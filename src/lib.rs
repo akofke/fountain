@@ -27,6 +27,13 @@ use crate::geom::Sphere;
 use crate::material::*;
 use rand::prelude::*;
 use crate::camera::Lens;
+use num::{Num, Bounded};
+use num::traits::NumAssignOps;
+use std::fmt::Debug;
+use std::any::Any;
+
+
+pub trait Scalar: Num + NumAssignOps + Bounded + Copy + Debug + Any {}
 
 
 pub fn to_rgb(v: Vec3) -> [u8; 3] {

@@ -2,6 +2,8 @@ use crate::Vec3;
 use nalgebra::Transform3;
 use nalgebra::Point3;
 
+pub mod bounds;
+
 pub struct Ray {
     pub origin: Point3<f32>,
     pub dir: Vec3,

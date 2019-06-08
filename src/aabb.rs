@@ -17,10 +17,6 @@ impl std::fmt::Debug for Aabb {
     }
 }
 
-pub trait Bounded {
-    fn aabb(&self) -> Aabb;
-}
-
 pub enum Axis { X = 0, Y, Z }
 
 impl Aabb {
