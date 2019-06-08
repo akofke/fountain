@@ -11,7 +11,6 @@ pub mod renderer;
 pub mod aabb;
 pub mod bvh;
 pub mod morton;
-pub mod aac;
 pub mod primitive;
 pub mod geometry;
 
