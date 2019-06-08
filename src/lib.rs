@@ -1,5 +1,5 @@
 
-pub mod geometry;
+pub mod geom;
 pub mod camera;
 pub mod material;
 #[macro_use]
@@ -13,17 +13,18 @@ pub mod bvh;
 pub mod morton;
 pub mod aac;
 pub mod primitive;
+pub mod geometry;
 
 pub use crate::math::Vec3;
 
 use nalgebra::clamp;
-use crate::geometry::Object;
+use crate::geom::Object;
 use crate::camera::Camera;
-use crate::geometry::Ray;
+use crate::geom::Ray;
 use num::traits::ToPrimitive;
 use std::f32;
 use crate::scene::Scene;
-use crate::geometry::Sphere;
+use crate::geom::Sphere;
 use crate::material::*;
 use rand::prelude::*;
 use crate::camera::Lens;

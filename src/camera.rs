@@ -1,5 +1,5 @@
 use crate::Vec3;
-use crate::geometry::Ray;
+use crate::geom::Ray;
 use nalgebra::Vector2;
 use rand::prelude::*;
 use rand::distributions::Uniform;

@@ -2,10 +2,10 @@ use crate::scene::Scene;
 use crate::camera::Camera;
 use crate::Vec3;
 use crate::math::to_array;
-use crate::geometry::Ray;
+use crate::geom::Ray;
 use crate::fast_rand::thread_rng;
 use std::f32;
-use crate::geometry::Object;
+use crate::geom::Object;
 use rand::Rng;
 use rayon::prelude::*;
 

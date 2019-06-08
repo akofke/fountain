@@ -3,7 +3,7 @@ use raytracer::renderer::Renderer;
 use raytracer::scene::Scene;
 use raytracer::camera::Camera;
 use raytracer::camera::Lens;
-use raytracer::geometry::Sphere;
+use raytracer::geom::Sphere;
 use raytracer::material::*;
 use raytracer::{Vec3, v3};
 use raytracer::cover_example_scene;

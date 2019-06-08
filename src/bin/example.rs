@@ -1,4 +1,4 @@
-use raytracer::geometry::Sphere;
+use raytracer::geom::Sphere;
 use raytracer::material::*;
 use raytracer::camera::*;
 use raytracer::image::write_ppm_ascii;

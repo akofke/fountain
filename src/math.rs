@@ -1,4 +1,5 @@
 use nalgebra::Vector3;
+use nalgebra::Transform3;
 
 pub type Vec3 = Vector3<f32>;
 

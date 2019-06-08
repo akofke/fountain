@@ -6,15 +6,16 @@ edition = "2018"
 
 [dependencies]
 num = "0.2.0"
-nalgebra = "0.16.0"
+nalgebra = "0.18.0"
 rand = "0.6.5"
-rand_xoshiro = "0.1.0"
+rand_xoshiro = "0.2.0"
 rayon = "1.0.3"
 bumpalo = "2.4.3"
 partition = "0.1.1"
 
 [dev-dependencies]
-criterion = "0.2.10"
+criterion = "0.2.11"
+pretty_assertions = "0.6.1"
 
 [profile.release]
 debug=true

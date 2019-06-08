@@ -1,4 +1,4 @@
-use crate::geometry::Sphere;
+use crate::geom::Sphere;
 use crate::aabb::Aabb;
 
 pub struct PrimId(usize);
