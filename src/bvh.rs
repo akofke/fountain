@@ -5,6 +5,7 @@ use bumpalo::Bump;
 use std::ops::{Range, DerefMut};
 use partition::partition;
 use std::rc::Rc;
+use std::fmt::Debug;
 
 #[derive(Copy, Clone)]
 pub enum SplitMethod {
@@ -74,7 +75,8 @@ impl BVH {
             for prim in prim_info {
                 prim_ordering.push(prim.prim_id as isize)
             }
-            let node = arena.alloc(BVHBuildNode::new_leaf(first_prim_idx as u32, n_prims as u16, node_bounds));
+            let node = arena.alloc(
+                BVHBuildNode::new_leaf(first_prim_idx as u32, n_prims as u16, node_bounds));
             return node;
         }
 
@@ -94,7 +96,7 @@ impl BVH {
         };
 
         let child1 = Self::recursive_build(arena, part1, prim_ordering, split_method);
-        let child2 = Self::recursive_build(arena, part1, prim_ordering, split_method);
+        let child2 = Self::recursive_build(arena, part2, prim_ordering, split_method);
 
         arena.alloc(BVHBuildNode::new_interior([child1, child2], ax as u8))
     }
@@ -112,7 +114,7 @@ impl BVH {
                 let interior = LinearBVHNode::Interior {bounds, split_axis, second_child_idx: 0};
                 flat_nodes.push(interior);
                 let first_subtree_len = Self::flatten_tree(flat_nodes, children[0], idx + 1);
-                let second_idx = idx + first_subtree_len;
+                let second_idx = idx + first_subtree_len + 1;
                 if let LinearBVHNode::Interior {ref mut second_child_idx, ..} = flat_nodes[idx] {
                     *second_child_idx = second_idx as u32;
                 } else { unreachable!() } // unchecked?
@@ -125,7 +127,7 @@ impl BVH {
 }
 
 // Should be 32 bytes
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum LinearBVHNode {
     Leaf {
         bounds: Aabb,
@@ -191,6 +193,7 @@ impl<'a> BVHBuildNode<'a> {
 }
 
 fn apply_permutation<T>(items: &mut [T], indices: &mut [isize]) {
+    // https://stackoverflow.com/a/27507869
     assert_eq!(items.len(), indices.len());
 
     for i in 0..items.len() {
@@ -213,6 +216,7 @@ fn apply_permutation<T>(items: &mut [T], indices: &mut [isize]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions as pa;
 
     #[test]
     fn test_permutation() {
@@ -222,5 +226,46 @@ mod tests {
         apply_permutation(&mut items, &mut perm);
 
         assert_eq!(items, vec!["c", "d", "a", "b", "e"])
+    }
+
+    #[derive(Copy, Clone)]
+    struct MockPrim(Aabb);
+
+    impl Primitive for MockPrim {
+        fn world_bound(&self) -> Aabb {
+            self.0
+        }
+    }
+
+    #[test]
+    fn test_bvh() {
+        let prim1 = MockPrim(Aabb::with_bounds(v3!(1, 1, 1), v3!(2, 2, 2)));
+        let prim2 = MockPrim(Aabb::with_bounds(v3!(1, -1, 1), v3!(2, -2, 2)));
+
+        let mut prims: Vec<Rc<dyn Primitive>> = vec![Rc::new(prim1), Rc::new(prim2)];
+
+        let bvh = BVH::build(prims);
+
+        let node1 = LinearBVHNode::Interior {
+            bounds: prim1.0.join(&prim2.0),
+            second_child_idx: 2,
+            split_axis: 1 // y
+        };
+
+        let node2 = LinearBVHNode::Leaf {
+            bounds: prim2.0,
+            first_prim_idx: 0,
+            n_prims: 1
+        };
+
+        let node3 = LinearBVHNode::Leaf {
+            bounds: prim1.0,
+            first_prim_idx: 1,
+            n_prims: 1
+        };
+
+        let expected_tree = vec![node1, node2, node3];
+
+        pa::assert_eq!(bvh.nodes, expected_tree);
     }
 }

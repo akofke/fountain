@@ -1,11 +1,20 @@
 use crate::Vec3;
 use std::f32;
+use std::fmt::Error;
 
 /// Axis-aligned bounding box
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct Aabb {
     pub min: Vec3,
     pub max: Vec3
+}
+
+impl std::fmt::Debug for Aabb {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), Error> {
+        let arrmin: [f32; 3] = self.min.into();
+        let arrmax: [f32; 3] = self.max.into();
+        write!(f, "Aabb[{:?}, {:?}]", arrmin, arrmax)
+    }
 }
 
 pub trait Bounded {
