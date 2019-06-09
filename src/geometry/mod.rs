@@ -1,10 +1,10 @@
 use crate::Vec3;
 use nalgebra::Transform3;
 use nalgebra::Point3;
+use std::ops::Deref;
 
 pub mod bounds;
 
-pub type Point3f = Point3<f32>;
 
 
 
@@ -24,11 +24,17 @@ impl Ray {
 }
 
 
-pub struct Normal3 {
-    pub v: Vec3
-}
+pub struct Normal3(Vec3);
 
 impl Normal3 {
+}
+
+impl Deref for Normal3 {
+    type Target = Vec3;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 pub struct Transform {
@@ -38,14 +44,11 @@ pub struct Transform {
 
 impl Transform {
     pub fn transform_normal(&self, n: &Normal3) -> Normal3 {
-        let n = n.v;
         // transform by the transpose of the inverse
         let x = self.invt[(0, 0)]*n.x + self.invt[(1, 0)]*n.y + self.invt[(2, 0)]*n.z;
         let y = self.invt[(0, 1)]*n.x + self.invt[(1, 1)]*n.y + self.invt[(2, 1)]*n.z;
         let z = self.invt[(0, 2)]*n.x + self.invt[(1, 2)]*n.y + self.invt[(2, 2)]*n.z;
-        Normal3 { v: v3!(x, y, z)}
-
-
+        Normal3(v3!(x, y, z))
     }
 }
 

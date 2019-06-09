@@ -14,10 +14,12 @@ pub mod bvh;
 pub mod morton;
 pub mod primitive;
 pub mod geometry;
+pub mod medium;
+pub mod interaction;
 
 pub use crate::math::Vec3;
 
-use nalgebra::clamp;
+use nalgebra::{clamp, Point2, Point3};
 use crate::geom::Object;
 use crate::camera::Camera;
 use crate::geom::Ray;
@@ -32,6 +34,9 @@ use num::{Num, Bounded};
 use num::traits::NumAssignOps;
 use std::fmt::Debug;
 use std::any::Any;
+
+pub type Point2f = Point2<f32>;
+pub type Point3f = Point3<f32>;
 
 
 pub trait Scalar: Num + NumAssignOps + PartialOrd + Bounded + Copy + Debug + Any + From<u8> {

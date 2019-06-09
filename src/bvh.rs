@@ -6,7 +6,7 @@ use partition::partition;
 use std::rc::Rc;
 use std::fmt::Debug;
 use crate::geometry::bounds::Bounds3f;
-use crate::geometry::Point3f;
+use crate::Point3f;
 
 #[derive(Copy, Clone)]
 pub enum SplitMethod {
