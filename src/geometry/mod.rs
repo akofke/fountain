@@ -4,6 +4,10 @@ use nalgebra::Point3;
 
 pub mod bounds;
 
+pub type Point3f = Point3<f32>;
+
+
+
 pub struct Ray {
     pub origin: Point3<f32>,
     pub dir: Vec3,

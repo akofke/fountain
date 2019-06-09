@@ -1,3 +1,4 @@
+#![feature(specialization)]
 
 pub mod geom;
 pub mod camera;
@@ -33,7 +34,55 @@ use std::fmt::Debug;
 use std::any::Any;
 
 
-pub trait Scalar: Num + NumAssignOps + Bounded + Copy + Debug + Any {}
+pub trait Scalar: Num + NumAssignOps + PartialOrd + Bounded + Copy + Debug + Any + From<u8> {
+    fn min(self, other: Self) -> Self;
+    fn max(self, other: Self) -> Self;
+}
+
+// Can't do this because of conflicting implementations...
+
+//impl<S> Scalar for S
+//    where S: num::PrimInt
+//{
+//    fn min(self, other: Self) -> Self {
+//        Ord::min(self, other)
+//    }
+//
+//    fn max(self, other: Self) -> Self {
+//        Ord::max(self, other)
+//    }
+//}
+
+impl Scalar for f32 {
+    fn min(self, other: Self) -> Self {
+        self.min(other)
+    }
+
+    fn max(self, other: Self) -> Self {
+        self.max(other)
+    }
+}
+
+impl Scalar for f64 {
+    fn min(self, other: Self) -> Self {
+        self.min(other)
+    }
+
+    fn max(self, other: Self) -> Self {
+        self.max(other)
+    }
+}
+
+// TODO: others...
+impl Scalar for u32 {
+    fn min(self, other: Self) -> Self {
+        Ord::min(self, other)
+    }
+
+    fn max(self, other: Self) -> Self {
+        Ord::max(self, other)
+    }
+}
 
 
 pub fn to_rgb(v: Vec3) -> [u8; 3] {

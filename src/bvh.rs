@@ -1,11 +1,12 @@
 use crate::primitive::Primitive;
-use crate::aabb::{Aabb, Axis};
 use crate::Vec3;
 use bumpalo::Bump;
 use std::ops::{Range, DerefMut};
 use partition::partition;
 use std::rc::Rc;
 use std::fmt::Debug;
+use crate::geometry::bounds::Bounds3f;
+use crate::geometry::Point3f;
 
 #[derive(Copy, Clone)]
 pub enum SplitMethod {
@@ -62,7 +63,7 @@ impl BVH {
         // Find the union of the bounding boxes of all primitives in this node,
         // and the bounding box of all centroids
         let (node_bounds, centroid_bounds) = prim_info.iter()
-            .fold((Aabb::empty(), Aabb::empty()), |(node_bb, centr_bb), prim| {
+            .fold((Bounds3f::empty(), Bounds3f::empty()), |(node_bb, centr_bb), prim| {
                 (node_bb.join(&prim.bounds), centr_bb.join_point(&prim.centroid))
             });
 
@@ -130,12 +131,12 @@ impl BVH {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum LinearBVHNode {
     Leaf {
-        bounds: Aabb,
+        bounds: Bounds3f,
         first_prim_idx: u32,
         n_prims: u16
     },
     Interior {
-        bounds: Aabb,
+        bounds: Bounds3f,
         second_child_idx: u32,
         split_axis: u8
     }
@@ -143,32 +144,32 @@ pub enum LinearBVHNode {
 
 struct BVHPrimInfo {
     prim_id: usize,
-    bounds: Aabb,
-    centroid: Vec3
+    bounds: Bounds3f,
+    centroid: Point3f
 }
 
 impl BVHPrimInfo {
-    fn new(prim_id: usize, bounds: Aabb) -> Self {
+    fn new(prim_id: usize, bounds: Bounds3f) -> Self {
         Self { prim_id, bounds, centroid: bounds.centroid() }
     }
 }
 
 enum BVHBuildNode<'a> {
     Leaf {
-        bounds: Aabb,
+        bounds: Bounds3f,
         first_prim_idx: u32,
         n_prims: u16,
     },
 
     Interior {
-        bounds: Aabb,
+        bounds: Bounds3f,
         children: [&'a BVHBuildNode<'a>; 2],
         split_axis: u8
     }
 }
 
 impl<'a> BVHBuildNode<'a> {
-    fn new_leaf(first_prim_idx: u32, n_prims: u16, bounds: Aabb) -> Self {
+    fn new_leaf(first_prim_idx: u32, n_prims: u16, bounds: Bounds3f) -> Self {
         BVHBuildNode::Leaf {
             first_prim_idx, n_prims, bounds
         }
@@ -183,7 +184,7 @@ impl<'a> BVHBuildNode<'a> {
         }
     }
 
-    fn bounds(&self) -> Aabb {
+    fn bounds(&self) -> Bounds3f {
         match self {
             BVHBuildNode::Leaf {bounds, ..} => *bounds,
             BVHBuildNode::Interior {bounds, ..} => *bounds
@@ -229,20 +230,20 @@ mod tests {
     }
 
     #[derive(Copy, Clone)]
-    struct MockPrim(Aabb);
+    struct MockPrim(Bounds3f);
 
     impl Primitive for MockPrim {
-        fn world_bound(&self) -> Aabb {
+        fn world_bound(&self) -> Bounds3f {
             self.0
         }
     }
 
     #[test]
     fn test_bvh() {
-        let prim1 = MockPrim(Aabb::with_bounds(v3!(1, 1, 1), v3!(2, 2, 2)));
-        let prim2 = MockPrim(Aabb::with_bounds(v3!(1, -1, 1), v3!(2, -2, 2)));
+        let prim1 = MockPrim(Bounds3f::with_bounds(Point3f::new(1.0, 1.0, 1.0), Point3f::new(2.0, 2.0, 2.0)));
+        let prim2 = MockPrim(Bounds3f::with_bounds(Point3f::new(1.0, -1.0, 1.0), Point3f::new(2.0, -2.0, 2.0)));
 
-        let mut prims: Vec<Rc<dyn Primitive>> = vec![Rc::new(prim1), Rc::new(prim2)];
+        let prims: Vec<Rc<dyn Primitive>> = vec![Rc::new(prim1), Rc::new(prim2)];
 
         let bvh = BVH::build(prims);
 
