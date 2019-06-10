@@ -1,5 +1,5 @@
 use criterion::{Criterion, criterion_group, criterion_main, BatchSize};
-use raytracer::renderer::Renderer;
+use raytracer::renderer_old::Renderer;
 use raytracer::scene::Scene;
 use raytracer::camera::Camera;
 use raytracer::camera::Lens;

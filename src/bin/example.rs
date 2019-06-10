@@ -4,7 +4,7 @@ use raytracer::camera::*;
 use raytracer::image::write_ppm_ascii;
 use raytracer::*;
 use raytracer::scene::Scene;
-use raytracer::renderer::Renderer;
+use raytracer::renderer_old::Renderer;
 
 fn main() {
     let width = 1000;

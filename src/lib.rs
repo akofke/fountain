@@ -8,7 +8,7 @@ pub mod math;
 pub mod fast_rand;
 pub mod image;
 pub mod scene;
-pub mod renderer;
+pub mod renderer_old;
 pub mod aabb;
 pub mod bvh;
 pub mod morton;
@@ -17,6 +17,9 @@ pub mod geometry;
 pub mod medium;
 pub mod interaction;
 pub mod shape;
+pub mod renderer;
+pub mod integrator;
+pub mod spectrum;
 
 pub use crate::math::Vec3;
 

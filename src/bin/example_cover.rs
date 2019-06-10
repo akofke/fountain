@@ -1,5 +1,5 @@
 use raytracer::cover_example_scene;
-use raytracer::renderer::Renderer;
+use raytracer::renderer_old::Renderer;
 use raytracer::image::write_ppm;
 
 fn main() {
