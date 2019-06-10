@@ -4,6 +4,7 @@ use num::Bounded;
 use crate::{Scalar, Vec3f};
 use std::fmt::Error;
 use crate::geometry::Ray;
+use std::mem::swap;
 
 pub type Bounds2f = Bounds2<f32>;
 pub type Bounds2i = Bounds2<i32>;
@@ -120,7 +121,27 @@ impl Bounds3<f32> {
     }
 
     pub fn intersect_test(&self, ray: &Ray) -> Option<(f32, f32)> {
-        unimplemented!()
+        let mut t0 = 0.0f32;
+        let mut t1 = ray.t_max;
+
+        for i in 0..3 {
+            let inv_ray_dir = 1.0 / ray.dir[i];
+            let mut t_near = (self.min[i] - ray.origin[i]) * inv_ray_dir;
+            let mut t_far = (self.max[i] - ray.origin[i]) * inv_ray_dir;
+
+            if t_near > t_far { swap(&mut t_near, &mut t_far) }
+
+            // TODO: use gamma to account for fp error
+
+            t0 = f32::max(t0, t_near);
+            t1 = f32::min(t1, t_far);
+            if t0 > t1 { return None; }
+        }
+        Some((t0, t1))
+    }
+
+    pub fn intersect_test_fast(&self, ray: &Ray) -> Option<(f32, f32)> {
+        unimplemented!();
     }
 
 }
@@ -130,5 +151,40 @@ impl<S: Scalar> std::fmt::Debug for Bounds3<S>{
         let arrmin: [S; 3] = self.min.coords.into();
         let arrmax: [S; 3] = self.max.coords.into();
         write!(f, "Bounds3f[{:?}, {:?}]", arrmin, arrmax)
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use crate::geometry::bounds::Bounds3f;
+    use crate::geometry::Ray;
+
+    #[test]
+    fn test_bounds3f_intersect() {
+        // basic hit
+        let bounds = bounds3f!((1, 1, 1), (2, 2, 2));
+        let ray = Ray::new(point3f!(0, 0, 0), vec3f!(1, 1, 1));
+
+        assert_eq!(bounds.intersect_test(&ray), Some((1.0, 2.0)));
+
+        // zero component
+        let bounds = bounds3f!((-0.5, -0.5, -0.5), (0.5, 0.5, 0.5));
+        let ray = Ray::new(point3f!(0, 0, -2), vec3f!(0, 0, 1));
+
+        assert_eq!(bounds.intersect_test(&ray), Some((1.5, 2.5)));
+
+        // miss
+        let bounds = bounds3f!((1, 1, 1), (2, 2, 2));
+        let ray = Ray::new(point3f!(0, 0, 0), vec3f!(-1, 1, 1));
+
+        assert_eq!(bounds.intersect_test(&ray), None);
+
+
+        // along edge
+        let bounds = bounds3f!((1, 1, 1), (2, 2, 2));
+        let ray = Ray::new(point3f!(1, 1, 1), vec3f!(1, 0, 0));
+
+        assert_eq!(bounds.intersect_test(&ray), Some((0.0, 1.0)));
     }
 }
