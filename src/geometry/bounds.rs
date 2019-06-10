@@ -3,6 +3,7 @@ use nalgebra::Point2;
 use num::Bounded;
 use crate::Scalar;
 use std::fmt::Error;
+use crate::geometry::Ray;
 
 pub type Bounds2f = Bounds2<f32>;
 pub type Bounds2i = Bounds2<i32>;
@@ -116,6 +117,10 @@ impl<F: num::Float + Scalar> Bounds3<F> {
         if self.max.y > self.min.y { o.y /= self.max.y - self.min.y };
         if self.max.z > self.min.z { o.z /= self.max.z - self.min.z };
         o
+    }
+
+    pub fn intersect_test(&self, ray: &Ray) -> Option<(f32, f32)> {
+        unimplemented!()
     }
 
 }

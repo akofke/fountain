@@ -16,6 +16,7 @@ pub mod primitive;
 pub mod geometry;
 pub mod medium;
 pub mod interaction;
+pub mod shape;
 
 pub use crate::math::Vec3;
 
