@@ -1,4 +1,4 @@
-use crate::Vec3;
+use crate::Vec3f;
 use std::ops::Deref;
 use crate::material::Material;
 
@@ -6,12 +6,12 @@ use crate::material::Material;
 
 #[derive(Copy, Clone)]
 pub struct Ray {
-    pub origin: Vec3,
-    pub dir: Vec3,
+    pub origin: Vec3f,
+    pub dir: Vec3f,
 }
 
 impl Ray {
-    pub fn at_param(&self, t: f32) -> Vec3 {
+    pub fn at_param(&self, t: f32) -> Vec3f {
         self.origin + (self.dir * t)
     }
 }
@@ -19,8 +19,8 @@ impl Ray {
 #[derive(Copy, Clone)]
 pub struct HitRecord<'a> {
     pub dist: f32,
-    pub hit: Vec3,
-    pub normal: Vec3,
+    pub hit: Vec3f,
+    pub normal: Vec3f,
     pub material: &'a dyn Material
 }
 
@@ -30,24 +30,24 @@ pub trait Object {
 }
 
 pub struct Sphere {
-    pub center: Vec3,
+    pub center: Vec3f,
     pub radius: f32,
     pub material: Box<dyn Material + Sync>,
-    pub velocity: Option<Vec3>
+    pub velocity: Option<Vec3f>
 }
 
 impl Sphere {
 
-    pub fn new(center: Vec3, radius: f32, material: Box<dyn Material + Sync>, velocity: Option<Vec3>) -> Self {
+    pub fn new(center: Vec3f, radius: f32, material: Box<dyn Material + Sync>, velocity: Option<Vec3f>) -> Self {
         Sphere {center, radius, material, velocity}
     }
 
 
-    pub fn fixed(center: Vec3, radius: f32, material: Box<dyn Material + Sync>) -> Self {
+    pub fn fixed(center: Vec3f, radius: f32, material: Box<dyn Material + Sync>) -> Self {
         Sphere {center, radius, material, velocity: None}
     }
 
-    fn center(&self, time: f32) -> Vec3 {
+    fn center(&self, time: f32) -> Vec3f {
         self.velocity.map_or(self.center, |v| {
             self.center + time*v
         })

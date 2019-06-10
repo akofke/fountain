@@ -1,5 +1,5 @@
 use crate::primitive::Primitive;
-use crate::Vec3;
+use crate::Vec3f;
 use bumpalo::Bump;
 use std::ops::{Range, DerefMut};
 use partition::partition;

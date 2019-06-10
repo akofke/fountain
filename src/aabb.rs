@@ -1,12 +1,12 @@
-use crate::Vec3;
+use crate::Vec3f;
 use std::f32;
 use std::fmt::Error;
 
 /// Axis-aligned bounding box
 #[derive(Copy, Clone, PartialEq)]
 pub struct Aabb {
-    pub min: Vec3,
-    pub max: Vec3
+    pub min: Vec3f,
+    pub max: Vec3f
 }
 
 impl std::fmt::Debug for Aabb {
@@ -20,22 +20,22 @@ impl std::fmt::Debug for Aabb {
 pub enum Axis { X = 0, Y, Z }
 
 impl Aabb {
-    pub fn with_bounds(min: Vec3, max: Vec3) -> Self {
+    pub fn with_bounds(min: Vec3f, max: Vec3f) -> Self {
         Self {min, max}
     }
 
     pub fn empty() -> Self {
-        Self::with_bounds(Vec3::repeat(f32::INFINITY), Vec3::repeat(f32::NEG_INFINITY))
+        Self::with_bounds(Vec3f::repeat(f32::INFINITY), Vec3f::repeat(f32::NEG_INFINITY))
     }
 
     pub fn join(&self, other: &Aabb) -> Self {
         Self::with_bounds(
-            Vec3::new(
+            Vec3f::new(
                 self.min.x.min(other.min.x),
                 self.min.y.min(other.min.y),
                 self.min.z.min(other.min.z),
             ),
-            Vec3::new(
+            Vec3f::new(
                 self.max.x.max(other.max.x),
                 self.max.y.max(other.max.y),
                 self.max.z.max(other.max.z),
@@ -44,15 +44,15 @@ impl Aabb {
         )
     }
 
-    pub fn join_point(&self, point: &Vec3) -> Self {
+    pub fn join_point(&self, point: &Vec3f) -> Self {
         Self::with_bounds(
-            Vec3::new(
+            Vec3f::new(
                 self.min.x.min(point.x),
                 self.min.y.min(point.y),
                 self.min.z.min(point.z),
             ),
 
-            Vec3::new(
+            Vec3f::new(
                 self.max.x.max(point.x),
                 self.max.y.max(point.y),
                 self.max.z.max(point.z),
@@ -64,14 +64,14 @@ impl Aabb {
     /// the given world Aabb used as a scale.
     ///
     /// ```
-    /// use raytracer::math::Vec3;
+    /// use raytracer::Vec3f;
     /// use raytracer::aabb::Aabb;
     ///
-    /// let world = Aabb::with_bounds(Vec3::new(-50.0, -50.0, -50.0), Vec3::new(50.0, 50.0, 50.0));
-    /// let bb = Aabb::with_bounds(Vec3::new(-20.0, 0.0, 10.0), Vec3::new(-10.0, 10.0, 30.0));
+    /// let world = Aabb::with_bounds(Vec3f::new(-50.0, -50.0, -50.0), Vec3f::new(50.0, 50.0, 50.0));
+    /// let bb = Aabb::with_bounds(Vec3f::new(-20.0, 0.0, 10.0), Vec3f::new(-10.0, 10.0, 30.0));
     /// let scaled = bb.normalized_by(&world);
-    /// assert_eq!(scaled.min, Vec3::new(0.3, 0.5, 0.6));
-    /// assert_eq!(scaled.max, Vec3::new(0.4, 0.6, 0.8));
+    /// assert_eq!(scaled.min, Vec3f::new(0.3, 0.5, 0.6));
+    /// assert_eq!(scaled.max, Vec3f::new(0.4, 0.6, 0.8));
     /// ```
     pub fn normalized_by(&self, world: &Aabb) -> Self {
         let size = world.size();
@@ -87,15 +87,15 @@ impl Aabb {
         norm
     }
 
-    pub fn size(&self) -> Vec3 {
+    pub fn size(&self) -> Vec3f {
         self.max - self.min
     }
 
-    pub fn centroid(&self) -> Vec3 {
+    pub fn centroid(&self) -> Vec3f {
         self.min + (self.size() / 2.0)
     }
 
-    pub fn diagonal(&self) -> Vec3 {
+    pub fn diagonal(&self) -> Vec3f {
         self.max - self.min
     }
 

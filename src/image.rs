@@ -1,10 +1,10 @@
-use crate::Vec3;
+use crate::Vec3f;
 use crate::to_rgb;
 use std::fs::File;
 use std::path::Path;
 use std::io::{Write, BufWriter};
 
-pub fn write_ppm<P: AsRef<Path>>(width: usize, height: usize, framebuffer: &[Vec3], path: P) -> std::io::Result<()> {
+pub fn write_ppm<P: AsRef<Path>>(width: usize, height: usize, framebuffer: &[Vec3f], path: P) -> std::io::Result<()> {
     assert_eq!(framebuffer.len(), width * height);
 
     let mut f = BufWriter::new(File::create(path)?);
@@ -18,7 +18,7 @@ pub fn write_ppm<P: AsRef<Path>>(width: usize, height: usize, framebuffer: &[Vec
     Ok(())
 }
 
-pub fn write_ppm_ascii<P: AsRef<Path>>(width: usize, height: usize, framebuffer: &[Vec3], path: P) -> std::io::Result<()> {
+pub fn write_ppm_ascii<P: AsRef<Path>>(width: usize, height: usize, framebuffer: &[Vec3f], path: P) -> std::io::Result<()> {
     assert_eq!(framebuffer.len(), width * height);
 
     let mut f = BufWriter::new(File::create(path)?);

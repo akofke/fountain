@@ -1,11 +1,11 @@
 use crate::geom::Ray;
-use crate::Vec3;
+use crate::Vec3f;
 use crate::geom::HitRecord;
 use crate::fast_rand::{random_in_unit_sphere, rand};
 
 #[derive(Clone, Copy)]
 pub struct Scatter {
-    pub attenuation: Vec3,
+    pub attenuation: Vec3f,
     pub scattered: Ray
 }
 
@@ -14,7 +14,7 @@ pub trait Material {
 }
 
 pub struct Lambertian {
-    pub albedo: Vec3
+    pub albedo: Vec3f
 }
 
 impl Material for Lambertian {
@@ -26,11 +26,11 @@ impl Material for Lambertian {
 }
 
 pub struct Metal {
-    pub albedo: Vec3,
+    pub albedo: Vec3f,
     pub fuzz: f32
 }
 
-fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
+fn reflect(v: &Vec3f, n: &Vec3f) -> Vec3f {
     v - 2.0 * v.dot(n) * n
 }
 
@@ -56,7 +56,7 @@ fn sclick(cosine: f32, refract_idx: f32) -> f32 {
     r0 + (1.0 - r0) * (1.0-cosine).powf(5.0)
 }
 
-fn refract(v: &Vec3, n: &Vec3, refract_idx_ratio: f32) -> Option<Vec3> {
+fn refract(v: &Vec3f, n: &Vec3f, refract_idx_ratio: f32) -> Option<Vec3f> {
     let dt = v.dot(n);
     let discriminant = 1.0 - refract_idx_ratio * refract_idx_ratio * (1.0 - dt*dt);
     if discriminant > 0.0 {
@@ -67,7 +67,7 @@ fn refract(v: &Vec3, n: &Vec3, refract_idx_ratio: f32) -> Option<Vec3> {
 
 impl Material for Dielectric {
     fn scatter(&self, ray_in: &Ray, hit: &HitRecord) -> Option<Scatter> {
-        let attenuation = Vec3::repeat(1.0);
+        let attenuation = Vec3f::repeat(1.0);
         let (outward_normal, refract_idx_ratio, cosine) = if ray_in.dir.dot(&hit.normal) > 0.0{
             (
                 -hit.normal,

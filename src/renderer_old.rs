@@ -1,6 +1,6 @@
 use crate::scene::Scene;
 use crate::camera::Camera;
-use crate::Vec3;
+use crate::Vec3f;
 use crate::math::to_array;
 use crate::geom::Ray;
 use crate::fast_rand::thread_rng;
@@ -14,11 +14,11 @@ pub struct Renderer {
     pub camera: Camera,
 }
 
-pub fn background(dir: &Vec3) -> Vec3 {
+pub fn background(dir: &Vec3f) -> Vec3f {
     // scale so t is between 0.0 and 1.0
     let t = 0.5 * (dir[1] + 1.0);
     // linear interpolation based on t
-    (1.0 - t) * Vec3::repeat(1.0) + t * Vec3::new(0.5, 0.7, 1.0)
+    (1.0 - t) * Vec3f::repeat(1.0) + t * Vec3f::new(0.5, 0.7, 1.0)
 }
 
 impl Renderer {
@@ -29,16 +29,16 @@ impl Renderer {
         }
     }
 
-    pub fn render(&self, width: usize, height: usize) -> Vec<Vec3> {
-        let mut framebuf: Vec<Vec3> = Vec::with_capacity(width * height);
-        framebuf.extend(self.iter_pixels(width, height).map(|p| Vec3::new(p[0], p[1], p[2])));
+    pub fn render(&self, width: usize, height: usize) -> Vec<Vec3f> {
+        let mut framebuf: Vec<Vec3f> = Vec::with_capacity(width * height);
+        framebuf.extend(self.iter_pixels(width, height).map(|p| Vec3f::new(p[0], p[1], p[2])));
         framebuf
 //        self.iter_pixels(width, height).collect()
     }
 
-    pub fn render_parallel(&self, width: usize, height: usize) -> Vec<Vec3> {
-        let mut framebuf: Vec<Vec3> = Vec::with_capacity(width * height);
-        framebuf.par_extend(self.iter_pixels_parallel(width, height).map(|p| Vec3::new(p[0], p[1], p[2])));
+    pub fn render_parallel(&self, width: usize, height: usize) -> Vec<Vec3f> {
+        let mut framebuf: Vec<Vec3f> = Vec::with_capacity(width * height);
+        framebuf.par_extend(self.iter_pixels_parallel(width, height).map(|p| Vec3f::new(p[0], p[1], p[2])));
         framebuf
     }
 
@@ -60,7 +60,7 @@ impl Renderer {
         const AA_SAMPLES: usize = 128;
         let rng = thread_rng(); // TODO: put this in the right place when we have threads
 
-        let mut color: Vec3 = (0..AA_SAMPLES).map(|_| {
+        let mut color: Vec3f = (0..AA_SAMPLES).map(|_| {
             let u = (i as f32 + rng.gen::<f32>()) / w as f32;
             let v = (j as f32 + rng.gen::<f32>()) / h as f32;
 
@@ -73,8 +73,8 @@ impl Renderer {
         to_array(color)
     }
 
-    fn cast_ray(&self, ray: Ray, time: f32, depth: usize) -> Vec3 {
-        let mut color = Vec3::repeat(1.0);
+    fn cast_ray(&self, ray: Ray, time: f32, depth: usize) -> Vec3f {
+        let mut color = Vec3f::repeat(1.0);
         let mut ray = ray;
         for _ in 0..10 {
             if let Some(hit_record) = self.scene.spheres.hit(&ray, 0.001, f32::MAX, time) {
@@ -82,7 +82,7 @@ impl Renderer {
                     color = color.component_mul(&scatter.attenuation);
                     ray = scatter.scattered;
                 } else {
-                    color = Vec3::zeros();
+                    color = Vec3f::zeros();
                     break;
                 }
             } else {

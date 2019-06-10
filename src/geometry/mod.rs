@@ -1,7 +1,8 @@
-use crate::Vec3;
+use crate::Vec3f;
 use nalgebra::Transform3;
 use nalgebra::Point3;
 use std::ops::Deref;
+use crate::Float;
 
 pub mod bounds;
 
@@ -10,7 +11,7 @@ pub mod bounds;
 
 pub struct Ray {
     pub origin: Point3<f32>,
-    pub dir: Vec3,
+    pub dir: Vec3f,
     pub t_max: f32,
     pub time: f32,
 
@@ -18,19 +19,24 @@ pub struct Ray {
 }
 
 impl Ray {
+    pub fn new(origin: Point3<f32>, dir: Vec3f) -> Self {
+        Self {
+            origin, dir, t_max: std::f32::INFINITY, time: 0.0
+        }
+    }
     pub fn at(&self, t: f32) -> Point3<f32> {
         self.origin + (self.dir * t)
     }
 }
 
 
-pub struct Normal3(Vec3);
+pub struct Normal3(Vec3f);
 
 impl Normal3 {
 }
 
 impl Deref for Normal3 {
-    type Target = Vec3;
+    type Target = Vec3f;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -48,7 +54,8 @@ impl Transform {
         let x = self.invt[(0, 0)]*n.x + self.invt[(1, 0)]*n.y + self.invt[(2, 0)]*n.z;
         let y = self.invt[(0, 1)]*n.x + self.invt[(1, 1)]*n.y + self.invt[(2, 1)]*n.z;
         let z = self.invt[(0, 2)]*n.x + self.invt[(1, 2)]*n.y + self.invt[(2, 2)]*n.z;
-        Normal3(v3!(x, y, z))
+        Normal3(vec3f!(x, y, z))
     }
 }
+
 

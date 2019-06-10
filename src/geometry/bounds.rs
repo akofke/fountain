@@ -1,7 +1,7 @@
 use nalgebra::{Vector2, Point3, Vector3};
 use nalgebra::Point2;
 use num::Bounded;
-use crate::Scalar;
+use crate::{Scalar, Vec3f};
 use std::fmt::Error;
 use crate::geometry::Ray;
 
@@ -109,9 +109,9 @@ impl <S: Scalar> Bounds3<S> {
     }
 }
 
-impl<F: num::Float + Scalar> Bounds3<F> {
+impl Bounds3<f32> {
 
-    pub fn offset(&self, p: &Point3<F>) -> Vector3<F> {
+    pub fn offset(&self, p: &Point3<f32>) -> Vec3f {
         let mut o = p - self.min;
         if self.max.x > self.min.x { o.x /= self.max.x - self.min.x };
         if self.max.y > self.min.y { o.y /= self.max.y - self.min.y };
@@ -129,6 +129,6 @@ impl<S: Scalar> std::fmt::Debug for Bounds3<S>{
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), Error> {
         let arrmin: [S; 3] = self.min.coords.into();
         let arrmax: [S; 3] = self.max.coords.into();
-        write!(f, "Aabb[{:?}, {:?}]", arrmin, arrmax)
+        write!(f, "Bounds3f[{:?}, {:?}]", arrmin, arrmax)
     }
 }

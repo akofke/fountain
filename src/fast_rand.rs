@@ -1,5 +1,5 @@
 use nalgebra::Vector2;
-use crate::Vec3;
+use crate::Vec3f;
 use std::cell::UnsafeCell;
 use rand_xoshiro::Xoshiro256Plus;
 use rand::distributions::{Distribution, Standard};
@@ -31,10 +31,10 @@ pub fn thread_rng() -> &'static mut Xoshiro256Plus {
     })
 }
 
-pub fn random_in_unit_sphere() -> Vec3 {
+pub fn random_in_unit_sphere() -> Vec3f {
     let rng = thread_rng();
     loop {
-        let p = 2.0 * Vec3::new(rng.gen(), rng.gen(), rng.gen()) - Vec3::repeat(1.0);
+        let p = 2.0 * Vec3f::new(rng.gen(), rng.gen(), rng.gen()) - Vec3f::repeat(1.0);
         if p.norm_squared() < 1.0 { break p }
     }
 }

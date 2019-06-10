@@ -1,4 +1,4 @@
-use crate::Vec3;
+use crate::Vec3f;
 use crate::geom::Ray;
 use nalgebra::Vector2;
 use rand::prelude::*;
@@ -6,12 +6,12 @@ use rand::distributions::Uniform;
 use crate::fast_rand::random_in_unit_disk;
 
 pub struct Camera {
-    lower_left_corner: Vec3,
-    horizontal: Vec3,
-    vertical: Vec3,
-    origin: Vec3,
+    lower_left_corner: Vec3f,
+    horizontal: Vec3f,
+    vertical: Vec3f,
+    origin: Vec3f,
     lens_radius: f32,
-    orientation: (Vec3, Vec3, Vec3),
+    orientation: (Vec3f, Vec3f, Vec3f),
     time_distribution: Option<Uniform<f32>>
 }
 
@@ -22,7 +22,7 @@ pub struct Lens {
 
 
 impl Camera {
-    pub fn new(lookfrom: Vec3, lookat: Vec3, up: Vec3, vfov: f32, aspect: f32, lens: Option<Lens>, time_delta: Option<(f32, f32)>) -> Camera {
+    pub fn new(lookfrom: Vec3f, lookat: Vec3f, up: Vec3f, vfov: f32, aspect: f32, lens: Option<Lens>, time_delta: Option<(f32, f32)>) -> Camera {
         let lens = lens.unwrap_or(Lens {aperture: 0.0, focus_dist: 1.0});
         let half_height = f32::tan(vfov / 2.0);
         let half_width = aspect * half_height;
@@ -46,9 +46,9 @@ impl Camera {
 
     pub fn with_aspect(aspect: f32) -> Camera {
         Camera::new(
-            Vec3::zeros(),
-            Vec3::new(0., 0., -1.),
-            Vec3::new(0., 1., 0.),
+            Vec3f::zeros(),
+            Vec3f::new(0., 0., -1.),
+            Vec3f::new(0., 1., 0.),
             90f32.to_radians(),
             aspect,
             None,

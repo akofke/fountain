@@ -5,7 +5,7 @@ use raytracer::camera::Camera;
 use raytracer::camera::Lens;
 use raytracer::geom::Sphere;
 use raytracer::material::*;
-use raytracer::{Vec3, v3};
+use raytracer::{Vec3f, v3};
 use raytracer::cover_example_scene;
 use std::time::Duration;
 
