@@ -1,3 +1,4 @@
+#![feature(const_generics)]
 
 #[macro_use] pub mod macros; // must stay at the top
 pub mod geom;
