@@ -58,4 +58,14 @@ impl Transform {
     }
 }
 
+pub trait Transformable {
+    fn transform(&self, t: Transform) -> Self;
+}
+
+impl Transformable for Vec3f {
+    fn transform(&self, t: Transform) -> Self {
+        t.t.transform_vector(&self)
+    }
+}
+
 
