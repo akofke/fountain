@@ -5,6 +5,7 @@ use crate::{Scalar, Vec3f};
 use std::fmt::Error;
 use crate::geometry::Ray;
 use std::mem::swap;
+use crate::err_float::gamma;
 
 pub type Bounds2f = Bounds2<f32>;
 pub type Bounds2i = Bounds2<i32>;
@@ -131,7 +132,8 @@ impl Bounds3<f32> {
 
             if t_near > t_far { swap(&mut t_near, &mut t_far) }
 
-            // TODO: use gamma to account for fp error
+            // expand t_far to account for fp error
+            t_far *= 1.0 + 2.0 * gamma(3);
 
             t0 = f32::max(t0, t_near);
             t1 = f32::min(t1, t_far);
