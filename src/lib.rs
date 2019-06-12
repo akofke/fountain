@@ -25,6 +25,7 @@ pub mod spectrum;
 pub mod err_float;
 
 pub use geometry::*;
+pub use err_float::EFloat;
 
 
 use nalgebra::{clamp, Point2, Point3, Vector3};

@@ -1,7 +1,6 @@
 use crate::scene::Scene;
 use crate::camera::Camera;
 use crate::Vec3f;
-use crate::math::to_array;
 use crate::geom::Ray;
 use crate::fast_rand::thread_rng;
 use std::f32;
@@ -70,7 +69,7 @@ impl Renderer {
         color /= AA_SAMPLES as f32;
 
         color.apply(|x| x.sqrt()); // gamma correction
-        to_array(color)
+        color.into()
     }
 
     fn cast_ray(&self, ray: Ray, time: f32, depth: usize) -> Vec3f {
