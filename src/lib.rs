@@ -1,4 +1,6 @@
 #![feature(const_generics)]
+#![feature(clamp)]
+#![feature(const_fn)]
 
 #[macro_use] pub mod macros; // must stay at the top
 pub mod geom;
@@ -16,10 +18,13 @@ pub mod primitive;
 pub mod geometry;
 pub mod medium;
 pub mod interaction;
-pub mod shape;
+pub mod shapes;
 pub mod renderer;
 pub mod integrator;
 pub mod spectrum;
+pub mod err_float;
+
+pub use geometry::*;
 
 
 use nalgebra::{clamp, Point2, Point3, Vector3};

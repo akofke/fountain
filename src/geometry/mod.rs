@@ -6,8 +6,7 @@ use crate::Float;
 
 pub mod bounds;
 
-
-
+pub use bounds::*;
 
 pub struct Ray {
     pub origin: Point3<f32>,

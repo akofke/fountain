@@ -22,6 +22,6 @@ macro_rules! point3f {
 #[macro_export]
 macro_rules! bounds3f {
     ( $p1:tt, $p2:tt ) => {
-       Bounds3f::with_bounds($crate::point3f![$p1], $crate::point3f![$p2])
+       $crate::Bounds3f::with_bounds($crate::point3f![$p1], $crate::point3f![$p2])
     };
 }

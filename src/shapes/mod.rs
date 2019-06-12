@@ -3,6 +3,7 @@ use crate::geometry::{Ray, Transformable};
 use crate::interaction::SurfaceInteraction;
 use crate::Float;
 
+pub mod sphere;
 
 pub trait Shape {
     fn object_bound(&self) -> Bounds3f;
