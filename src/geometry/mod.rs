@@ -10,6 +10,10 @@ pub mod bounds;
 pub use bounds::*;
 use crate::err_float::gamma;
 
+pub fn distance(p1: Point3f, p2: Point3f) -> Float {
+    (p1 - p2).norm()
+}
+
 pub struct Ray {
     pub origin: Point3<f32>,
     pub dir: Vec3f,
@@ -31,7 +35,7 @@ impl Ray {
 }
 
 
-pub struct Normal3(Vec3f);
+pub struct Normal3(pub Vec3f);
 
 impl Normal3 {
 }
@@ -84,6 +88,8 @@ impl Transformable for Point3f {
 }
 
 impl Transformable<(Self, Vec3f)> for Point3f {
+    /// Transform a Point, giving the transformed point and a vector of the absolute error
+    /// introduced by the transformation
     fn transform(&self, t: Transform) -> (Point3f, Vec3f) {
         let pt = t.t.transform_point(&self);
         let m = t.t;
@@ -100,8 +106,10 @@ impl Transformable<(Self, Vec3f)> for Point3f {
     }
 }
 
-impl Transformable<(Self, Vec3f)> for (Point3f, Vec3f) {
-    fn transform(&self, t: Transform) -> Self {
+impl Transformable<(Point3f, Vec3f)> for (Point3f, Vec3f) {
+    /// Transform a point given its existing absolute error, producing the transformed point
+    /// and its new absolute error
+    fn transform(&self, t: Transform) -> (Point3f, Vec3f) {
         let (p, perr) = self;
         let pt = t.t.transform_point(p);
         let m = t.t;
@@ -123,4 +131,61 @@ impl Transformable<(Self, Vec3f)> for (Point3f, Vec3f) {
     }
 }
 
+impl Transformable<(Vec3f, Vec3f)> for Vec3f {
+    fn transform(&self, t: Transform) -> (Vec3f, Vec3f) {
+        let vt = t.t.transform_vector(self);
+        let m = t.t;
+        let x = self.x;
+        let y = self.y;
+        let z = self.z;
 
+        let x_abs_sum = (m[(0, 0)] * x).abs() + (m[(0, 1)] * y).abs() + (m[(0, 2)] * z).abs();
+        let y_abs_sum = (m[(1, 0)] * x).abs() + (m[(1, 1)] * y).abs() + (m[(1, 2)] * z).abs();
+        let z_abs_sum = (m[(2, 0)] * x).abs() + (m[(2, 1)] * y).abs() + (m[(2, 2)] * z).abs();
+
+        let v_error = vec3f!(x_abs_sum, y_abs_sum, z_abs_sum) * gamma(3);
+        (vt, v_error)
+    }
+}
+
+impl Transformable<(Vec3f, Vec3f)> for (Vec3f, Vec3f) {
+    /// Transform a vector given its existing absolute error, producing the transformed vector
+    /// and its new absolute error
+    fn transform(&self, t: Transform) -> (Vec3f, Vec3f) {
+        let (v, verr) = self;
+        let vt = t.t.transform_vector(v);
+        let m = t.t;
+
+        let xerr = (gamma(3) + 1.0) *
+            (m[(0, 0)] * verr.x).abs() + (m[(0, 1)] * verr.y).abs() + (m[(0, 2)] * verr.z).abs() +
+            gamma(3) * (m[(0, 0)] * v.x).abs() + (m[(0, 1)] * v.y).abs() + (m[(0, 2)] * v.z).abs();
+
+        let yerr = (gamma(3) + 1.0) *
+            (m[(1, 0)] * verr.x).abs() + (m[(1, 1)] * verr.y).abs() + (m[(1, 2)] * verr.z).abs() +
+            gamma(3) * (m[(1, 0)] * v.x).abs() + (m[(1, 1)] * v.y).abs() + (m[(1, 2)] * v.z).abs();
+
+        let zerr = (gamma(3) + 1.0) *
+            (m[(2, 0)] * verr.x).abs() + (m[(2, 1)] * verr.y).abs() + (m[(2, 2)] * verr.z).abs() +
+            gamma(3) * (m[(2, 0)] * v.x).abs() + (m[(2, 1)] * v.y).abs() + (m[(2, 2)] * v.z).abs();
+
+        let v_error = vec3f!(xerr, yerr, zerr);
+        (vt, v_error)
+    }
+}
+
+impl Transformable<(Ray, Vec3f, Vec3f)> for &Ray {
+    fn transform(&self, t: Transform) -> (Ray, Vec3f, Vec3f) {
+        let (mut ot, o_err) = self.origin.transform(t);
+        let (dir_t, dir_err) = self.dir.transform(t);
+        let mut tmax = self.t_max;
+
+        let len_sq = dir_t.norm_squared();
+        if len_sq > 0.0 {
+            let dt = dir_t.abs().dot(&o_err) / len_sq;
+            ot += dir_t * dt;
+            tmax -= dt; // why was this commented out in pbrt source code but not book?
+        }
+        let ray_t = Ray { origin: ot, dir: dir_t, t_max: tmax, time: self.time };
+        (ray_t, o_err, dir_err)
+    }
+}
