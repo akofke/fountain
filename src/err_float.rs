@@ -1,5 +1,6 @@
 use crate::Float;
 use std::ops::{Add, Sub, Mul, Div, Neg};
+use std::fmt::Debug;
 
 pub const MACHINE_EPSILON: f32 = std::f32::EPSILON * 0.5;
 
@@ -103,6 +104,12 @@ impl From<EFloat> for Float {
 impl PartialEq for EFloat {
     fn eq(&self, other: &EFloat) -> bool {
         self.v == other.v
+    }
+}
+
+impl Debug for EFloat {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(f, "EFloat({} [{}, {}]", self.v, self.low, self.high)
     }
 }
 

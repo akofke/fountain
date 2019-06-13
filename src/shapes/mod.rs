@@ -12,13 +12,14 @@ pub trait Shape {
         unimplemented!()
     }
 
+    fn object_to_world<T: Transformable>(&self, t: T) -> T;
+
+    fn world_to_object<T: Transformable>(&self, t: T) -> T;
+
     fn intersect(&self, ray: &Ray) -> Option<(Float, SurfaceInteraction)>;
 
     fn intersect_test(&self, ray: &Ray) -> bool;
 
-    fn object_to_world<T: Transformable>(&self, t: T) -> T;
-
-    fn world_to_object<T: Transformable>(&self, t: T) -> T;
 }
 
 pub struct ShapeBase {

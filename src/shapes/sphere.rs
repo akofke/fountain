@@ -45,19 +45,19 @@ impl<'t> Shape for Sphere<'t> {
         bounds3f!((-self.radius, -self.radius, self.z_min), (self.radius, self.radius, self.z_max))
     }
 
-    fn intersect(&self, ray: &Ray) -> Option<(Float, SurfaceInteraction)> {
-        unimplemented!()
-    }
-
-    fn intersect_test(&self, ray: &Ray) -> bool {
-        unimplemented!()
-    }
-
     fn object_to_world<T: Transformable>(&self, t: T) -> T {
         unimplemented!()
     }
 
     fn world_to_object<T: Transformable>(&self, t: T) -> T {
+        unimplemented!()
+    }
+
+    fn intersect(&self, ray: &Ray) -> Option<(Float, SurfaceInteraction)> {
+        unimplemented!()
+    }
+
+    fn intersect_test(&self, ray: &Ray) -> bool {
         unimplemented!()
     }
 }
