@@ -29,9 +29,7 @@ pub use err_float::EFloat;
 
 
 use nalgebra::{clamp, Point2, Point3, Vector3};
-use crate::geom::Object;
 use crate::camera::Camera;
-use crate::geom::Ray;
 use num::traits::ToPrimitive;
 use std::f32;
 use crate::scene::Scene;

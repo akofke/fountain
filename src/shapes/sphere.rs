@@ -167,7 +167,9 @@ impl<'t> Shape for Sphere<'t> {
             DiffGeom { dpdu, dpdv, dndu, dndv }
         );
 
-        Some((t_shape_hit.into(), interact))
+        let world_intersect = self.object_to_world(interact);
+
+        Some((t_shape_hit.into(), world_intersect))
     }
 
     fn intersect_test(&self, ray: &Ray) -> bool {

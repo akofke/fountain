@@ -1,4 +1,4 @@
-use crate::{Point2f, Vec3f, Point3f, Float};
+use crate::{Point2f, Vec3f, Point3f, Float, Ray, offset_ray_origin};
 use crate::geometry::Normal3;
 
 #[derive(Clone, Copy)]
@@ -6,6 +6,9 @@ pub struct HitPoint {
     pub p: Point3f,
     pub p_err: Vec3f,
     pub time: Float,
+}
+
+impl HitPoint {
 }
 
 pub struct SurfaceInteraction {
@@ -51,6 +54,11 @@ impl SurfaceInteraction {
             n,
             geom
         }
+    }
+
+    pub fn spawn_ray(&self, dir: Vec3f) -> Ray {
+        let o = offset_ray_origin(&self.hit.p, &self.hit.p_err, &self.n, &dir);
+        Ray { origin: o, dir: dir, t_max: std::f32::INFINITY, time: self.hit.time }
     }
 }
 

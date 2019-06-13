@@ -8,10 +8,26 @@ use crate::Float;
 pub mod bounds;
 
 pub use bounds::*;
-use crate::err_float::gamma;
+use crate::err_float::{gamma, next_float_up, next_float_down};
+use crate::interaction::{SurfaceInteraction, HitPoint, DiffGeom};
 
 pub fn distance(p1: Point3f, p2: Point3f) -> Float {
     (p1 - p2).norm()
+}
+
+pub fn offset_ray_origin(p: &Point3f, p_err: &Vec3f, n: &Normal3, dir: &Vec3f) -> Point3f {
+    let d = n.abs().dot(p_err);
+    let mut offset = d * n.0;
+    if dir.dot(n) < 0.0 {
+        offset = -offset;
+    }
+    let mut po: Point3f = p + offset;
+    for i in 0..3 {
+        if offset[i] > 0.0 { po[i] = next_float_up(po[i]) }
+        else if offset[i] < 0.0 { po[i] = next_float_down(po[i]) }
+    }
+
+    po
 }
 
 pub struct Ray {
@@ -85,6 +101,12 @@ impl Transformable for Vec3f {
 
 impl Transformable for Point3f {
     fn transform(&self, t: Transform) -> Self { t.t.transform_point(&self) }
+}
+
+impl Transformable for Normal3 {
+    fn transform(&self, t: Transform) -> Self {
+        t.transform_normal(self)
+    }
 }
 
 impl Transformable<(Self, Vec3f)> for Point3f {
@@ -187,5 +209,35 @@ impl Transformable<(Ray, Vec3f, Vec3f)> for &Ray {
         }
         let ray_t = Ray { origin: ot, dir: dir_t, t_max: tmax, time: self.time };
         (ray_t, o_err, dir_err)
+    }
+}
+
+impl Transformable for HitPoint {
+    fn transform(&self, t: Transform) -> Self {
+        let (pt, pterr) = (self.p, self.p_err).transform(t);
+        HitPoint { p: pt, p_err: pterr, time: self.time }
+    }
+}
+
+impl Transformable for DiffGeom {
+    fn transform(&self, t: Transform) -> Self {
+        Self {
+            dpdu: self.dpdu.transform(t),
+            dpdv: self.dpdv.transform(t),
+            dndu: self.dndu.transform(t),
+            dndv: self.dndv.transform(t)
+        }
+    }
+}
+
+impl Transformable for SurfaceInteraction {
+    fn transform(&self, t: Transform) -> Self {
+        Self {
+            hit: self.hit.transform(t),
+            uv: self.uv,
+            wo: Transformable::<Vec3f>::transform(&self.wo, t).normalize(),
+            n: self.n.transform(t),
+            geom: self.geom.transform(t)
+        }
     }
 }
