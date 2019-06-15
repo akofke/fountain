@@ -2,6 +2,12 @@ use crate::EFloat;
 use crate::Float;
 use crate::err_float::MACHINE_EPSILON;
 
+pub const INFINITY: Float = std::f32::INFINITY;
+
+pub fn lerp(t: Float, v1: Float, v2: Float) -> Float {
+    (1.0 - t) * v1 + t * v2
+}
+
 pub fn quadratic(a: EFloat, b: EFloat, c: EFloat) -> Option<(EFloat, EFloat)> {
     let discrim: f64 = b.v as f64 * b.v as f64 - (4.0 * a.v as f64 * c.v as f64);
     if discrim < 0.0 { return None; }

@@ -251,6 +251,24 @@ impl Transformable<(Ray, Vec3f, Vec3f)> for &Ray {
     }
 }
 
+impl Transformable for Ray {
+    fn transform(&self, t: Transform) -> Ray {
+        let (mut ot, o_err) = self.origin.transform(t);
+        let dir: Vec3f = self.dir.transform(t);
+        let mut tmax = self.t_max;
+
+        let len_sq = dir.norm_squared();
+        if len_sq > 0.0 {
+            let dt = dir.abs().dot(&o_err) / len_sq;
+            ot += dir * dt;
+            tmax -= dt;
+        }
+
+        let ray_t = Ray { origin: ot, dir: dir, t_max: tmax, time: self.time };
+        ray_t
+    }
+}
+
 impl Transformable for HitPoint {
     fn transform(&self, t: Transform) -> Self {
         let (pt, pterr) = (self.p, self.p_err).transform(t);

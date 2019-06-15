@@ -1,4 +1,4 @@
-use crate::{Point2f, Float, Ray, Transform, Bounds2f, Point2i};
+use crate::{Point2f, Float, Ray, Transform, Bounds2f, Point2i, Transformable, Point3f, lerp, INFINITY};
 
 #[derive(Clone, Copy)]
 pub struct CameraSample {
@@ -37,5 +37,60 @@ impl CameraProjection {
         let raster_to_camera = camera_to_screen.inverse() * raster_to_screen;
 
         Self { camera_to_screen, screen_to_raster, raster_to_camera, raster_to_screen }
+    }
+}
+
+pub struct PerspectiveCamera {
+    camera_to_world: Transform,
+    proj: CameraProjection,
+    shutter_interval: (Float, Float),
+    lens_radius: Float,
+    focal_dist: Float,
+    aspect: Float
+}
+
+impl PerspectiveCamera {
+    pub fn new(
+        camera_to_world: Transform,
+        full_resolution: Point2i,
+        screen_window: Bounds2f,
+        shutter_interval: (Float, Float),
+        lens_radius: Float,
+        focal_dist: Float,
+        fov: Float
+    ) -> Self {
+        let persp = Transform::perspective(fov, 0.001, 1000.0);
+        let proj = CameraProjection::new(persp, full_resolution, screen_window);
+        let mut p_min: Point3f = point3f!(0, 0, 0).transform(proj.raster_to_camera);
+        let mut p_max: Point3f = point3f!(full_resolution.x, full_resolution.y, 0).transform(proj.raster_to_camera);
+        p_min /= p_min.z;
+        p_max /= p_max.z;
+        let aspect = ((p_max.x - p_min.x) * (p_max.y - p_min.y)).abs();
+
+        Self {
+            camera_to_world,
+            proj,
+            shutter_interval,
+            lens_radius,
+            focal_dist,
+            aspect
+        }
+    }
+}
+
+impl Camera for PerspectiveCamera {
+    fn generate_ray(&self, sample: CameraSample) -> (Float, Ray) {
+        let p_film = point3f!(sample.p_film.x, sample.p_film.y, 0);
+        let p_camera: Point3f = p_film.transform(self.proj.raster_to_camera);
+
+        let origin = Point3f::origin();
+        let dir = (p_camera - origin).normalize();
+
+        // TDOD: depth of field
+
+        let time = lerp(sample.time, self.shutter_interval.0, self.shutter_interval.1);
+        let ray = Ray { origin, dir, time, t_max: INFINITY };
+        let ray = ray.transform(self.camera_to_world);
+        (1.0, ray)
     }
 }

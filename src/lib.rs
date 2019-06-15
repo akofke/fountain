@@ -24,6 +24,7 @@ pub mod spectrum;
 pub mod err_float;
 
 pub use geometry::*;
+pub use math::*;
 pub use err_float::EFloat;
 
 
