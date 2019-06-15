@@ -5,6 +5,7 @@
 #[macro_use] pub mod macros; // must stay at the top
 pub mod geom;
 pub mod material;
+pub mod camera;
 pub mod math;
 pub mod fast_rand;
 pub mod image;
@@ -27,14 +28,8 @@ pub use err_float::EFloat;
 
 
 use nalgebra::{clamp, Point2, Point3, Vector3};
-use crate::camera::Camera;
 use num::traits::ToPrimitive;
 use std::f32;
-use crate::scene::Scene;
-use crate::geom::Sphere;
-use crate::material::*;
-use rand::prelude::*;
-use crate::camera::Lens;
 use num::{Num, Bounded};
 use num::traits::NumAssignOps;
 use std::fmt::Debug;
@@ -43,6 +38,7 @@ use std::any::Any;
 pub type Float = f32;
 
 pub type Point2f = Point2<Float>;
+pub type Point2i = Point2<i32>;
 pub type Point3f = Point3<Float>;
 pub type Vec3f = Vector3<Float>;
 

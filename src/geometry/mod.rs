@@ -72,12 +72,43 @@ pub struct Transform {
 
 impl Transform {
 
+    pub fn from_mat(mat: Matrix4<Float>) -> Self {
+        let m_inv = mat.try_inverse().expect("Could not invert matrix");
+        Self::new(mat, m_inv)
+    }
+
+    pub fn new(mat: Matrix4<Float>, mat_inv: Matrix4<Float>) -> Self {
+        let t = Transform3::from_matrix_unchecked(mat);
+        let invt = Transform3::from_matrix_unchecked(mat_inv);
+        Self { t, invt }
+    }
+
     pub fn translate(delta: Vec3f) -> Self {
         let m = Matrix4::new_translation(&delta);
         let m_inv = Matrix4::new_translation(&-delta);
-        let t = Transform3::from_matrix_unchecked(m);
-        let invt = Transform3::from_matrix_unchecked(m_inv);
-        Self { t, invt }
+        Self::new(m, m_inv)
+    }
+
+    pub fn scale(sx: Float, sy: Float, sz: Float) -> Self {
+        let m = Matrix4::new_nonuniform_scaling(&vec3f!(sx, sy, sz));
+        let m_inv = Matrix4::new_nonuniform_scaling(&vec3f!(1.0 / sx, 1.0 / sy, 1.0 / sz));
+        Self::new(m, m_inv)
+    }
+
+    pub fn perspective(fov: Float, near: Float, far: Float) -> Self {
+        let mat = Matrix4::new(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, far / (far-near), -far * near / (far - near),
+            0.0, 0.0, 1.0, 0.0
+        );
+
+        let inv_tan_ang = 1.0 / (fov.to_radians() / 2.0).tan();
+        Transform::scale(inv_tan_ang, inv_tan_ang, 1.0) * Self::from_mat(mat)
+    }
+
+    pub fn inverse(&self) -> Self {
+        Self::new(self.invt.into_inner(), self.t.into_inner())
     }
 
     pub fn transform_normal(&self, n: &Normal3) -> Normal3 {
@@ -86,6 +117,14 @@ impl Transform {
         let y = self.invt[(0, 1)]*n.x + self.invt[(1, 1)]*n.y + self.invt[(2, 1)]*n.z;
         let z = self.invt[(0, 2)]*n.x + self.invt[(1, 2)]*n.y + self.invt[(2, 2)]*n.z;
         Normal3(vec3f!(x, y, z))
+    }
+}
+
+impl std::ops::Mul for Transform {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self {
+        Self::new(self.t.into_inner() * rhs.t.into_inner(), rhs.invt.into_inner() * self.invt.into_inner())
     }
 }
 
