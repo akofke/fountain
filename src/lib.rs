@@ -22,13 +22,15 @@ pub mod renderer;
 pub mod integrator;
 pub mod spectrum;
 pub mod err_float;
+pub mod film;
+pub mod filter;
 
 pub use geometry::*;
 pub use math::*;
 pub use err_float::EFloat;
 
 
-use nalgebra::{clamp, Point2, Point3, Vector3};
+use nalgebra::{clamp, Point2, Point3, Vector3, Vector2};
 use num::traits::ToPrimitive;
 use std::f32;
 use num::{Num, Bounded};
@@ -42,6 +44,7 @@ pub type Point2f = Point2<Float>;
 pub type Point2i = Point2<i32>;
 pub type Point3f = Point3<Float>;
 pub type Vec3f = Vector3<Float>;
+pub type Vec2f = Vector2<Float>;
 
 
 pub trait Scalar: Num + NumAssignOps + PartialOrd + Bounded + Copy + Debug + Any + From<u8> {
@@ -85,6 +88,16 @@ impl Scalar for f64 {
 
 // TODO: others...
 impl Scalar for u32 {
+    fn min(self, other: Self) -> Self {
+        Ord::min(self, other)
+    }
+
+    fn max(self, other: Self) -> Self {
+        Ord::max(self, other)
+    }
+}
+
+impl Scalar for i32 {
     fn min(self, other: Self) -> Self {
         Ord::min(self, other)
     }
