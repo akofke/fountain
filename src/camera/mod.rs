@@ -1,4 +1,6 @@
-use crate::{Point2f, Float, Ray, Transform, Bounds2f, Point2i, Transformable, Point3f, lerp, INFINITY};
+use crate::{Point2f, Float, Ray, Bounds2f, Point2i, Transformable, Point3f, lerp, INFINITY};
+use crate::geometry::Transform;
+use cgmath::InnerSpace;
 
 #[derive(Clone, Copy)]
 pub struct CameraSample {
@@ -83,7 +85,7 @@ impl Camera for PerspectiveCamera {
         let p_film = point3f!(sample.p_film.x, sample.p_film.y, 0);
         let p_camera: Point3f = p_film.transform(self.proj.raster_to_camera);
 
-        let origin = Point3f::origin();
+        let origin = Point3f::new(0.0, 0.0, 0.0);
         let dir = (p_camera - origin).normalize();
 
         // TDOD: depth of field

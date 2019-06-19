@@ -7,6 +7,7 @@ use crate::geometry::{Transform, Ray, Transformable};
 use crate::shapes::Shape;
 use crate::geometry::bounds::Bounds3;
 use crate::interaction::SurfaceInteraction;
+use cgmath::{InnerSpace};
 
 pub struct Sphere<'t> {
     object_to_world: &'t Transform,
@@ -139,15 +140,15 @@ impl<'t> Shape for Sphere<'t> {
         let d2pdvv = -(self.theta_max - self.theta_min) * (self.theta_max - self.theta_min) *
             vec3f!(p_hit.x, p_hit.y, p_hit.z);
 
-        let E = dpdu.dot(&dpdu);
-        let F = dpdu.dot(&dpdv);
-        let G = dpdv.dot(&dpdv);
+        let E = dpdu.dot(dpdu);
+        let F = dpdu.dot(dpdv);
+        let G = dpdv.dot(dpdv);
 
-        let N = dpdu.cross(&dpdv).normalize();
+        let N = dpdu.cross(dpdv).normalize();
 
-        let e = N.dot(&d2pduu);
-        let f = N.dot(&d2pduv);
-        let g = N.dot(&d2pdvv);
+        let e = N.dot(d2pduu);
+        let f = N.dot(d2pduv);
+        let g = N.dot(d2pdvv);
 
         let invEGF2 = 1.0 / (E * G - F * F);
 

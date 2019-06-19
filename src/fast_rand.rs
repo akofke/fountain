@@ -1,9 +1,9 @@
-use nalgebra::Vector2;
-use crate::Vec3f;
+use crate::{Vec3f, Vec2f};
 use std::cell::UnsafeCell;
 use rand_xoshiro::Xoshiro256Plus;
 use rand::distributions::{Distribution, Standard};
 use rand::{Rng, FromEntropy, SeedableRng};
+use cgmath::InnerSpace;
 
 thread_local!(static RNG: UnsafeCell<Xoshiro256Plus> = UnsafeCell::new(Xoshiro256Plus::from_entropy()));
 
@@ -34,15 +34,15 @@ pub fn thread_rng() -> &'static mut Xoshiro256Plus {
 pub fn random_in_unit_sphere() -> Vec3f {
     let rng = thread_rng();
     loop {
-        let p = 2.0 * Vec3f::new(rng.gen(), rng.gen(), rng.gen()) - Vec3f::repeat(1.0);
-        if p.norm_squared() < 1.0 { break p }
+        let p = 2.0 * Vec3f::new(rng.gen(), rng.gen(), rng.gen()) - Vec3f::new(1.0, 1.0, 1.0);
+        if p.magnitude2() < 1.0 { break p }
     }
 }
 
-pub fn random_in_unit_disk() -> Vector2<f32> {
+pub fn random_in_unit_disk() -> Vec2f {
     let rng = thread_rng();
     loop {
-        let p: Vector2<f32> = 2.0 * Vector2::<f32>::new(rng.gen(), rng.gen()) - Vector2::repeat(1.0f32);
-        if p.norm_squared() < 1.0 { break p }
+        let p: Vec2f = 2.0 * Vec2f::new(rng.gen(), rng.gen()) - Vec2f::new(1.0, 1.0);
+        if p.magnitude2() < 1.0 { break p }
     }
 }

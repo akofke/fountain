@@ -15,8 +15,8 @@ macro_rules! vec3f {
 
 #[macro_export]
 macro_rules! point3f {
-    ( ($x:expr , $y:expr , $z:expr) ) => { nalgebra::Point3::new($x as $crate::Float, $y as $crate::Float, $z as $crate::Float)};
-    ($x:expr , $y:expr , $z:expr) => { nalgebra::Point3::new($x as $crate::Float, $y as $crate::Float, $z as $crate::Float)};
+    ( ($x:expr , $y:expr , $z:expr) ) => { cgmath::Point3::new($x as $crate::Float, $y as $crate::Float, $z as $crate::Float)};
+    ($x:expr , $y:expr , $z:expr) => { cgmath::Point3::new($x as $crate::Float, $y as $crate::Float, $z as $crate::Float)};
 }
 
 #[macro_export]

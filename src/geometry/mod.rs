@@ -1,7 +1,6 @@
-use crate::{Vec3f, Point3f};
-use nalgebra::Transform3;
-use nalgebra::Point3;
-use nalgebra::Matrix4;
+use crate::{Vec3f, Point3f, ElementAbs};
+use cgmath::prelude::*;
+use cgmath::{Matrix4, Transform as cgTransform};
 use std::ops::Deref;
 use crate::Float;
 
@@ -12,13 +11,13 @@ use crate::err_float::{gamma, next_float_up, next_float_down};
 use crate::interaction::{SurfaceInteraction, HitPoint, DiffGeom};
 
 pub fn distance(p1: Point3f, p2: Point3f) -> Float {
-    (p1 - p2).norm()
+    (p1 - p2).magnitude()
 }
 
 pub fn offset_ray_origin(p: &Point3f, p_err: &Vec3f, n: &Normal3, dir: &Vec3f) -> Point3f {
-    let d = n.abs().dot(p_err);
+    let d = n.map(|v| v.abs()).dot(*p_err);
     let mut offset = d * n.0;
-    if dir.dot(n) < 0.0 {
+    if dir.dot(n.0) < 0.0 {
         offset = -offset;
     }
     let mut po: Point3f = p + offset;
@@ -31,7 +30,7 @@ pub fn offset_ray_origin(p: &Point3f, p_err: &Vec3f, n: &Normal3, dir: &Vec3f) -
 }
 
 pub struct Ray {
-    pub origin: Point3<f32>,
+    pub origin: Point3f,
     pub dir: Vec3f,
     pub t_max: f32,
     pub time: f32,
@@ -40,17 +39,18 @@ pub struct Ray {
 }
 
 impl Ray {
-    pub fn new(origin: Point3<f32>, dir: Vec3f) -> Self {
+    pub fn new(origin: Point3f, dir: Vec3f) -> Self {
         Self {
             origin, dir, t_max: std::f32::INFINITY, time: 0.0
         }
     }
-    pub fn at(&self, t: f32) -> Point3<f32> {
+    pub fn at(&self, t: f32) -> Point3f {
         self.origin + (self.dir * t)
     }
 }
 
 
+#[derive(Copy, Clone)]
 pub struct Normal3(pub Vec3f);
 
 impl Normal3 {
@@ -66,32 +66,32 @@ impl Deref for Normal3 {
 
 #[derive(Clone, Copy)]
 pub struct Transform {
-    pub t: Transform3<f32>,
-    pub invt: Transform3<f32>
+    pub t: Matrix4<Float>,
+    pub invt: Matrix4<Float>
 }
 
 impl Transform {
 
     pub fn from_mat(mat: Matrix4<Float>) -> Self {
-        let m_inv = mat.try_inverse().expect("Could not invert matrix");
+        let m_inv = mat.invert().expect("Could not invert matrix");
         Self::new(mat, m_inv)
     }
 
     pub fn new(mat: Matrix4<Float>, mat_inv: Matrix4<Float>) -> Self {
-        let t = Transform3::from_matrix_unchecked(mat);
-        let invt = Transform3::from_matrix_unchecked(mat_inv);
+        let t = mat;
+        let invt = mat_inv;
         Self { t, invt }
     }
 
     pub fn translate(delta: Vec3f) -> Self {
-        let m = Matrix4::new_translation(&delta);
-        let m_inv = Matrix4::new_translation(&-delta);
+        let m = Matrix4::from_translation(delta);
+        let m_inv = Matrix4::from_translation(-delta);
         Self::new(m, m_inv)
     }
 
     pub fn scale(sx: Float, sy: Float, sz: Float) -> Self {
-        let m = Matrix4::new_nonuniform_scaling(&vec3f!(sx, sy, sz));
-        let m_inv = Matrix4::new_nonuniform_scaling(&vec3f!(1.0 / sx, 1.0 / sy, 1.0 / sz));
+        let m = Matrix4::from_nonuniform_scale(sx, sy, sz);
+        let m_inv = Matrix4::from_nonuniform_scale(1.0 / sx, 1.0 / sy, 1.0 / sz);
         Self::new(m, m_inv)
     }
 
@@ -108,14 +108,14 @@ impl Transform {
     }
 
     pub fn inverse(&self) -> Self {
-        Self::new(self.invt.into_inner(), self.t.into_inner())
+        Self::new(self.invt, self.t)
     }
 
     pub fn transform_normal(&self, n: &Normal3) -> Normal3 {
         // transform by the transpose of the inverse
-        let x = self.invt[(0, 0)]*n.x + self.invt[(1, 0)]*n.y + self.invt[(2, 0)]*n.z;
-        let y = self.invt[(0, 1)]*n.x + self.invt[(1, 1)]*n.y + self.invt[(2, 1)]*n.z;
-        let z = self.invt[(0, 2)]*n.x + self.invt[(1, 2)]*n.y + self.invt[(2, 2)]*n.z;
+        let x = self.invt[0][0]*n.x + self.invt[1][0]*n.y + self.invt[2][0]*n.z;
+        let y = self.invt[0][1]*n.x + self.invt[1][1]*n.y + self.invt[2][1]*n.z;
+        let z = self.invt[0][2]*n.x + self.invt[1][2]*n.y + self.invt[2][2]*n.z;
         Normal3(vec3f!(x, y, z))
     }
 }
@@ -124,7 +124,7 @@ impl std::ops::Mul for Transform {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self {
-        Self::new(self.t.into_inner() * rhs.t.into_inner(), rhs.invt.into_inner() * self.invt.into_inner())
+        Self::new(self.t * rhs.t, rhs.invt * self.invt)
     }
 }
 
@@ -134,12 +134,12 @@ pub trait Transformable<O=Self> {
 
 impl Transformable for Vec3f {
     fn transform(&self, t: Transform) -> Self {
-        t.t.transform_vector(&self)
+        t.t.transform_vector(*self)
     }
 }
 
 impl Transformable for Point3f {
-    fn transform(&self, t: Transform) -> Self { t.t.transform_point(&self) }
+    fn transform(&self, t: Transform) -> Self { t.t.transform_point(*self) }
 }
 
 impl Transformable for Normal3 {
@@ -152,15 +152,15 @@ impl Transformable<(Self, Vec3f)> for Point3f {
     /// Transform a Point, giving the transformed point and a vector of the absolute error
     /// introduced by the transformation
     fn transform(&self, t: Transform) -> (Point3f, Vec3f) {
-        let pt = t.t.transform_point(&self);
+        let pt = t.t.transform_point(*self);
         let m = t.t;
         let x = self.x;
         let y = self.y;
         let z = self.z;
 
-        let x_abs_sum = (m[(0, 0)] * x).abs() + (m[(0, 1)] * y).abs() + (m[(0, 2)] * z).abs() + m[(0, 3)].abs();
-        let y_abs_sum = (m[(1, 0)] * x).abs() + (m[(1, 1)] * y).abs() + (m[(1, 2)] * z).abs() + m[(1, 3)].abs();
-        let z_abs_sum = (m[(2, 0)] * x).abs() + (m[(2, 1)] * y).abs() + (m[(2, 2)] * z).abs() + m[(2, 3)].abs();
+        let x_abs_sum = (m[0][0] * x).abs() + (m[0][1] * y).abs() + (m[0][2] * z).abs() + m[0][3].abs();
+        let y_abs_sum = (m[1][0] * x).abs() + (m[1][1] * y).abs() + (m[1][2] * z).abs() + m[1][3].abs();
+        let z_abs_sum = (m[2][0] * x).abs() + (m[2][1] * y).abs() + (m[2][2] * z).abs() + m[2][3].abs();
 
         let p_error = vec3f!(x_abs_sum, y_abs_sum, z_abs_sum) * gamma(3);
         (pt, p_error)
@@ -172,20 +172,20 @@ impl Transformable<(Point3f, Vec3f)> for (Point3f, Vec3f) {
     /// and its new absolute error
     fn transform(&self, t: Transform) -> (Point3f, Vec3f) {
         let (p, perr) = self;
-        let pt = t.t.transform_point(p);
+        let pt = t.t.transform_point(*p);
         let m = t.t;
 
         let xerr = (gamma(3) + 1.0) *
-            (m[(0, 0)] * perr.x).abs() + (m[(0, 1)] * perr.y).abs() + (m[(0, 2)] * perr.z).abs() +
-            gamma(3) * (m[(0, 0)] * p.x).abs() + (m[(0, 1)] * p.y).abs() + (m[(0, 2)] * p.z).abs() + m[(0, 3)].abs();
+            (m[0][0] * perr.x).abs() + (m[0][1] * perr.y).abs() + (m[0][2] * perr.z).abs() +
+            gamma(3) * (m[0][0] * p.x).abs() + (m[0][1] * p.y).abs() + (m[0][2] * p.z).abs() + m[0][3].abs();
 
         let yerr = (gamma(3) + 1.0) *
-            (m[(1, 0)] * perr.x).abs() + (m[(1, 1)] * perr.y).abs() + (m[(1, 2)] * perr.z).abs() +
-            gamma(3) * (m[(1, 0)] * p.x).abs() + (m[(1, 1)] * p.y).abs() + (m[(1, 2)] * p.z).abs() + m[(1, 3)].abs();
+            (m[1][0] * perr.x).abs() + (m[1][1] * perr.y).abs() + (m[1][2] * perr.z).abs() +
+            gamma(3) * (m[1][0] * p.x).abs() + (m[1][1] * p.y).abs() + (m[1][2] * p.z).abs() + m[1][3].abs();
 
         let zerr = (gamma(3) + 1.0) *
-            (m[(2, 0)] * perr.x).abs() + (m[(2, 1)] * perr.y).abs() + (m[(2, 2)] * perr.z).abs() +
-            gamma(3) * (m[(2, 0)] * p.x).abs() + (m[(2, 1)] * p.y).abs() + (m[(2, 2)] * p.z).abs() + m[(2, 3)].abs();
+            (m[2][0] * perr.x).abs() + (m[2][1] * perr.y).abs() + (m[2][2] * perr.z).abs() +
+            gamma(3) * (m[2][0] * p.x).abs() + (m[2][1] * p.y).abs() + (m[2][2] * p.z).abs() + m[2][3].abs();
 
         let p_error = vec3f!(xerr, yerr, zerr);
         (pt, p_error)
@@ -194,15 +194,15 @@ impl Transformable<(Point3f, Vec3f)> for (Point3f, Vec3f) {
 
 impl Transformable<(Vec3f, Vec3f)> for Vec3f {
     fn transform(&self, t: Transform) -> (Vec3f, Vec3f) {
-        let vt = t.t.transform_vector(self);
+        let vt = t.t.transform_vector(*self);
         let m = t.t;
         let x = self.x;
         let y = self.y;
         let z = self.z;
 
-        let x_abs_sum = (m[(0, 0)] * x).abs() + (m[(0, 1)] * y).abs() + (m[(0, 2)] * z).abs();
-        let y_abs_sum = (m[(1, 0)] * x).abs() + (m[(1, 1)] * y).abs() + (m[(1, 2)] * z).abs();
-        let z_abs_sum = (m[(2, 0)] * x).abs() + (m[(2, 1)] * y).abs() + (m[(2, 2)] * z).abs();
+        let x_abs_sum = (m[0][0] * x).abs() + (m[0][1] * y).abs() + (m[0][2] * z).abs();
+        let y_abs_sum = (m[1][0] * x).abs() + (m[1][1] * y).abs() + (m[1][2] * z).abs();
+        let z_abs_sum = (m[2][0] * x).abs() + (m[2][1] * y).abs() + (m[2][2] * z).abs();
 
         let v_error = vec3f!(x_abs_sum, y_abs_sum, z_abs_sum) * gamma(3);
         (vt, v_error)
@@ -214,20 +214,20 @@ impl Transformable<(Vec3f, Vec3f)> for (Vec3f, Vec3f) {
     /// and its new absolute error
     fn transform(&self, t: Transform) -> (Vec3f, Vec3f) {
         let (v, verr) = self;
-        let vt = t.t.transform_vector(v);
+        let vt = t.t.transform_vector(*v);
         let m = t.t;
 
         let xerr = (gamma(3) + 1.0) *
-            (m[(0, 0)] * verr.x).abs() + (m[(0, 1)] * verr.y).abs() + (m[(0, 2)] * verr.z).abs() +
-            gamma(3) * (m[(0, 0)] * v.x).abs() + (m[(0, 1)] * v.y).abs() + (m[(0, 2)] * v.z).abs();
+            (m[0][0] * verr.x).abs() + (m[0][1] * verr.y).abs() + (m[0][2] * verr.z).abs() +
+            gamma(3) * (m[0][0] * v.x).abs() + (m[0][1] * v.y).abs() + (m[0][2] * v.z).abs();
 
         let yerr = (gamma(3) + 1.0) *
-            (m[(1, 0)] * verr.x).abs() + (m[(1, 1)] * verr.y).abs() + (m[(1, 2)] * verr.z).abs() +
-            gamma(3) * (m[(1, 0)] * v.x).abs() + (m[(1, 1)] * v.y).abs() + (m[(1, 2)] * v.z).abs();
+            (m[1][0] * verr.x).abs() + (m[1][1] * verr.y).abs() + (m[1][2] * verr.z).abs() +
+            gamma(3) * (m[1][0] * v.x).abs() + (m[1][1] * v.y).abs() + (m[1][2] * v.z).abs();
 
         let zerr = (gamma(3) + 1.0) *
-            (m[(2, 0)] * verr.x).abs() + (m[(2, 1)] * verr.y).abs() + (m[(2, 2)] * verr.z).abs() +
-            gamma(3) * (m[(2, 0)] * v.x).abs() + (m[(2, 1)] * v.y).abs() + (m[(2, 2)] * v.z).abs();
+            (m[2][0] * verr.x).abs() + (m[2][1] * verr.y).abs() + (m[2][2] * verr.z).abs() +
+            gamma(3) * (m[2][0] * v.x).abs() + (m[2][1] * v.y).abs() + (m[2][2] * v.z).abs();
 
         let v_error = vec3f!(xerr, yerr, zerr);
         (vt, v_error)
@@ -240,9 +240,9 @@ impl Transformable<(Ray, Vec3f, Vec3f)> for &Ray {
         let (dir_t, dir_err) = self.dir.transform(t);
         let mut tmax = self.t_max;
 
-        let len_sq = dir_t.norm_squared();
+        let len_sq = dir_t.magnitude2();
         if len_sq > 0.0 {
-            let dt = dir_t.abs().dot(&o_err) / len_sq;
+            let dt = dir_t.abs().dot(o_err) / len_sq;
             ot += dir_t * dt;
             tmax -= dt; // why was this commented out in pbrt source code but not book?
         }
@@ -257,9 +257,9 @@ impl Transformable for Ray {
         let dir: Vec3f = self.dir.transform(t);
         let mut tmax = self.t_max;
 
-        let len_sq = dir.norm_squared();
+        let len_sq = dir.magnitude2();
         if len_sq > 0.0 {
-            let dt = dir.abs().dot(&o_err) / len_sq;
+            let dt = dir.map(|v| v.abs()).dot(o_err) / len_sq;
             ot += dir * dt;
             tmax -= dt;
         }

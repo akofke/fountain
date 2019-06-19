@@ -1,5 +1,4 @@
-use nalgebra::{Vector2, Point3, Vector3};
-use nalgebra::Point2;
+use cgmath::{Point2, Vector2, Point3, Vector3};
 use num::Bounded;
 use crate::{Scalar, Vec3f};
 use std::fmt::Error;
@@ -100,7 +99,7 @@ impl <S: Scalar> Bounds3<S> {
     }
 
     pub fn centroid(&self) -> Point3<S> {
-        self.min + (self.diagonal() / S::from(2))
+        self.min + (self.diagonal() / std::convert::From::from(2))
     }
 
     pub fn diagonal(&self) -> Vector3<S> {
@@ -162,8 +161,8 @@ impl Bounds3<f32> {
 
 impl<S: Scalar> std::fmt::Debug for Bounds3<S>{
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), Error> {
-        let arrmin: [S; 3] = self.min.coords.into();
-        let arrmax: [S; 3] = self.max.coords.into();
+        let arrmin: [S; 3] = self.min.into();
+        let arrmax: [S; 3] = self.max.into();
         write!(f, "Bounds3f[{:?}, {:?}]", arrmin, arrmax)
     }
 }

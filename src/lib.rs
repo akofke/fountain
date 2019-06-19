@@ -3,14 +3,11 @@
 #![feature(const_fn)]
 
 #[macro_use] pub mod macros; // must stay at the top
-pub mod geom;
-pub mod material;
 pub mod camera;
 pub mod math;
 pub mod fast_rand;
 pub mod image;
 pub mod scene;
-pub mod aabb;
 pub mod bvh;
 pub mod morton;
 pub mod primitive;
@@ -30,10 +27,9 @@ pub use math::*;
 pub use err_float::EFloat;
 
 
-use nalgebra::{clamp, Point2, Point3, Vector3, Vector2};
-use num::traits::ToPrimitive;
+use cgmath::{Vector2, Point2, Vector3, Point3};
 use std::f32;
-use num::{Num, Bounded};
+use num::{Num, Bounded, Signed, NumCast};
 use num::traits::NumAssignOps;
 use std::fmt::Debug;
 use std::any::Any;
@@ -47,7 +43,7 @@ pub type Vec3f = Vector3<Float>;
 pub type Vec2f = Vector2<Float>;
 
 
-pub trait Scalar: Num + NumAssignOps + PartialOrd + Bounded + Copy + Debug + Any + From<u8> {
+pub trait Scalar: Num + NumAssignOps + NumCast + PartialOrd + Bounded + Copy + Debug + Any + From<u8> {
     fn min(self, other: Self) -> Self;
     fn max(self, other: Self) -> Self;
 }
@@ -107,20 +103,20 @@ impl Scalar for i32 {
     }
 }
 
-
-pub fn to_rgb(v: Vec3f) -> [u8; 3] {
-    let mut arr = [0u8; 3];
-    let bytes = v.map(|x| {
-        let clamped = clamp(x, 0.0, 1.0) * 255.0;
-        clamped.to_u8().unwrap()
-    });
-    arr.copy_from_slice(bytes.as_slice());
-    arr
+pub trait ElementAbs {
+    fn abs(&self) -> Self;
 }
+
+impl<S: Signed + Copy> ElementAbs for cgmath::Vector3<S> {
+    fn abs(&self) -> Self {
+        self.map(|v| v.abs())
+    }
+}
+
 
 pub fn background(dir: &Vec3f) -> Vec3f {
     // scale so t is between 0.0 and 1.0
     let t = 0.5 * (dir[1] + 1.0);
     // linear interpolation based on t
-    (1.0 - t) * Vec3f::repeat(1.0) + t * Vec3f::new(0.5, 0.7, 1.0)
+    (1.0 - t) * Vec3f::new(1.0, 1.0, 1.0) + t * Vec3f::new(0.5, 0.7, 1.0)
 }

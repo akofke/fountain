@@ -1,4 +1,3 @@
-use crate::aabb::Aabb;
 use crate::geometry::bounds::Bounds3f;
 
 pub trait Primitive {

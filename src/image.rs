@@ -1,5 +1,4 @@
 use crate::Vec3f;
-use crate::to_rgb;
 use std::fs::File;
 use std::path::Path;
 use std::io::{Write, BufWriter};
@@ -12,7 +11,7 @@ pub fn write_ppm<P: AsRef<Path>>(width: usize, height: usize, framebuffer: &[Vec
     write!(&mut f, "P6\n{} {}\n255\n", width, height)?;
 
     for v in framebuffer.into_iter() {
-        f.write_all(&to_rgb(*v))?;
+//        f.write_all(&to_rgb(*v))?; // TODO
     }
 
     Ok(())
@@ -26,8 +25,8 @@ pub fn write_ppm_ascii<P: AsRef<Path>>(width: usize, height: usize, framebuffer:
     write!(&mut f, "P3\n{} {}\n255\n", width, height)?;
 
     for v in framebuffer.into_iter() {
-        let arr = to_rgb(*v);
-        write!(&mut f, "{} {} {}\n", arr[0], arr[1], arr[2])?;
+//        let arr = to_rgb(*v);
+//        write!(&mut f, "{} {} {}\n", arr[0], arr[1], arr[2])?;
     }
 
     Ok(())
