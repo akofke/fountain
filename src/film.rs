@@ -24,9 +24,12 @@ struct FilmTilePixel {
     filter_weight_sum: Float,
 }
 
-pub struct FilmTile {
+pub struct FilmTile<'a, F: Filter> {
     pixel_bounds: Bounds2i,
-
+    filter_radius: Vec2f,
+    inv_filter_radius: Vec2f,
+    film: &'a Film<F>,
+    pixels: Vec<FilmTilePixel>
 }
 
 impl<F: Filter> Film<F> {
@@ -83,6 +86,26 @@ impl<F: Filter> Film<F> {
         Bounds2i::with_bounds(Point2i::new(low_x, low_y), Point2i::new(high_x, high_y))
     }
 
-//    pub fn get_film_tile(&self, sample_)
+    pub fn get_film_tile(&self, sample_bounds: Bounds2i) -> FilmTile<F> {
+        let half_pixel = Vec2f::new(0.5, 0.5);
+        let p0x = (sample_bounds.min.x as Float - 0.5 - self.filter.radius().0.x).ceil() as i32;
+        let p0y = (sample_bounds.min.y as Float - 0.5 - self.filter.radius().0.y).ceil() as i32;
+
+        let p1x = (sample_bounds.max.x as Float - 0.5 + self.filter.radius().0.x + 1.0).ceil() as i32;
+        let p1y = (sample_bounds.max.y as Float - 0.5 - self.filter.radius().0.y + 1.0).ceil() as i32;
+
+        let p0 = Point2i::new(p0x, p0y);
+        let p1 = Point2i::new(p1x, p1y);
+
+        let tile_pixel_bounds = Bounds2i::with_bounds(p0, p1).intersection(&self.cropped_pixel_bounds);
+
+        FilmTile {
+            pixel_bounds: tile_pixel_bounds,
+            filter_radius: self.filter.radius().0,
+            inv_filter_radius: self.filter.radius().1,
+            film: &self,
+            pixels: Vec::with_capacity(tile_pixel_bounds.area().max(0) as usize)
+        }
+    }
 }
 

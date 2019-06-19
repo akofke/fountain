@@ -38,6 +38,18 @@ impl<S: Scalar> Bounds2<S> {
         let d = self.diagonal();
         d.x * d.y
     }
+
+    pub fn intersection(&self, other: &Bounds2<S>) -> Bounds2<S> {
+        let min = Point2::<S>::new(
+            S::max(self.min.x, other.min.x),
+            S::max(self.min.y, other.min.y),
+        );
+        let max = Point2::<S>::new(
+            S::min(self.max.x, other.max.x),
+            S::min(self.max.y, other.max.y),
+        );
+        Self::with_bounds(min, max)
+    }
 }
 
 #[derive(Clone, Copy, PartialEq)]
