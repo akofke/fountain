@@ -1,5 +1,6 @@
-use crate::{Float, Point2i, Bounds2i, Bounds2f, Point2f};
+use crate::{Float, Point2i, Bounds2i, Bounds2f, Point2f, Vec2f};
 use crate::filter::Filter;
+use crate::spectrum::{Spectrum, RGBSpectrum};
 
 const FILTER_TABLE_WIDTH: usize = 16;
 
@@ -16,6 +17,16 @@ pub struct Film<F: Filter> {
     pub filter: F,
     pub pixels: Vec<Pixel>,
     filter_table: [[Float; FILTER_TABLE_WIDTH]; FILTER_TABLE_WIDTH],
+}
+
+struct FilmTilePixel {
+    contrib_sum: Spectrum<RGBSpectrum>,
+    filter_weight_sum: Float,
+}
+
+pub struct FilmTile {
+    pixel_bounds: Bounds2i,
+
 }
 
 impl<F: Filter> Film<F> {
@@ -42,8 +53,8 @@ impl<F: Filter> Film<F> {
         for (x, row) in filter_table.iter_mut().enumerate() {
             for (y, val) in row.iter_mut().enumerate() {
                 let p = Point2f::new(
-                    (x as Float + 0.5) * filter.radius().x / FILTER_TABLE_WIDTH as Float,
-                    (y as Float + 0.5) * filter.radius().y / FILTER_TABLE_WIDTH as Float
+                    (x as Float + 0.5) * filter.radius().0.x / FILTER_TABLE_WIDTH as Float,
+                    (y as Float + 0.5) * filter.radius().0.y / FILTER_TABLE_WIDTH as Float
                 );
 
                 *val = filter.evaluate(&p);
@@ -59,5 +70,19 @@ impl<F: Filter> Film<F> {
             filter_table,
         }
     }
+
+    /// The range of pixel values that must be sampled,
+    /// this is larger than the size of the image to allow pixels
+    /// at the edge to have an equal number of samples.
+    pub fn sample_bounds(&self) -> Bounds2i {
+        let low_x = (self.cropped_pixel_bounds.min.x as Float + 0.5 - self.filter.radius().0.x).floor() as i32;
+        let low_y = (self.cropped_pixel_bounds.min.y as Float + 0.5 - self.filter.radius().0.y).floor() as i32;
+        let high_x = (self.cropped_pixel_bounds.max.x as Float - 0.5 + self.filter.radius().0.x).ceil() as i32;
+        let high_y = (self.cropped_pixel_bounds.max.y as Float - 0.5 + self.filter.radius().0.y).ceil() as i32;
+
+        Bounds2i::with_bounds(Point2i::new(low_x, low_y), Point2i::new(high_x, high_y))
+    }
+
+//    pub fn get_film_tile(&self, sample_)
 }
 

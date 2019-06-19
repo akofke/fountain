@@ -3,11 +3,12 @@ use crate::{Float, Point2f, Vec2f};
 pub trait Filter {
     fn evaluate(&self, p: &Point2f) -> Float;
 
-    fn radius(&self) -> Vec2f;
+    fn radius(&self) -> (Vec2f, Vec2f);
 }
 
 pub struct BoxFilter {
-    pub radius: Vec2f
+    pub radius: Vec2f,
+    pub inv_radius: Vec2f,
 }
 
 impl Filter for BoxFilter {
@@ -15,7 +16,7 @@ impl Filter for BoxFilter {
         1.0
     }
 
-    fn radius(&self) -> Vec2f {
-        self.radius
+    fn radius(&self) -> (Vec2f, Vec2f) {
+        (self.radius, self.inv_radius)
     }
 }
