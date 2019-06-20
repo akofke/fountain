@@ -19,7 +19,8 @@ pub trait CoefficientSpectrum: Index<usize, Output=Float> + IndexMut<usize, Outp
     }
 }
 
-pub struct Spectrum<S: CoefficientSpectrum>(S);
+#[derive(Clone, Copy, PartialEq)]
+pub struct Spectrum<S: CoefficientSpectrum=RGBSpectrum>(S);
 
 impl<S: CoefficientSpectrum> Spectrum<S> {
     pub fn sqrt(&self) -> Self {
@@ -182,6 +183,18 @@ impl<S> Mul<Spectrum<S>> for Float where S: CoefficientSpectrum {
         let mut ret = S::new(0.0);
         for i in 0..S::N_SAMPLES {
             ret[i] = self * rhs.0[i];
+        }
+        Spectrum(ret)
+    }
+}
+
+impl<S> Mul<Float> for Spectrum<S> where S: CoefficientSpectrum {
+    type Output = Spectrum<S>;
+
+    fn mul(self, rhs: Float) -> Self::Output {
+        let mut ret = S::new(0.0);
+        for i in 0..S::N_SAMPLES {
+            ret[i] = self[i] * rhs;
         }
         Spectrum(ret)
     }

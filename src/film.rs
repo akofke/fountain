@@ -1,6 +1,8 @@
-use crate::{Float, Point2i, Bounds2i, Bounds2f, Point2f, Vec2f};
+use crate::{Float, Point2i, Bounds2i, Bounds2f, Point2f, Vec2f, Vec2i, ComponentWiseExt};
 use crate::filter::Filter;
 use crate::spectrum::{Spectrum, RGBSpectrum};
+use cgmath::vec2;
+use smallvec::SmallVec;
 
 const FILTER_TABLE_WIDTH: usize = 16;
 
@@ -53,8 +55,8 @@ impl<F: Filter> Film<F> {
         pixels.iter_mut().for_each(|p| *p = Pixel::default());
 
         let mut filter_table = [[0.0f32; FILTER_TABLE_WIDTH]; FILTER_TABLE_WIDTH];
-        for (x, row) in filter_table.iter_mut().enumerate() {
-            for (y, val) in row.iter_mut().enumerate() {
+        for (y, row) in filter_table.iter_mut().enumerate() {
+            for (x, val) in row.iter_mut().enumerate() {
                 let p = Point2f::new(
                     (x as Float + 0.5) * filter.radius().0.x / FILTER_TABLE_WIDTH as Float,
                     (y as Float + 0.5) * filter.radius().0.y / FILTER_TABLE_WIDTH as Float
@@ -108,4 +110,54 @@ impl<F: Filter> Film<F> {
         }
     }
 }
+
+impl<'a, F: Filter> FilmTile<'a, F> {
+
+    pub fn add_sample(&mut self, p_film: Point2f, radiance: Spectrum, sample_weight: Float) {
+        let p_film_discrete = p_film - vec2(0.5, 0.5);
+        let p0: Point2i = (p_film_discrete - self.filter_radius).map(|v| v.ceil()).cast().unwrap();
+        let p1: Point2i = (p_film_discrete + self.filter_radius).map(|v| v.floor()).cast::<i32>().unwrap() + Vec2i::new(1, 1);
+
+        let p0 = p0.max(self.pixel_bounds.min);
+        let p1 = p1.min( self.pixel_bounds.max);
+
+        let mut filter_indices_x = SmallVec::<[usize; 64]>::from_elem(0, (p1.x - p0.x) as usize);
+        for x in p0.x..p1.x {
+            let filt_x = ((x as Float - p_film_discrete.x) * self.inv_filter_radius.x * FILTER_TABLE_WIDTH as Float).abs();
+
+            let i = (x - p0.x) as usize;
+            filter_indices_x[i] = (filt_x.floor() as usize).min(FILTER_TABLE_WIDTH - 1);
+        }
+
+        let mut filter_indices_y = SmallVec::<[usize; 64]>::from_elem(0, (p1.y - p0.y) as usize);
+        for y in p0.y..p1.y {
+            let filt_y = ((y as Float - p_film_discrete.y) * self.inv_filter_radius.y * FILTER_TABLE_WIDTH as Float).abs();
+
+            let i = (y - p0.y) as usize;
+            filter_indices_y[i] = (filt_y.floor() as usize).min(FILTER_TABLE_WIDTH - 1);
+        }
+
+        for y in p0.y..p1.y {
+            for x in p0.x..p1.x {
+                let y_idx = filter_indices_y[(y - p0.y) as usize];
+                let x_idx = filter_indices_x[(x - p0.x) as usize];
+
+                let filter_weight = self.film.filter_table[y_idx][x_idx];
+                let idx = self.get_pixel_idx(Point2i::new(x, y));
+                let pixel = &mut self.pixels[idx];
+                pixel.contrib_sum += radiance * sample_weight * filter_weight;
+                pixel.filter_weight_sum += filter_weight;
+            }
+        }
+    }
+
+    /// Gets the FilmTilePixel of a FilmTile given pixel coordinates with respect to the overall
+    /// image
+    fn get_pixel_idx(&self, p: Point2i) -> usize {
+        let width = self.pixel_bounds.max.x - self.pixel_bounds.min.x;
+        let idx = (p.y - self.pixel_bounds.min.y) * width + (p.x - self.pixel_bounds.min.x);
+        idx as usize
+    }
+}
+
 

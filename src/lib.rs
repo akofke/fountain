@@ -41,6 +41,7 @@ pub type Point2i = Point2<i32>;
 pub type Point3f = Point3<Float>;
 pub type Vec3f = Vector3<Float>;
 pub type Vec2f = Vector2<Float>;
+pub type Vec2i = Vector2<i32>;
 
 
 pub trait Scalar: Num + NumAssignOps + NumCast + PartialOrd + Bounded + Copy + Debug + Any + From<u8> {
@@ -110,6 +111,62 @@ pub trait ElementAbs {
 impl<S: Signed + Copy> ElementAbs for cgmath::Vector3<S> {
     fn abs(&self) -> Self {
         self.map(|v| v.abs())
+    }
+}
+
+pub trait ComponentWiseExt {
+    fn abs(self) -> Self;
+
+//    fn ceil(self) -> Self;
+//
+//    fn floor(self) -> Self;
+
+    fn min(self, other: Self) -> Self;
+
+    fn max(self, other: Self) -> Self;
+}
+
+impl ComponentWiseExt for cgmath::Vector3<Float> {
+    fn abs(self) -> Self {
+        self.map(|v| v.abs())
+    }
+
+    fn min(self, other: Self) -> Self {
+        Vector3::new(
+            Float::min(self.x, other.x),
+            Float::min(self.y, other.y),
+            Float::min(self.z, other.z)
+        )
+    }
+
+    fn max(self, other: Self) -> Self {
+        Vector3::new(
+            Float::max(self.x, other.x),
+            Float::max(self.y, other.y),
+            Float::max(self.z, other.z)
+        )
+    }
+}
+
+impl<S> ComponentWiseExt for cgmath::Point2<S>
+where S: Copy + Signed + Ord
+{
+    fn abs(self) -> Self {
+        self.map(|v| v.abs())
+    }
+
+    fn min(self, other: Self) -> Self {
+        Point2::new(
+            S::min(self.x, other.x),
+            S::min(self.y, other.y),
+        )
+    }
+
+    fn max(self, other: Self) -> Self {
+        Point2::new(
+            S::max(self.x, other.x),
+            S::max(self.y, other.y),
+        )
     }
 }
 

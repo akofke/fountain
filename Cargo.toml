@@ -12,6 +12,7 @@ rayon = "1.0.3"
 bumpalo = "2.4.3"
 partition = "0.1.1"
 cgmath = "0.17.0"
+smallvec = "0.6.10"
 
 [dev-dependencies]
 criterion = "0.2.11"
