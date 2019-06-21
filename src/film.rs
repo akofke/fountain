@@ -3,6 +3,7 @@ use crate::filter::Filter;
 use crate::spectrum::{Spectrum, RGBSpectrum};
 use cgmath::vec2;
 use smallvec::SmallVec;
+use parking_lot::Mutex;
 
 const FILTER_TABLE_WIDTH: usize = 16;
 
@@ -17,7 +18,7 @@ pub struct Film<F: Filter> {
     pub cropped_pixel_bounds: Bounds2i,
     pub diagonal: Float,
     pub filter: F,
-    pub pixels: Vec<Pixel>,
+    pub pixels: Mutex<Vec<Pixel>>,
     filter_table: [[Float; FILTER_TABLE_WIDTH]; FILTER_TABLE_WIDTH],
 }
 
@@ -71,7 +72,7 @@ impl<F: Filter> Film<F> {
             cropped_pixel_bounds,
             diagonal,
             filter,
-            pixels,
+            pixels: Mutex::new(pixels),
             filter_table,
         }
     }
@@ -107,6 +108,15 @@ impl<F: Filter> Film<F> {
             inv_filter_radius: self.filter.radius().1,
             film: &self,
             pixels: Vec::with_capacity(tile_pixel_bounds.area().max(0) as usize)
+        }
+    }
+
+    pub fn merge_film_tile(&mut self, tile: FilmTile<F>) {
+        let pixels = self.pixels.lock();
+        for pixel in tile.pixel_bounds.iter_points() {
+            let film_tile_pixel = tile.pixels[tile.get_pixel_idx(p.into())];
+
+            // todo
         }
     }
 }

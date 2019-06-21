@@ -51,6 +51,17 @@ impl<S: Scalar> Bounds2<S> {
     }
 }
 
+impl Bounds2<i32> {
+    pub fn iter_points(self) -> impl Iterator<Item=(i32, i32)> {
+        let x1 = self.min.x;
+        let x2 = self.max.x;
+        let y1 = self.min.y;
+        let y2 = self.max.y;
+
+        (x1..x2).flat_map(move |x| (y1..y2).map(move |y| (x, y)))
+    }
+}
+
 #[derive(Clone, Copy, PartialEq)]
 pub struct Bounds3<S: Scalar> {
     pub min: Point3<S>,
@@ -170,8 +181,18 @@ impl<S: Scalar> std::fmt::Debug for Bounds3<S>{
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use crate::geometry::bounds::Bounds3f;
     use crate::geometry::Ray;
+    use crate::Point2i;
+
+    #[test]
+    fn test_bounds_iter() {
+        let bounds = Bounds2i::with_bounds(Point2i::new(-1, -2), Point2i::new(1, 1));
+        let points: Vec<_> = bounds.iter_points().collect();
+        let expected = vec![(-1, -2), (-1, -1), (-1, 0), (0, -2), (0, -1), (0, 0)];
+        assert_eq!(expected, points);
+    }
 
     #[test]
     fn test_bounds3f_intersect() {
