@@ -44,6 +44,12 @@ impl<S: CoefficientSpectrum> Spectrum<S> {
     }
 }
 
+impl From<Spectrum<RGBSpectrum>> for [Float; 3] {
+    fn from(s: Spectrum<RGBSpectrum>) -> Self {
+        s.c
+    }
+}
+
 impl<S: CoefficientSpectrum> Deref for Spectrum<S> {
     type Target = S;
 

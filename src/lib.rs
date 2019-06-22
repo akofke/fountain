@@ -21,6 +21,7 @@ pub mod spectrum;
 pub mod err_float;
 pub mod film;
 pub mod filter;
+pub mod sampler;
 
 pub use geometry::*;
 pub use math::*;
