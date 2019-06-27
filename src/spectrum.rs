@@ -23,6 +23,9 @@ pub trait CoefficientSpectrum: Index<usize, Output=Float> + IndexMut<usize, Outp
 pub struct Spectrum<S: CoefficientSpectrum=RGBSpectrum>(S);
 
 impl<S: CoefficientSpectrum> Spectrum<S> {
+    pub fn new(v: Float) -> Self {
+        Self(S::new(v))
+    }
     pub fn sqrt(&self) -> Self {
         let mut res = S::new(0.0);
         for i in 0..S::N_SAMPLES {
@@ -89,6 +92,8 @@ impl IndexMut<usize> for RGBSpectrum {
         &mut self.c[index]
     }
 }
+
+// Spectrum (op) Spectrum
 
 impl<S> Add for Spectrum<S> where S: CoefficientSpectrum {
     type Output = Self;
@@ -182,6 +187,8 @@ impl<S> std::ops::Neg for Spectrum<S> where S: CoefficientSpectrum {
     }
 }
 
+// Float (op) Spectrum
+
 impl<S> Mul<Spectrum<S>> for Float where S: CoefficientSpectrum {
     type Output = Spectrum<S>;
 
@@ -194,6 +201,20 @@ impl<S> Mul<Spectrum<S>> for Float where S: CoefficientSpectrum {
     }
 }
 
+impl<S> Add<Spectrum<S>> for Float where S: CoefficientSpectrum {
+    type Output = Spectrum<S>;
+
+    fn add(self, rhs: Spectrum<S>) -> Self::Output {
+        let mut ret = S::new(0.0);
+        for i in 0..S::N_SAMPLES {
+            ret[i] = self + rhs.0[i];
+        }
+        Spectrum(ret)
+    }
+}
+
+// Spectrum (op) Float
+
 impl<S> Mul<Float> for Spectrum<S> where S: CoefficientSpectrum {
     type Output = Spectrum<S>;
 
@@ -201,6 +222,30 @@ impl<S> Mul<Float> for Spectrum<S> where S: CoefficientSpectrum {
         let mut ret = S::new(0.0);
         for i in 0..S::N_SAMPLES {
             ret[i] = self[i] * rhs;
+        }
+        Spectrum(ret)
+    }
+}
+
+impl<S> Sub<Float> for Spectrum<S> where S: CoefficientSpectrum {
+    type Output = Spectrum<S>;
+
+    fn sub(self, rhs: Float) -> Self::Output {
+        let mut ret = S::new(0.0);
+        for i in 0..S::N_SAMPLES {
+            ret[i] = self[i] - rhs;
+        }
+        Spectrum(ret)
+    }
+}
+
+impl<S> Add<Float> for Spectrum<S> where S: CoefficientSpectrum {
+    type Output = Spectrum<S>;
+
+    fn add(self, rhs: Float) -> Self::Output {
+        let mut ret = S::new(0.0);
+        for i in 0..S::N_SAMPLES {
+            ret[i] = self[i] + rhs;
         }
         Spectrum(ret)
     }

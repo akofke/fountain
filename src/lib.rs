@@ -22,6 +22,8 @@ pub mod err_float;
 pub mod film;
 pub mod filter;
 pub mod sampler;
+pub mod reflection;
+pub mod fresnel;
 
 pub use geometry::*;
 pub use math::*;
