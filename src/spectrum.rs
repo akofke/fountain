@@ -227,6 +227,18 @@ impl<S> Mul<Float> for Spectrum<S> where S: CoefficientSpectrum {
     }
 }
 
+impl<S> Div<Float> for Spectrum<S> where S: CoefficientSpectrum {
+    type Output = Spectrum<S>;
+
+    fn div(self, rhs: Float) -> Self::Output {
+        let mut ret = S::new(0.0);
+        for i in 0..S::N_SAMPLES {
+            ret[i] = self[i] / rhs;
+        }
+        Spectrum(ret)
+    }
+}
+
 impl<S> Sub<Float> for Spectrum<S> where S: CoefficientSpectrum {
     type Output = Spectrum<S>;
 

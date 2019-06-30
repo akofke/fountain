@@ -78,6 +78,12 @@ pub struct FresnelDielectric {
     eta_t: Float,
 }
 
+impl FresnelDielectric {
+    pub fn new(eta_i: Float, eta_t: Float) -> Self {
+        Self { eta_i, eta_t }
+    }
+}
+
 impl Fresnel for FresnelDielectric {
     fn evaluate(&self, cos_i: Float) -> Spectrum {
         Spectrum::new(fresnel_dielectric(cos_i, self.eta_i, self.eta_t))

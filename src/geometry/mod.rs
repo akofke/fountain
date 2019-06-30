@@ -54,6 +54,17 @@ impl Ray {
 pub struct Normal3(pub Vec3f);
 
 impl Normal3 {
+    pub fn new(x: Float, y: Float, z: Float) -> Self {
+        Self(Vec3f::new(x, y, z))
+    }
+
+    pub fn faceforward(self, v: Vec3f) -> Self {
+        if self.dot(v) < 0.0 {
+            Self(-self.0)
+        } else {
+            self
+        }
+    }
 }
 
 impl Deref for Normal3 {

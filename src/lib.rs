@@ -24,6 +24,7 @@ pub mod filter;
 pub mod sampler;
 pub mod reflection;
 pub mod fresnel;
+pub mod material;
 
 pub use geometry::*;
 pub use math::*;
