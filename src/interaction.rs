@@ -23,9 +23,9 @@ pub struct SurfaceInteraction {
 
     pub geom: DiffGeom,
 
-//    pub shading_n: Normal3,
-//
-//    pub shading_geom: DiffGeom,
+    pub shading_n: Normal3,
+
+    pub shading_geom: DiffGeom,
 
 
     // shape
@@ -52,7 +52,10 @@ impl SurfaceInteraction {
             uv,
             wo,
             n,
-            geom
+            geom,
+
+            shading_n: n,
+            shading_geom: geom
         }
     }
 
@@ -62,6 +65,7 @@ impl SurfaceInteraction {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct DiffGeom {
     pub dpdu: Vec3f,
     pub dpdv: Vec3f,

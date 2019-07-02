@@ -47,6 +47,12 @@ impl<S: CoefficientSpectrum> Spectrum<S> {
     }
 }
 
+impl<S: CoefficientSpectrum> std::iter::Sum for Spectrum<S> {
+    fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
+        iter.fold(Self::new(0.0), Mul::mul)
+    }
+}
+
 impl From<Spectrum<RGBSpectrum>> for [Float; 3] {
     fn from(s: Spectrum<RGBSpectrum>) -> Self {
         s.c
@@ -93,7 +99,9 @@ impl IndexMut<usize> for RGBSpectrum {
     }
 }
 
+//
 // Spectrum (op) Spectrum
+//
 
 impl<S> Add for Spectrum<S> where S: CoefficientSpectrum {
     type Output = Self;
@@ -187,7 +195,9 @@ impl<S> std::ops::Neg for Spectrum<S> where S: CoefficientSpectrum {
     }
 }
 
+//
 // Float (op) Spectrum
+//
 
 impl<S> Mul<Spectrum<S>> for Float where S: CoefficientSpectrum {
     type Output = Spectrum<S>;
@@ -213,7 +223,9 @@ impl<S> Add<Spectrum<S>> for Float where S: CoefficientSpectrum {
     }
 }
 
+//
 // Spectrum (op) Float
+//
 
 impl<S> Mul<Float> for Spectrum<S> where S: CoefficientSpectrum {
     type Output = Spectrum<S>;

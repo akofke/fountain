@@ -114,7 +114,7 @@ impl<F: Filter> Film<F> {
     pub fn merge_film_tile(&mut self, tile: FilmTile<F>) {
         let pixels = self.pixels.lock();
         for pixel in tile.pixel_bounds.iter_points() {
-            let film_tile_pixel = tile.pixels[tile.get_pixel_idx(p.into())];
+            let film_tile_pixel = &tile.pixels[tile.get_pixel_idx(pixel.into())];
 
             // todo
         }

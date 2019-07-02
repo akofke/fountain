@@ -5,6 +5,8 @@ use crate::fresnel::{Fresnel, FresnelDielectric};
 use crate::material::TransportMode;
 use cgmath::InnerSpace;
 
+pub mod bsdf;
+
 bitflags! {
     pub struct BxDFType: u8 {
         const REFLECTION = 1 << 0;
@@ -48,7 +50,7 @@ pub fn refract(wi: Vec3f, n: Normal3, eta: Float) -> Option<Vec3f> {
 pub trait BxDF {
 
     fn matches_flags(&self, t: BxDFType) -> bool {
-        unimplemented!()
+        t.contains(self.get_type())
     }
 
     fn get_type(&self) -> BxDFType;

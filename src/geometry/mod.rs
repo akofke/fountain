@@ -75,6 +75,18 @@ impl Deref for Normal3 {
     }
 }
 
+impl From<Vec3f> for Normal3 {
+    fn from(v: Vec3f) -> Self {
+        Self(v)
+    }
+}
+
+impl From<Normal3> for Vec3f {
+    fn from(n: Normal3) -> Self {
+        n.0
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct Transform {
     pub t: Matrix4<Float>,
@@ -304,8 +316,11 @@ impl Transformable for SurfaceInteraction {
             hit: self.hit.transform(t),
             uv: self.uv,
             wo: Transformable::<Vec3f>::transform(&self.wo, t).normalize(),
-            n: self.n.transform(t),
-            geom: self.geom.transform(t)
+            n: self.n.transform(t).normalize().into(),
+            geom: self.geom.transform(t),
+
+            shading_n: self.shading_n.transform(t).normalize().into(),
+            shading_geom: self.shading_geom.transform(t)
         }
     }
 }
