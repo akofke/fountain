@@ -25,6 +25,7 @@ pub mod sampler;
 pub mod reflection;
 pub mod fresnel;
 pub mod material;
+pub mod texture;
 
 pub use geometry::*;
 pub use math::*;

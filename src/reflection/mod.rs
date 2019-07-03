@@ -65,7 +65,7 @@ pub trait BxDF {
 }
 
 pub struct LambertianReflection {
-    r: Spectrum,
+    pub r: Spectrum,
 }
 
 impl BxDF for LambertianReflection {
@@ -73,8 +73,8 @@ impl BxDF for LambertianReflection {
         BxDFType::REFLECTION | BxDFType::DIFFUSE
     }
 
-    fn f(&self, wo: Vec3f, wi: Vec3f) -> Spectrum {
-        unimplemented!()
+    fn f(&self, _wo: Vec3f, _wi: Vec3f) -> Spectrum {
+        self.r * std::f32::consts::FRAC_1_PI
     }
 
     fn sample_f(&self, wo: Vec3f, sample: Point2f) -> (Spectrum, Option<(Vec3f, Float)>) {

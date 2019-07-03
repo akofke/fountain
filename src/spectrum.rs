@@ -45,6 +45,17 @@ impl<S: CoefficientSpectrum> Spectrum<S> {
         }
         Self(ret)
     }
+
+    pub fn clamp_positive(&self) -> Self {
+        self.clamp(0.0, std::f32::INFINITY)
+    }
+
+    pub fn is_black(&self) -> bool {
+        for i in 0..S::N_SAMPLES {
+            if self.0[i] != 0.0 { return false; }
+        }
+        true
+    }
 }
 
 impl<S: CoefficientSpectrum> std::iter::Sum for Spectrum<S> {
