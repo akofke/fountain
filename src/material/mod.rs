@@ -10,11 +10,11 @@ pub enum TransportMode {
 }
 
 pub trait Material {
-    fn compute_scattering_functions(
+    fn compute_scattering_functions<'a>(
         &self,
         si: &SurfaceInteraction,
-        arena: &Bump,
+        arena: &'a Bump,
         mode: TransportMode,
         allow_multiple_lobes: bool
-    ) -> Bsdf;
+    ) -> Bsdf<'a>;
 }

@@ -13,7 +13,7 @@ pub struct MatteMaterial {
 }
 
 impl Material for MatteMaterial {
-    fn compute_scattering_functions(&self, si: &SurfaceInteraction, arena: &Bump, mode: TransportMode, allow_multiple_lobes: bool) -> Bsdf {
+    fn compute_scattering_functions<'a>(&self, si: &SurfaceInteraction, arena: &'a Bump, mode: TransportMode, allow_multiple_lobes: bool) -> Bsdf<'a> {
         let mut bsdf = Bsdf::new(si, 0.0);
 
         let r = self.diffuse.evaluate(si).clamp_positive();
@@ -21,6 +21,6 @@ impl Material for MatteMaterial {
             let lambertian = arena.alloc(LambertianReflection { r });
             bsdf.add(lambertian)
         }
-        unimplemented!()
+        bsdf
     }
 }
