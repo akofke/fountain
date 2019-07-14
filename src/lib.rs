@@ -28,6 +28,7 @@ pub mod material;
 pub mod texture;
 
 pub use geometry::*;
+pub use interaction::SurfaceInteraction;
 pub use math::*;
 pub use err_float::EFloat;
 

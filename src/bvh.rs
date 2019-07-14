@@ -1,5 +1,5 @@
 use crate::primitive::Primitive;
-use crate::Vec3f;
+use crate::{Vec3f, Ray, SurfaceInteraction};
 use bumpalo::Bump;
 use std::ops::{Range, DerefMut};
 use partition::partition;
@@ -7,6 +7,7 @@ use std::rc::Rc;
 use std::fmt::Debug;
 use crate::geometry::bounds::Bounds3f;
 use crate::Point3f;
+use arrayvec::ArrayVec;
 
 #[derive(Copy, Clone)]
 pub enum SplitMethod {
@@ -106,17 +107,17 @@ impl BVH {
     fn flatten_tree(flat_nodes: &mut Vec<LinearBVHNode>, node: &BVHBuildNode, idx: usize) -> usize {
         let subtree_len = match node {
             &BVHBuildNode::Leaf {bounds, first_prim_idx, n_prims} => {
-                let leaf = LinearBVHNode::Leaf {bounds, first_prim_idx, n_prims};
+                let leaf = LinearBVHNode::new_leaf(bounds, first_prim_idx, n_prims);
                 flat_nodes.push(leaf);
                 1
             },
 
             &BVHBuildNode::Interior {bounds, children, split_axis} => {
-                let interior = LinearBVHNode::Interior {bounds, split_axis, second_child_idx: 0};
+                let interior = LinearBVHNode::new_interior(bounds, 0, split_axis);
                 flat_nodes.push(interior);
                 let first_subtree_len = Self::flatten_tree(flat_nodes, children[0], idx + 1);
                 let second_idx = idx + first_subtree_len + 1;
-                if let LinearBVHNode::Interior {ref mut second_child_idx, ..} = flat_nodes[idx] {
+                if let LinearNodeKind::Interior {ref mut second_child_idx, ..} = flat_nodes[idx].kind {
                     *second_child_idx = second_idx as u32;
                 } else { unreachable!() } // unchecked?
 
@@ -125,18 +126,54 @@ impl BVH {
         };
         subtree_len
     }
+
+    pub fn intersect(&self, ray: &Ray) -> Option<SurfaceInteraction> {
+        let inverse_dir = 1.0 / ray.dir;
+        let dir_is_neg = [ray.dir.x < 0.0, ray.dir.y < 0.0, ray.dir.z < 0.0];
+
+        let nodes_to_visit = ArrayVec::<[usize; 64]>::new();  // used as a stack
+        let mut current_node_index = 0;
+
+        loop {
+            let node = self.nodes[current_node_index];
+
+            
+
+        }
+        unimplemented!()
+    }
 }
 
 // Should be 32 bytes
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum LinearBVHNode {
+pub struct LinearBVHNode {
+    bounds: Bounds3f,
+    kind: LinearNodeKind
+}
+
+impl LinearBVHNode {
+    fn new_leaf(bounds: Bounds3f, first_prim_idx: u32, n_prims: u16) -> Self {
+        Self {
+            bounds,
+            kind: LinearNodeKind::Leaf { first_prim_idx, n_prims }
+        }
+    }
+    
+    fn new_interior(bounds: Bounds3f, second_child_idx: u32, split_axis: u8) -> Self {
+        Self {
+            bounds,
+            kind: LinearNodeKind::Interior { second_child_idx, split_axis }
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum LinearNodeKind {
     Leaf {
-        bounds: Bounds3f,
         first_prim_idx: u32,
         n_prims: u16
     },
     Interior {
-        bounds: Bounds3f,
         second_child_idx: u32,
         split_axis: u8
     }
@@ -247,22 +284,26 @@ mod tests {
 
         let bvh = BVH::build(prims);
 
-        let node1 = LinearBVHNode::Interior {
-            bounds: prim1.0.join(&prim2.0),
-            second_child_idx: 2,
-            split_axis: 1 // y
-        };
+        let node1 = LinearBVHNode::new_interior(
+            prim1.0.join(&prim2.0),
+            2,
+            1 // y
+        );
 
-        let node2 = LinearBVHNode::Leaf {
+        let node2 = LinearBVHNode {
             bounds: prim2.0,
-            first_prim_idx: 0,
-            n_prims: 1
+            kind: LinearNodeKind::Leaf {
+                first_prim_idx: 0,
+                n_prims: 1
+            }
         };
 
-        let node3 = LinearBVHNode::Leaf {
+        let node3 = LinearBVHNode {
             bounds: prim1.0,
-            first_prim_idx: 1,
-            n_prims: 1
+            kind: LinearNodeKind::Leaf {
+                first_prim_idx: 1,
+                n_prims: 1
+            }
         };
 
         let expected_tree = vec![node1, node2, node3];
