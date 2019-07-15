@@ -127,20 +127,102 @@ impl BVH {
         subtree_len
     }
 
-    pub fn intersect(&self, ray: &Ray) -> Option<SurfaceInteraction> {
+    pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
         let inverse_dir = 1.0 / ray.dir;
         let dir_is_neg = [ray.dir.x < 0.0, ray.dir.y < 0.0, ray.dir.z < 0.0];
 
-        let nodes_to_visit = ArrayVec::<[usize; 64]>::new();  // used as a stack
+        let mut nodes_to_visit = ArrayVec::<[usize; 64]>::new();  // used as a stack
+        let mut current_node_index = 0;
+
+        let mut interaction = None;
+
+        loop {
+            let node = self.nodes[current_node_index];
+
+            if node.bounds.intersect_test(ray).is_some() {
+                match node.kind {
+                    LinearNodeKind::Leaf {first_prim_idx, n_prims} => {
+                        for i in 0..n_prims as usize {
+                            let prim = &self.prims[first_prim_idx as usize + i];
+                            interaction = prim.intersect(ray);
+
+                            if let Some(next_node) = nodes_to_visit.pop() {
+                                current_node_index = next_node;
+                            } else {
+                                break;
+                            }
+                        }
+                    },
+
+                    LinearNodeKind::Interior {second_child_idx, split_axis} => {
+                        if dir_is_neg[split_axis as usize] {
+                            nodes_to_visit.push(current_node_index + 1);  // unchecked?
+                            current_node_index = second_child_idx as usize;
+                        } else {
+                            nodes_to_visit.push(second_child_idx as usize);
+                            current_node_index += 1;
+                        }
+                    }
+                }
+            } else {
+                // no intersection with bounding box
+                if let Some(next_node) = nodes_to_visit.pop() {
+                    current_node_index = next_node;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        interaction
+    }
+
+    pub fn intersect_test(&self, ray: &Ray) -> bool {
+        let inverse_dir = 1.0 / ray.dir;
+        let dir_is_neg = [ray.dir.x < 0.0, ray.dir.y < 0.0, ray.dir.z < 0.0];
+
+        let mut nodes_to_visit = ArrayVec::<[usize; 64]>::new();  // used as a stack
         let mut current_node_index = 0;
 
         loop {
             let node = self.nodes[current_node_index];
 
-            
+            if node.bounds.intersect_test(ray).is_some() {
+                match node.kind {
+                    LinearNodeKind::Leaf {first_prim_idx, n_prims} => {
+                        for i in 0..n_prims as usize {
+                            let prim = &self.prims[first_prim_idx as usize + i];
+                            if prim.intersect_test(ray) { return true; }
 
+                            if let Some(next_node) = nodes_to_visit.pop() {
+                                current_node_index = next_node;
+                            } else {
+                                break;
+                            }
+                        }
+                    },
+
+                    LinearNodeKind::Interior {second_child_idx, split_axis} => {
+                        if dir_is_neg[split_axis as usize] {
+                            nodes_to_visit.push(current_node_index + 1);  // unchecked?
+                            current_node_index = second_child_idx as usize;
+                        } else {
+                            nodes_to_visit.push(second_child_idx as usize);
+                            current_node_index += 1;
+                        }
+                    }
+                }
+            } else {
+                // no intersection with bounding box
+                if let Some(next_node) = nodes_to_visit.pop() {
+                    current_node_index = next_node;
+                } else {
+                    break;
+                }
+            }
         }
-        unimplemented!()
+
+        false
     }
 }
 
@@ -272,6 +354,14 @@ mod tests {
     impl Primitive for MockPrim {
         fn world_bound(&self) -> Bounds3f {
             self.0
+        }
+
+        fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+            unimplemented!()
+        }
+
+        fn intersect_test(&self, ray: &Ray) -> bool {
+            unimplemented!()
         }
     }
 
