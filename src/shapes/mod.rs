@@ -12,9 +12,9 @@ pub trait Shape {
         unimplemented!()
     }
 
-    fn object_to_world<T: Transformable<O>, O>(&self, t: T) -> O;
+    fn object_to_world<T: Transformable<O>, O>(&self, t: T) -> O where Self: Sized;
 
-    fn world_to_object<T: Transformable<O>, O>(&self, t: T) -> O;
+    fn world_to_object<T: Transformable<O>, O>(&self, t: T) -> O where Self: Sized;
 
     fn intersect(&self, ray: &Ray) -> Option<(Float, SurfaceInteraction)>;
 
