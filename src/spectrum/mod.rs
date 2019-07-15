@@ -1,22 +1,30 @@
 use crate::Float;
 use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, Div, DivAssign, Index, IndexMut, Deref};
 
-pub trait SpectrumArith: Add + AddAssign + Sub + SubAssign + Mul + MulAssign + Div + DivAssign + Mul<Float>
-+ MulAssign<Float> + Div<Float> + DivAssign<Float>
-    where Self: Sized {}
+fn xyz_to_rgb(xyz: [Float; 3]) -> [Float; 3] {
+    let mut rgb = [0.0; 3];
+    rgb[0] =  3.240479*xyz[0] - 1.537150*xyz[1] - 0.498535*xyz[2];
+    rgb[1] = -0.969256*xyz[0] + 1.875991*xyz[1] + 0.041556*xyz[2];
+    rgb[2] =  0.055648*xyz[0] - 0.204043*xyz[1] + 1.057311*xyz[2];
+    rgb
+}
+
+fn rgb_to_xyz(rgb: [Float; 3]) -> [Float; 3] {
+    let mut xyz = [0.0; 3];
+    xyz[0] = 0.412453*rgb[0] + 0.357580*rgb[1] + 0.180423*rgb[2];
+    xyz[1] = 0.212671*rgb[0] + 0.715160*rgb[1] + 0.072169*rgb[2];
+    xyz[2] = 0.019334*rgb[0] + 0.119193*rgb[1] + 0.950227*rgb[2];
+    xyz
+}
 
 pub trait CoefficientSpectrum: Index<usize, Output=Float> + IndexMut<usize, Output=Float> + Copy {
     const N_SAMPLES: usize;
 
     fn new(v: Float) -> Self;
 
-    fn sqrt(&self) -> Self {
-        let mut res = Self::new(0.0);
-        for i in 0..Self::N_SAMPLES {
-            res[i] = self[i].sqrt();
-        }
-        res
-    }
+    fn to_xyz(&self) -> [Float; 3];
+
+    fn to_rgb(&self) -> [Float; 3];
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -92,6 +100,14 @@ impl CoefficientSpectrum for RGBSpectrum {
 
     fn new(v: Float) -> Self {
         Self {c: [v; 3]}
+    }
+
+    fn to_xyz(&self) -> [Float; 3] {
+        rgb_to_xyz(self.c)
+    }
+
+    fn to_rgb(&self) -> [Float; 3] {
+        self.c
     }
 }
 

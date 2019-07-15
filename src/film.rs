@@ -170,4 +170,12 @@ impl<'a, F: Filter> FilmTile<'a, F> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+
+}
+
 
