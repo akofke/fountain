@@ -1,5 +1,6 @@
 use crate::camera::Camera;
 use crate::sampler::Sampler;
+use crate::scene::Scene;
 
 pub trait Renderer {
     fn render(&mut self, scene: &Scene);
@@ -19,7 +20,7 @@ impl<C: Camera, S: Sampler> SamplerRenderer<C, S> {
 }
 
 impl<C: Camera, S: Sampler> Renderer for SamplerRenderer<C, S> {
-    fn render(&mut self) {
+    fn render(&mut self, scene: &Scene) {
         // preprocess
 
 

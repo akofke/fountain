@@ -337,6 +337,7 @@ fn apply_permutation<T>(items: &mut [T], indices: &mut [isize]) {
 mod tests {
     use super::*;
     use pretty_assertions as pa;
+    use crate::material::Material;
 
     #[test]
     fn test_permutation() {
@@ -363,6 +364,7 @@ mod tests {
         fn intersect_test(&self, ray: &Ray) -> bool {
             unimplemented!()
         }
+        fn material(&self) -> Option<&dyn Material> { unimplemented!() }
     }
 
     #[test]

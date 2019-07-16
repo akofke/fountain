@@ -1,7 +1,7 @@
 use crate::Float;
 use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, Div, DivAssign, Index, IndexMut, Deref};
 
-fn xyz_to_rgb(xyz: [Float; 3]) -> [Float; 3] {
+pub fn xyz_to_rgb(xyz: [Float; 3]) -> [Float; 3] {
     let mut rgb = [0.0; 3];
     rgb[0] =  3.240479*xyz[0] - 1.537150*xyz[1] - 0.498535*xyz[2];
     rgb[1] = -0.969256*xyz[0] + 1.875991*xyz[1] + 0.041556*xyz[2];
@@ -9,7 +9,7 @@ fn xyz_to_rgb(xyz: [Float; 3]) -> [Float; 3] {
     rgb
 }
 
-fn rgb_to_xyz(rgb: [Float; 3]) -> [Float; 3] {
+pub fn rgb_to_xyz(rgb: [Float; 3]) -> [Float; 3] {
     let mut xyz = [0.0; 3];
     xyz[0] = 0.412453*rgb[0] + 0.357580*rgb[1] + 0.180423*rgb[2];
     xyz[1] = 0.212671*rgb[0] + 0.715160*rgb[1] + 0.072169*rgb[2];
@@ -27,7 +27,7 @@ pub trait CoefficientSpectrum: Index<usize, Output=Float> + IndexMut<usize, Outp
     fn to_rgb(&self) -> [Float; 3];
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub struct Spectrum<S: CoefficientSpectrum=RGBSpectrum>(S);
 
 impl<S: CoefficientSpectrum> Spectrum<S> {
@@ -87,7 +87,7 @@ impl<S: CoefficientSpectrum> Deref for Spectrum<S> {
 }
 
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub struct RGBSpectrum {
     c: [Float; 3]
 }

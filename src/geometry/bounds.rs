@@ -10,7 +10,7 @@ pub type Bounds2f = Bounds2<f32>;
 pub type Bounds2i = Bounds2<i32>;
 pub type Bounds3f = Bounds3<f32>;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Bounds2<S: Scalar> {
     pub min: Point2<S>,
     pub max: Point2<S>
@@ -48,6 +48,12 @@ impl<S: Scalar> Bounds2<S> {
             S::min(self.max.y, other.max.y),
         );
         Self::with_bounds(min, max)
+    }
+}
+
+impl<S: Scalar, T> From<(T, T)> for Bounds2<S> where Point2<S>: From<T> {
+    fn from(t: (T, T)) -> Self { 
+        Self::with_bounds(t.0.into(), t.1.into())
     }
 }
 
