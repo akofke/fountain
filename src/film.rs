@@ -1,9 +1,11 @@
 use crate::{Float, Point2i, Bounds2i, Bounds2f, Point2f, Vec2f, Vec2i, ComponentWiseExt};
 use crate::filter::Filter;
-use crate::spectrum::{Spectrum, RGBSpectrum, CoefficientSpectrum};
+use crate::spectrum::{Spectrum, RGBSpectrum, CoefficientSpectrum, xyz_to_rgb};
 use cgmath::vec2;
 use smallvec::SmallVec;
 use parking_lot::Mutex;
+use image::{ImageBuffer, Rgb};
+use arrayvec::ArrayVec;
 
 const FILTER_TABLE_WIDTH: usize = 16;
 
@@ -171,6 +173,28 @@ impl<F: Filter> Film<F> {
             }
         }
     }
+
+    pub fn into_image_buffer(self) -> ImageBuffer<Rgb<f32>, Vec<f32>> {
+        let pixels = self.pixels.into_inner();
+        let rgb_flat_buffer: Vec<Float> = pixels.into_iter().flat_map(|pixel| {
+            let mut rgb = xyz_to_rgb(pixel.xyz);
+            if pixel.filter_weight_sum != 0.0 {
+                let inv_wt = 1.0 / pixel.filter_weight_sum;
+                for val in &mut rgb {
+                    *val = Float::max(0.0, *val * inv_wt);
+                }
+            }
+            ArrayVec::from(rgb)
+        }).collect();
+
+        let (width, height) = self.cropped_pixel_bounds.dimensions();
+        let img_buf = ImageBuffer::from_vec(
+            width as u32,
+            height as u32,
+            rgb_flat_buffer
+        ).expect("Invalid dimensions when creating image buffer");
+        img_buf
+    }
 }
 
 impl FilmTile {
@@ -189,6 +213,11 @@ impl FilmTile {
 mod tests {
     use super::*;
     use crate::filter::BoxFilter;
+    use image::ConvertBuffer;
+    use std::fs::File;
+    use std::ops::Deref;
+    use approx::relative_eq;
+
 
     #[test]
     fn test_add_one_sample() {
@@ -204,8 +233,13 @@ mod tests {
         
         film.merge_film_tile(tile);
 
-        let pixels = film.pixels.into_inner();
-        assert_eq!(pixels, vec![])
+
+        let img = film.into_image_buffer();
+        // TODO: approx assertions
+//        let mut file = File::create("test.hdr").unwrap();
+//        let encoder = image::hdr::HDREncoder::new(file);
+//        let pixels: Vec<_> = img.pixels().map(|p| *p).collect();
+//        encoder.encode(pixels.as_slice(), img.width() as usize, img.height() as usize).unwrap();
     }
 
 }

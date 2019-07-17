@@ -49,6 +49,12 @@ impl<S: Scalar> Bounds2<S> {
         );
         Self::with_bounds(min, max)
     }
+
+    pub fn dimensions(&self) -> (S, S) {
+        let x = self.max.x - self.min.x;
+        let y = self.max.y - self.min.y;
+        (x, y)
+    }
 }
 
 impl<S: Scalar, T> From<(T, T)> for Bounds2<S> where Point2<S>: From<T> {
