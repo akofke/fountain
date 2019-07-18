@@ -5,7 +5,7 @@ use crate::Float;
 
 pub mod sphere;
 
-pub trait Shape {
+pub trait Shape: Sync + Send {
     fn object_bound(&self) -> Bounds3f;
 
     fn world_bound(&self) -> Bounds3f {

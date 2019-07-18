@@ -8,6 +8,7 @@ use std::fmt::Debug;
 use crate::geometry::bounds::Bounds3f;
 use crate::Point3f;
 use arrayvec::ArrayVec;
+use std::sync::Arc;
 
 #[derive(Copy, Clone)]
 pub enum SplitMethod {
@@ -17,12 +18,12 @@ pub enum SplitMethod {
 }
 
 pub struct BVH {
-    pub prims: Vec<Rc<dyn Primitive>>,
+    pub prims: Vec<Box<dyn Primitive>>,
     nodes: Vec<LinearBVHNode>
 }
 
 impl BVH {
-    pub fn build(mut prims: Vec<Rc<dyn Primitive>>) -> BVH {
+    pub fn build(mut prims: Vec<Box<dyn Primitive>>) -> BVH {
         // TODO: figure out prims type. Rc or Box?
 
         let mut prim_info: Vec<BVHPrimInfo> = prims.iter().enumerate().map(|(i, p)| {
@@ -372,7 +373,7 @@ mod tests {
         let prim1 = MockPrim(Bounds3f::with_bounds(Point3f::new(1.0, 1.0, 1.0), Point3f::new(2.0, 2.0, 2.0)));
         let prim2 = MockPrim(Bounds3f::with_bounds(Point3f::new(1.0, -1.0, 1.0), Point3f::new(2.0, -2.0, 2.0)));
 
-        let prims: Vec<Rc<dyn Primitive>> = vec![Rc::new(prim1), Rc::new(prim2)];
+        let prims: Vec<Box<dyn Primitive>> = vec![Box::new(prim1), Box::new(prim2)];
 
         let bvh = BVH::build(prims);
 

@@ -8,6 +8,8 @@ use crate::filter::BoxFilter;
 use rayon::prelude::*;
 use crate::spectrum::{Spectrum, RGBSpectrum};
 
+pub mod whitted;
+
 pub trait Integrator {
     fn render(&mut self, scene: &Scene, film: &Film<BoxFilter>);
 }
@@ -21,7 +23,7 @@ pub struct SamplerIntegrator<R: IntegratorRadiance> {
 pub trait IntegratorRadiance: Sync {
     fn preprocess(&mut self, scene: &Scene, sampler: &dyn Sampler);
 
-    fn radiance(&self, ray: &RayDifferential, scene: &Scene, sampler: &dyn Sampler, arena: &Bump, depth: u16) -> Spectrum;
+    fn incident_radiance(&self, ray: &mut RayDifferential, scene: &Scene, sampler: &dyn Sampler, arena: &Bump, depth: u16) -> Spectrum;
 }
 
 
@@ -48,7 +50,7 @@ impl<R: IntegratorRadiance> Integrator for SamplerIntegrator<R> {
                     let mut radiance = Spectrum::<RGBSpectrum>::new(0.0);
 
                     if ray_weight > 0.0 {
-                        radiance = self.radiance.radiance(&ray_differential, scene, tile_sampler.as_ref(), &arena, 0);
+                        radiance = self.radiance.incident_radiance(&mut ray_differential, scene, tile_sampler.as_ref(), &arena, 0);
                         // TODO: check value
                     }
 

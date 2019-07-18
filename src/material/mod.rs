@@ -9,7 +9,7 @@ pub enum TransportMode {
     Importance,
 }
 
-pub trait Material {
+pub trait Material: Sync + Send {
     fn compute_scattering_functions<'a>(
         &self,
         si: &SurfaceInteraction,

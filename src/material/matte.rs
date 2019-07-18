@@ -6,9 +6,10 @@ use crate::interaction::SurfaceInteraction;
 use bumpalo::Bump;
 use crate::reflection::bsdf::Bsdf;
 use crate::reflection::LambertianReflection;
+use std::sync::Arc;
 
 pub struct MatteMaterial {
-    diffuse: Rc<Texture<Spectrum>>,
+    diffuse: Arc<dyn Texture<Spectrum>>,
     // TODO sigma, bump map
 }
 

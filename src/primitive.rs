@@ -4,8 +4,9 @@ use crate::material::Material;
 use std::rc::Rc;
 use crate::shapes::Shape;
 use std::borrow::Borrow;
+use std::sync::Arc;
 
-pub trait Primitive {
+pub trait Primitive: Sync {
     fn world_bound(&self) -> Bounds3f;
 
     fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction>;
@@ -16,8 +17,8 @@ pub trait Primitive {
 }
 
 pub struct GeometricPrimitive {
-    shape: Rc<dyn Shape>,  // TODO: use generic param instead?
-    material: Option<Rc<dyn Material>>,
+    shape: Arc<dyn Shape>,  // TODO: use generic param instead?
+    material: Option<Arc<dyn Material>>,
 
 }
 
