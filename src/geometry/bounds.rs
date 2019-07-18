@@ -1,6 +1,6 @@
 use cgmath::{Point2, Vector2, Point3, Vector3};
 use num::Bounded;
-use crate::{Scalar, Vec3f};
+use crate::{Scalar, Vec3f, Point2i, ComponentWiseExt};
 use std::fmt::Error;
 use crate::geometry::Ray;
 use std::mem::swap;
@@ -71,6 +71,20 @@ impl Bounds2<i32> {
         let y2 = self.max.y;
 
         (x1..x2).flat_map(move |x| (y1..y2).map(move |y| (x, y)))
+    }
+
+    pub fn iter_tiles(self, tile_size: usize) -> impl Iterator<Item=Bounds2i> {
+        let xmin = self.min.x;
+        let xmax = self.max.x;
+        let ymin = self.min.y;
+        let ymax = self.max.y;
+
+        (xmin..xmax).step_by(tile_size)
+            .flat_map(move |x| (ymin..ymax).step_by(tile_size).map(move |y| {
+                let min = Point2i::new(x, y);
+                let max = Point2i::new(x + tile_size as i32, y + tile_size as i32).min(self.max);
+                Bounds2i::with_bounds(min, max)
+            }))
     }
 }
 
@@ -204,6 +218,32 @@ mod test {
         let points: Vec<_> = bounds.iter_points().collect();
         let expected = vec![(-1, -2), (-1, -1), (-1, 0), (0, -2), (0, -1), (0, 0)];
         assert_eq!(expected, points);
+    }
+
+    #[test]
+    fn test_bounds_iter_tiles() {
+        let small_bounds = Bounds2i::with_bounds((0, 0).into(), (2, 2).into());
+
+        let single_tiles = vec![
+            Bounds2i::with_bounds((0, 0).into(), (1, 1).into()),
+            Bounds2i::with_bounds((0, 1).into(), (1, 2).into()),
+            Bounds2i::with_bounds((1, 0).into(), (2, 1).into()),
+            Bounds2i::with_bounds((1, 1).into(), (2, 2).into()),
+        ];
+
+        assert_eq!(small_bounds.iter_tiles(1).collect::<Vec<_>>(), single_tiles);
+
+        let big_bounds = Bounds2i::with_bounds((0, 0).into(), (100, 100).into());
+
+        // tile areas should sum to the same area as the overall bounds,
+        // even with tile sizes that don't evenly fit
+        for &tile_size in &[1, 5, 7, 16] {
+            let total_tile_area = big_bounds.iter_tiles(tile_size)
+                .map(|tile| tile.area())
+                .sum();
+
+            assert_eq!(big_bounds.area(), total_tile_area);
+        }
     }
 
     #[test]

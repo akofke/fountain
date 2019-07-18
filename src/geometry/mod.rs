@@ -49,6 +49,32 @@ impl Ray {
     }
 }
 
+#[derive(Copy, Clone)]
+pub struct Differential {
+    pub rx_origin: Point3f,
+    pub ry_origin: Point3f,
+    pub rx_dir: Vec3f,
+    pub ry_dir: Vec3f,
+}
+
+/// Ray differentials contain information about two auxiliary rays that represent camera rays
+/// offset by one sample in the x and y direction from the main ray on the film plane.
+pub struct RayDifferential {
+    pub ray: Ray,
+    pub diff: Option<Differential>,
+}
+
+impl RayDifferential {
+    pub fn scale_differentials(&mut self, s: Float) {
+        if let Some(mut diff) = self.diff {
+            diff.rx_origin = self.ray.origin + (diff.rx_origin - self.ray.origin) * s;
+            diff.ry_origin = self.ray.origin + (diff.ry_origin - self.ray.origin) * s;
+            diff.rx_dir = self.ray.dir + (diff.rx_dir - self.ray.dir) * s;
+            diff.ry_dir = self.ray.dir + (diff.ry_dir - self.ray.dir) * s;
+        }
+    }
+}
+
 
 #[derive(Copy, Clone)]
 pub struct Normal3(pub Vec3f);

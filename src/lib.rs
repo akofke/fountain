@@ -15,7 +15,6 @@ pub mod geometry;
 pub mod medium;
 pub mod interaction;
 pub mod shapes;
-pub mod renderer;
 pub mod integrator;
 pub mod spectrum;
 pub mod err_float;
