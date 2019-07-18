@@ -26,7 +26,7 @@ impl Sampler for RandomSampler {
 
     fn start_next_sample(&mut self) -> bool {
         self.current_pixel_sample_num += 1;
-        self.current_pixel_sample_num < self.samples_per_pixel
+        self.current_pixel_sample_num <= self.samples_per_pixel
     }
 
     fn get_1d(&mut self) -> Float {
@@ -43,5 +43,14 @@ impl Sampler for RandomSampler {
 
     fn request_2d_array(&mut self, len: usize) {
         unimplemented!()
+    }
+
+    fn clone_with_seed(&self, seed: u64) -> Box<dyn Sampler> {
+        // TODO: how to base off initial seed or do we need to?
+        Box::new(Self::new_with_seed(self.samples_per_pixel, seed))
+    }
+
+    fn samples_per_pixel(&self) -> u64 {
+        self.samples_per_pixel
     }
 }

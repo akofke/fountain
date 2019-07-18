@@ -1,8 +1,10 @@
-use crate::{Float, Point2f, Point2i};
+use crate::{Float, Point2f, Point2i, Vec2f};
+use crate::camera::CameraSample;
+use cgmath::EuclideanSpace;
 
 pub mod random;
 
-pub trait Sampler {
+pub trait Sampler: Sync {
     fn start_pixel(&mut self, pixel: Point2i);
 
     fn start_next_sample(&mut self) -> bool;
@@ -17,5 +19,17 @@ pub trait Sampler {
 
     fn round_count(&self, n: usize) -> usize { n }
 
+    fn clone_with_seed(&self, seed: u64) -> Box<dyn Sampler>;
 
+    fn samples_per_pixel(&self) -> u64;
+
+    fn get_camera_sample(&mut self, p_raster: Point2i) -> CameraSample {
+        let p_film = p_raster.cast::<Float>().unwrap() + self.get_2d().to_vec();
+
+        CameraSample {
+            p_film,
+            p_lens: self.get_2d(),
+            time: self.get_1d(),
+        }
+    }
 }

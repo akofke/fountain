@@ -1,4 +1,4 @@
-use crate::{Point2f, Float, Ray, Bounds2f, Point2i, Transformable, Point3f, lerp, INFINITY};
+use crate::{Point2f, Float, Ray, Bounds2f, Point2i, Transformable, Point3f, lerp, INFINITY, RayDifferential, Vec2i, Vec2f, Differential};
 use crate::geometry::Transform;
 use cgmath::InnerSpace;
 
@@ -9,8 +9,33 @@ pub struct CameraSample {
     pub time: Float
 }
 
-pub trait Camera {
+pub trait Camera: Sync {
     fn generate_ray(&self, sample: CameraSample) -> (Float, Ray);
+
+    fn generate_ray_differential(&self, sample: CameraSample) -> (Float, RayDifferential) {
+        let (mut weight, ray) = self.generate_ray(sample);
+
+        let cs_shift_x = CameraSample { p_film: sample.p_film + Vec2f::new(1.0, 0.0), ..sample};
+        let (wtx, rx) = self.generate_ray(cs_shift_x);
+
+        let cs_shift_y = CameraSample { p_film: sample.p_film + Vec2f::new(0.0, 1.0), ..sample};
+        let (wty, ry) = self.generate_ray(cs_shift_y);
+
+        let ray_diff = RayDifferential {
+            ray,
+            diff: Some(Differential {
+                rx_origin: rx.origin,
+                rx_dir: rx.dir,
+                ry_origin: ry.origin,
+                ry_dir: ry.dir,
+            })
+        };
+
+        if wtx == 0.0 || wty == 0.0 {
+            weight = 0.0
+        }
+        (weight, ray_diff)
+    }
 }
 
 struct CameraProjection {

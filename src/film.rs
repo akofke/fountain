@@ -119,7 +119,7 @@ impl<F: Filter> Film<F> {
         offset as usize
     }
 
-    pub fn merge_film_tile(&mut self, tile: FilmTile) {
+    pub fn merge_film_tile(&self, tile: FilmTile) {
         let mut pixels = self.pixels.lock();
         for pixel in tile.pixel_bounds.iter_points() {
             let film_tile_pixel = &tile.pixels[tile.get_pixel_idx(pixel.into())];
