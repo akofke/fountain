@@ -346,7 +346,7 @@ impl Transformable for TextureDifferentials {
     }
 }
 
-impl Transformable for SurfaceInteraction {
+impl Transformable for SurfaceInteraction<'_> {
     fn transform(&self, t: Transform) -> Self {
         Self {
             hit: self.hit.transform(t),
@@ -358,7 +358,8 @@ impl Transformable for SurfaceInteraction {
             shading_n: self.shading_n.transform(t).normalize().into(),
             shading_geom: self.shading_geom.transform(t),
 
-            tex_diffs: self.tex_diffs.map(|diff| diff.transform(t))
+            tex_diffs: self.tex_diffs.map(|diff| diff.transform(t)),
+            primitive: self.primitive
         }
     }
 }

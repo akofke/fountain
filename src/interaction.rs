@@ -4,6 +4,7 @@ use crate::{offset_ray_origin, Float, Point2f, Point3f, Ray, RayDifferential, Ve
 use bumpalo::Bump;
 use cgmath::{EuclideanSpace, InnerSpace, Matrix2, Vector2};
 use crate::reflection::bsdf::Bsdf;
+use crate::primitive::Primitive;
 
 #[derive(Clone, Copy)]
 pub struct HitPoint {
@@ -14,7 +15,7 @@ pub struct HitPoint {
 
 impl HitPoint {}
 
-pub struct SurfaceInteraction {
+pub struct SurfaceInteraction<'i> {
     pub hit: HitPoint,
 
     /// (u, v) coordinates from the parametrization of the surface
@@ -31,6 +32,9 @@ pub struct SurfaceInteraction {
     pub shading_geom: DiffGeom,
 
     pub tex_diffs: Option<TextureDifferentials>,
+
+    // TODO: CHANGE THIS
+    pub primitive: Option<&'i dyn Primitive>
     // shape
     // primitive
     // BSDF
@@ -38,7 +42,7 @@ pub struct SurfaceInteraction {
     //
 }
 
-impl SurfaceInteraction {
+impl<'i> SurfaceInteraction<'i> {
     pub fn new(
         p: Point3f,
         p_err: Vec3f,
@@ -59,6 +63,7 @@ impl SurfaceInteraction {
             shading_geom: geom,
 
             tex_diffs: None,
+            primitive: None
         }
     }
 
@@ -72,16 +77,16 @@ impl SurfaceInteraction {
         }
     }
 
-    pub fn compute_scattering_functions(
+    pub fn compute_scattering_functions<'a>(
         &mut self,
         ray: &RayDifferential,
-        arena: &Bump,
+        arena: &'a Bump,
         allow_multiple_lobes: bool,
         mode: TransportMode,
-    ) -> Option<Bsdf> {
+    ) -> Option<Bsdf<'a>> {
         self.tex_diffs = self.compute_tex_differentials(ray);
-//        let material =
-        unimplemented!()
+        let material = self.primitive.expect("Should have a prim at this point").material()?;
+        Some(material.compute_scattering_functions(self, arena, mode, allow_multiple_lobes))
     }
 
     fn compute_tex_differentials(&self, ray: &RayDifferential) -> Option<TextureDifferentials> {

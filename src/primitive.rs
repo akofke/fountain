@@ -28,9 +28,10 @@ impl Primitive for GeometricPrimitive {
     }
 
     fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
-        let (t_hit, intersect) = self.shape.intersect(ray)?;
+        let (t_hit, mut intersect) = self.shape.intersect(ray)?;
 
         ray.t_max = t_hit;
+        intersect.primitive = Some(self); // TODO: this is terrible
         Some(intersect)
     }
 
