@@ -8,7 +8,7 @@ pub mod bounds;
 
 pub use bounds::*;
 use crate::err_float::{gamma, next_float_up, next_float_down};
-use crate::interaction::{SurfaceInteraction, HitPoint, DiffGeom};
+use crate::interaction::{SurfaceInteraction, HitPoint, DiffGeom, TextureDifferentials};
 
 pub fn distance(p1: Point3f, p2: Point3f) -> Float {
     (p1 - p2).magnitude()
@@ -336,6 +336,16 @@ impl Transformable for DiffGeom {
     }
 }
 
+impl Transformable for TextureDifferentials {
+    fn transform(&self, t: Transform) -> Self {
+        Self {
+            dpdx: self.dpdx.transform(t),
+            dpdy: self.dpdy.transform(t),
+            ..*self
+        }
+    }
+}
+
 impl Transformable for SurfaceInteraction {
     fn transform(&self, t: Transform) -> Self {
         Self {
@@ -346,7 +356,9 @@ impl Transformable for SurfaceInteraction {
             geom: self.geom.transform(t),
 
             shading_n: self.shading_n.transform(t).normalize().into(),
-            shading_geom: self.shading_geom.transform(t)
+            shading_geom: self.shading_geom.transform(t),
+
+            tex_diffs: self.tex_diffs.map(|diff| diff.transform(t))
         }
     }
 }

@@ -19,11 +19,13 @@ impl IntegratorRadiance for WhittedIntegrator {
 
         match scene.intersect(&mut ray.ray) {
             None => {
-
+                // get radiance of escaping ray
+//                Spectrum::new(0.0);
             },
 
             Some(intersect) => {
-
+                let n = intersect.shading_n;
+                let wo = intersect.wo;
             }
 
         }
