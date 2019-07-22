@@ -60,7 +60,7 @@ pub trait BxDF {
 
     /// Computes the direction of incident light wi given an outgoing direction wo as well
     /// as the value of the BxDF for the pair of directions. TODO other uses...
-    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> (Spectrum, Option<(Vec3f, Float)>);
+    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> Option<BxdfSample>;
 
 }
 
@@ -77,7 +77,7 @@ impl BxDF for LambertianReflection {
         self.r * std::f32::consts::FRAC_1_PI
     }
 
-    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> (Spectrum, Option<(Vec3f, Float)>) {
+    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> Option<BxdfSample> {
         unimplemented!()
     }
 }
@@ -102,13 +102,13 @@ impl<F: Fresnel> BxDF for SpecularReflection<F> {
         Spectrum::new(0.0)
     }
 
-    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> (Spectrum, Option<(Vec3f, Float)>) {
+    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> Option<BxdfSample> {
         let wi = Vec3f::new(-wo.x, -wo.y, wo.z);
         let pdf = 1.0f32;
 
 
         let reflected = self.fresnel.evaluate(cos_theta(wi)) * self.r / abs_cos_theta(wi);
-        (reflected, Some((wi, pdf)))
+        Some(BxdfSample{f: reflected, wi, pdf})
     }
 }
 
@@ -137,21 +137,31 @@ impl BxDF for SpecularTransmission {
         Spectrum::new(0.0)
     }
 
-    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> (Spectrum, Option<(Vec3f, Float)>) {
+    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> Option<BxdfSample> {
         let entering = cos_theta(wo) > 0.0;
         let eta_i = if entering { self.eta_a } else { self.eta_b };
         let eta_t = if entering { self.eta_b } else { self.eta_a };
 
-        let wi = refract(wo, Normal3::new(0.0, 0.0, 1.0).faceforward(wo), eta_i / eta_t);
-        let wi = match wi {
-            Some(wi) => wi,
-            None => return (Spectrum::new(0.0), None)
-        };
+        let wi = refract(
+            wo,
+            Normal3::new(0.0, 0.0, 1.0).faceforward(wo),
+            eta_i / eta_t
+        )?;
 
         let pdf = 1.0f32;
         let ft = self.t * (Spectrum::new(1.0) - self.fresnel.evaluate(cos_theta(wi)));
-        (ft / abs_cos_theta(wi), Some((wi, pdf)))
+        Some(BxdfSample {
+            f: ft / abs_cos_theta(wi),
+            wi,
+            pdf
+        })
     }
 
+}
+
+pub struct BxdfSample {
+    pub f: Spectrum,
+    pub wi: Vec3f,
+    pub pdf: Float
 }
 

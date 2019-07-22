@@ -1,4 +1,4 @@
-use crate::{Float, Normal3, Vec3f};
+use crate::{Float, Normal3, Vec3f, Point2f};
 use arrayvec::ArrayVec;
 use crate::reflection::{BxDF, BxDFType};
 use crate::interaction::SurfaceInteraction;
@@ -79,4 +79,28 @@ impl<'a> Bsdf<'a> {
             .map(|bxdf| bxdf.f(wo, wi))
             .sum()
     }
+
+    pub fn sample_f(&self, wo_world: Vec3f, u: Point2f, flags: BxDFType) -> Option<BsdfSample> {
+        let matching_comps = self.num_components(flags) as Float;
+        if matching_comps == 0.0 { return None }
+
+        let comp = (u[0] * (matching_comps)).floor().min(matching_comps - 1.0) as usize;
+
+        let bxdf: &dyn BxDF = *self.bxdfs.as_slice().iter()
+            .filter(|bxdf| bxdf.matches_flags(flags))
+            .nth(comp).unwrap();
+
+        let u_remapped = Point2f::new(u[0] * matching_comps - (comp as Float), u[1]);
+
+        let wo = self.world_to_local(wo_world);
+        let f = bxdf.sample_f()
+
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct BsdfSample {
+    f: Spectrum,
+    pdf: Float,
+    sampled_type: BxDFType
 }

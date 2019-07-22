@@ -4,6 +4,7 @@ use crate::sampler::Sampler;
 use crate::RayDifferential;
 use bumpalo::Bump;
 use crate::spectrum::Spectrum;
+use crate::material::TransportMode;
 
 pub struct WhittedIntegrator {
     pub max_depth: u16,
@@ -23,9 +24,16 @@ impl IntegratorRadiance for WhittedIntegrator {
 //                Spectrum::new(0.0);
             },
 
-            Some(intersect) => {
+            Some(mut intersect) => {
                 let n = intersect.shading_n;
                 let wo = intersect.wo;
+
+                let scatter = intersect.compute_scattering_functions(
+                    ray,
+                    arena,
+                    false,
+                    TransportMode::Radiance
+                );
             }
 
         }
