@@ -1,6 +1,6 @@
 use crate::{Float, Normal3, Vec3f, Point2f};
 use arrayvec::ArrayVec;
-use crate::reflection::{BxDF, BxDFType};
+use crate::reflection::{BxDF, BxDFType, ScatterSample};
 use crate::interaction::SurfaceInteraction;
 use cgmath::InnerSpace;
 use crate::spectrum::Spectrum;
@@ -80,7 +80,7 @@ impl<'a> Bsdf<'a> {
             .sum()
     }
 
-    pub fn sample_f(&self, wo_world: Vec3f, u: Point2f, flags: BxDFType) -> Option<BsdfSample> {
+    pub fn sample_f(&self, wo_world: Vec3f, u: Point2f, flags: BxDFType) -> Option<ScatterSample> {
         let matching_comps = self.num_components(flags) as Float;
         if matching_comps == 0.0 { return None }
 
@@ -96,11 +96,4 @@ impl<'a> Bsdf<'a> {
         let f = bxdf.sample_f()
 
     }
-}
-
-#[derive(Clone, Copy)]
-pub struct BsdfSample {
-    f: Spectrum,
-    pdf: Float,
-    sampled_type: BxDFType
 }

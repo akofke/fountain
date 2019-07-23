@@ -106,8 +106,9 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
         arena: &Bump,
         depth: u16,
     ) -> Spectrum {
+        let wo = intersect.wo;
         let bxdf_type = BxDFType::REFLECTION | BxDFType::SPECULAR;
 
-//        let f = bsdf
+        let f = bsdf.sample_f(wo, sampler.get_2d(), bxdf_type);
     }
 }
