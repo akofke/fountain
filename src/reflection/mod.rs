@@ -4,6 +4,7 @@ use crate::spectrum::Spectrum;
 use crate::fresnel::{Fresnel, FresnelDielectric};
 use crate::material::TransportMode;
 use cgmath::InnerSpace;
+use crate::sampling::cosine_sample_hemisphere;
 
 pub mod bsdf;
 
@@ -47,6 +48,10 @@ pub fn refract(wi: Vec3f, n: Normal3, eta: Float) -> Option<Vec3f> {
     Some(wt)
 }
 
+pub fn same_hemisphere(v1: Vec3f, v2: Vec3f) -> bool {
+    v1.z.is_sign_positive() == v2.z.is_sign_positive()
+}
+
 #[derive(Clone, Copy)]
 pub struct ScatterSample {
     pub f: Spectrum,
@@ -70,23 +75,55 @@ pub trait BxDF {
     /// as the value of the BxDF for the pair of directions. TODO other uses...
     fn sample_f(&self, wo: Vec3f, sample: Point2f) -> Option<ScatterSample>;
 
+    fn pdf(&self, wo: Vec3f, wi: Vec3f) -> Float;
+
+}
+
+// TODO: better name
+pub trait DefaultSampleF {
+    fn get_type(&self) -> BxDFType;
+
+    fn f(&self, wo: Vec3f, wi: Vec3f) -> Spectrum;
+}
+
+impl<T> BxDF for T where T: DefaultSampleF {
+    fn get_type(&self) -> BxDFType {
+        <Self as DefaultSampleF>::get_type(self)
+    }
+
+    fn f(&self, wo: Vec3f, wi: Vec3f) -> Spectrum {
+        <Self as DefaultSampleF>::f(self, wo, wi)
+    }
+
+    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> Option<ScatterSample> {
+        let mut wi = cosine_sample_hemisphere(sample);
+        // flip direction if wo is on the opposite hemisphere
+        if wo.z < 0.0 { wi.z *= -1.0; }
+        let pdf = self.pdf(wo, wi);
+        let f = self.f(wo, wi);
+        Some(ScatterSample { f, wi, pdf, sampled_type: self.get_type() })
+    }
+
+    fn pdf(&self, wo: Vec3f, wi: Vec3f) -> Float {
+        if same_hemisphere(wo, wi) {
+            abs_cos_theta(wi) * std::f32::consts::FRAC_1_PI
+        } else {
+            0.0
+        }
+    }
 }
 
 pub struct LambertianReflection {
     pub r: Spectrum,
 }
 
-impl BxDF for LambertianReflection {
+impl DefaultSampleF for LambertianReflection {
     fn get_type(&self) -> BxDFType {
         BxDFType::REFLECTION | BxDFType::DIFFUSE
     }
 
     fn f(&self, _wo: Vec3f, _wi: Vec3f) -> Spectrum {
         self.r * std::f32::consts::FRAC_1_PI
-    }
-
-    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> Option<ScatterSample> {
-        unimplemented!()
     }
 }
 
@@ -117,6 +154,10 @@ impl<F: Fresnel> BxDF for SpecularReflection<F> {
 
         let reflected = self.fresnel.evaluate(cos_theta(wi)) * self.r / abs_cos_theta(wi);
         Some(ScatterSample{f: reflected, wi, pdf, sampled_type: self.get_type()})
+    }
+
+    fn pdf(&self, wo: Vec3f, wi: Vec3f) -> Float {
+        0.0
     }
 }
 
@@ -166,11 +207,9 @@ impl BxDF for SpecularTransmission {
         })
     }
 
-}
+    fn pdf(&self, wo: Vec3f, wi: Vec3f) -> Float {
+        0.0
+    }
 
-pub struct BxdfSample {
-    pub f: Spectrum,
-    pub wi: Vec3f,
-    pub pdf: Float
 }
 

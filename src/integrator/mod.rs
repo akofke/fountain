@@ -102,7 +102,7 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
         intersect: &SurfaceInteraction,
         bsdf: &Bsdf,
         scene: &Scene,
-        sampler: &mut Sampler,
+        sampler: &mut dyn Sampler,
         arena: &Bump,
         depth: u16,
     ) -> Spectrum {
@@ -110,5 +110,6 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
         let bxdf_type = BxDFType::REFLECTION | BxDFType::SPECULAR;
 
         let f = bsdf.sample_f(wo, sampler.get_2d(), bxdf_type);
+        unimplemented!()
     }
 }

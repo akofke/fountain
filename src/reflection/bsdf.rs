@@ -22,6 +22,7 @@ pub struct Bsdf<'a> {
     /// t orthonormal basis vector with the shading normal
     ts: Vec3f,
 
+    // TODO: store flags alongside to avoid dynamic dispatch
     bxdfs: ArrayVec<[&'a dyn BxDF; 8]>
 }
 
@@ -80,20 +81,51 @@ impl<'a> Bsdf<'a> {
             .sum()
     }
 
+    // TODO: this could be simplified/improved
     pub fn sample_f(&self, wo_world: Vec3f, u: Point2f, flags: BxDFType) -> Option<ScatterSample> {
         let matching_comps = self.num_components(flags) as Float;
         if matching_comps == 0.0 { return None }
 
         let comp = (u[0] * (matching_comps)).floor().min(matching_comps - 1.0) as usize;
 
-        let bxdf: &dyn BxDF = *self.bxdfs.as_slice().iter()
-            .filter(|bxdf| bxdf.matches_flags(flags))
+        let bxdf: &dyn BxDF = *self.iter_matching(flags)
             .nth(comp).unwrap();
 
         let u_remapped = Point2f::new(u[0] * matching_comps - (comp as Float), u[1]);
 
         let wo = self.world_to_local(wo_world);
-        let f = bxdf.sample_f()
+        let ScatterSample { mut pdf, wi, mut f, sampled_type} = bxdf.sample_f(wo, u_remapped)?;
+        if pdf == 0.0 {
+            return None;
+        }
 
+        let wi_world = self.local_to_world(wi);
+
+        // compute overall PDF with all matching bxdfs
+        if !bxdf.get_type().contains(BxDFType::SPECULAR) && matching_comps > 1.0 {
+            pdf += self.iter_matching(flags)
+                .filter(|&&b| !std::ptr::eq(b, bxdf))
+                .map(|bxdf| bxdf.pdf(wo, wi))
+                .sum::<Float>();
+
+            let reflect = wi_world.dot(self.ng.into()) * wo_world.dot(self.ng.into()) > 0.0;
+            f = self.iter_matching(flags)
+                .filter(|bxdf| {
+                    (reflect && bxdf.get_type().contains(BxDFType::REFLECTION))
+                        || (!reflect && bxdf.get_type().contains(BxDFType::TRANSMISSION))
+                })
+                .map(|bxdf| bxdf.f(wo, wi))
+                .sum();
+        }
+
+        if matching_comps > 1.0 {
+            pdf /= matching_comps;
+        }
+
+        Some(ScatterSample {f, wi: wi_world, pdf, sampled_type})
+    }
+
+    pub fn iter_matching(&self, flags: BxDFType) -> impl Iterator<Item=&& dyn BxDF> + '_ {
+        self.bxdfs.as_slice().iter().filter(move |bxdf| bxdf.matches_flags(flags))
     }
 }

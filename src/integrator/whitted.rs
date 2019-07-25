@@ -11,11 +11,11 @@ pub struct WhittedIntegrator {
 }
 
 impl IntegratorRadiance for WhittedIntegrator {
-    fn preprocess(&mut self, scene: &Scene, sampler: &Sampler) {
+    fn preprocess(&mut self, scene: &Scene, sampler: &dyn Sampler) {
         unimplemented!()
     }
 
-    fn incident_radiance(&self, ray: &mut RayDifferential, scene: &Scene, sampler: &Sampler, arena: &Bump, depth: u16) -> Spectrum {
+    fn incident_radiance(&self, ray: &mut RayDifferential, scene: &Scene, sampler: &dyn Sampler, arena: &Bump, depth: u16) -> Spectrum {
         let radiance: Spectrum = Spectrum::new(0.0);
 
         match scene.intersect(&mut ray.ray) {

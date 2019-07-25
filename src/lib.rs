@@ -2,6 +2,8 @@
 #![feature(clamp)]
 #![feature(const_fn)]
 
+#![deny(bare_trait_objects)]
+
 #[macro_use] pub mod macros; // must stay at the top
 pub mod camera;
 pub mod math;
@@ -25,6 +27,7 @@ pub mod reflection;
 pub mod fresnel;
 pub mod material;
 pub mod texture;
+pub mod sampling;
 
 pub use geometry::*;
 pub use interaction::SurfaceInteraction;
