@@ -1,6 +1,6 @@
 use crate::geometry::Normal3;
 use crate::material::TransportMode;
-use crate::{offset_ray_origin, Float, Point2f, Point3f, Ray, RayDifferential, Vec3f, Vec2f, solve_linear_system_2x2};
+use crate::{offset_ray_origin, Float, Point2f, Point3f, Ray, RayDifferential, Vec3f, Vec2f, solve_linear_system_2x2, Differential};
 use bumpalo::Bump;
 use cgmath::{EuclideanSpace, InnerSpace, Matrix2, Vector2};
 use crate::reflection::bsdf::Bsdf;
@@ -75,6 +75,11 @@ impl<'i> SurfaceInteraction<'i> {
             t_max: std::f32::INFINITY,
             time: self.hit.time,
         }
+    }
+
+    pub fn spawn_ray_with_dfferentials(&self, dir: Vec3f, diff: Option<Differential>) -> RayDifferential {
+        let ray = self.spawn_ray(dir);
+        RayDifferential { ray, diff }
     }
 
     pub fn compute_scattering_functions<'a>(

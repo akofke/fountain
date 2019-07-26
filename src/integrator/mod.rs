@@ -4,11 +4,12 @@ use crate::filter::BoxFilter;
 use crate::sampler::Sampler;
 use crate::scene::Scene;
 use crate::spectrum::{RGBSpectrum, Spectrum};
-use crate::{Bounds2i, Float, RayDifferential, SurfaceInteraction};
+use crate::{Bounds2i, Float, RayDifferential, SurfaceInteraction, Normal3, Differential};
 use bumpalo::Bump;
 use rayon::prelude::*;
 use crate::reflection::bsdf::Bsdf;
 use crate::reflection::BxDFType;
+use cgmath::InnerSpace;
 
 pub mod whitted;
 
@@ -29,10 +30,65 @@ pub trait IntegratorRadiance: Sync {
         &self,
         ray: &mut RayDifferential,
         scene: &Scene,
-        sampler: &dyn Sampler,
+        sampler: &mut dyn Sampler,
         arena: &Bump,
         depth: u16,
     ) -> Spectrum;
+
+    #[allow(non_snake_case)]
+    fn specular_reflect(
+        &self,
+        ray: &mut RayDifferential,
+        intersect: &SurfaceInteraction,
+        bsdf: &Bsdf,
+        scene: &Scene,
+        sampler: &mut dyn Sampler,
+        arena: &Bump,
+        depth: u16,
+    ) -> Spectrum {
+        let wo = intersect.wo;
+        let bxdf_type = BxDFType::REFLECTION | BxDFType::SPECULAR;
+
+        if let Some(scatter) = bsdf.sample_f(wo, sampler.get_2d(), bxdf_type) {
+            let diff = ray.diff.map(|diff| {
+                let tex_diff = intersect.tex_diffs.unwrap(); // TODO make this cleaner. It must have them at this point
+                let rx_origin = intersect.hit.p + tex_diff.dpdx;
+                let ry_origin = intersect.hit.p + tex_diff.dpdy;
+
+                let shading = intersect.shading_geom;
+                let dndx = shading.dndu * tex_diff.dudx + shading.dndv * tex_diff.dvdx;
+                let dndy = shading.dndu * tex_diff.dudy + shading.dndv * tex_diff.dvdy;
+
+                let dwo_dx = -diff.rx_dir - wo;
+                let dwo_dy = -diff.ry_dir - wo;
+
+                let dDN_dx = dwo_dx.dot(intersect.shading_n.0) + wo.dot(dndx.0);
+                let dDN_dy = dwo_dy.dot(intersect.shading_n.0) + wo.dot(dndy.0);
+
+                let rx_dir = (scatter.wi - dwo_dx) + 2.0 * wo.dot(intersect.shading_n.0) * dndx.0 + dDN_dx * intersect.shading_n.0;
+                let ry_dir = (scatter.wi - dwo_dy) + 2.0 * wo.dot(intersect.shading_n.0) * dndy.0 + dDN_dy * intersect.shading_n.0;
+
+                Differential {
+                    rx_origin,
+                    rx_dir,
+                    ry_origin,
+                    ry_dir
+                }
+            });
+
+            let mut ray_diff = intersect.spawn_ray_with_dfferentials(scatter.wi, diff);
+            let li = self.incident_radiance(
+                &mut ray_diff,
+                scene,
+                sampler,
+                arena,
+                depth + 1
+            );
+            return scatter.f * li * scatter.wi.dot(intersect.shading_n.0).abs() / scatter.pdf;
+        } else {
+            return Spectrum::new(0.0);
+        }
+    }
 }
 
 impl<R: IntegratorRadiance> Integrator for SamplerIntegrator<R> {
@@ -66,7 +122,7 @@ impl<R: IntegratorRadiance> Integrator for SamplerIntegrator<R> {
                         radiance = self.radiance.incident_radiance(
                             &mut ray_differential,
                             scene,
-                            tile_sampler.as_ref(),
+                            tile_sampler.as_mut(),
                             &arena,
                             0,
                         );
@@ -86,8 +142,6 @@ impl<R: IntegratorRadiance> Integrator for SamplerIntegrator<R> {
 
             film.merge_film_tile(film_tile);
         });
-
-        unimplemented!()
     }
 }
 
@@ -97,19 +151,4 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
         (tile.min.y * n_cols + tile.min.x) as u64
     }
 
-    pub fn specular_reflect(
-        ray: &mut RayDifferential,
-        intersect: &SurfaceInteraction,
-        bsdf: &Bsdf,
-        scene: &Scene,
-        sampler: &mut dyn Sampler,
-        arena: &Bump,
-        depth: u16,
-    ) -> Spectrum {
-        let wo = intersect.wo;
-        let bxdf_type = BxDFType::REFLECTION | BxDFType::SPECULAR;
-
-        let f = bsdf.sample_f(wo, sampler.get_2d(), bxdf_type);
-        unimplemented!()
-    }
 }

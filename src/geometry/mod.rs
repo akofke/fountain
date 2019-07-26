@@ -1,7 +1,7 @@
 use crate::{Vec3f, Point3f, ElementAbs};
 use cgmath::prelude::*;
 use cgmath::{Matrix4, Transform as cgTransform};
-use std::ops::Deref;
+use std::ops::{Deref, Mul};
 use crate::Float;
 
 pub mod bounds;
@@ -98,6 +98,22 @@ impl Deref for Normal3 {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl std::ops::Mul<Float> for Normal3 {
+    type Output = Self;
+
+    fn mul(self, rhs: Float) -> Self::Output {
+        Self(self.0 * rhs)
+    }
+}
+
+impl std::ops::Add<Normal3> for Normal3 {
+    type Output = Self;
+
+    fn add(self, rhs: Normal3) -> Self::Output {
+        Self(self.0 + rhs.0)
     }
 }
 
