@@ -41,15 +41,20 @@ pub fn main() {
 
     let resolution = Point2i::new(256, 256);
 
-    let camera_pos = Transform::translate((0.0, 0.0, 10000.0).into());
+//    let camera_pos = Transform::translate((0.0, 0.0, 10000.0).into());
+    let camera_tf = Transform::look_at(
+        (3.0, 3.0, 1.5).into(),
+        (0.0, 0.0, 0.0).into(),
+        (0.0, 0.0, 1.0).into()
+    );
     let camera = PerspectiveCamera::new(
-        camera_pos,
+        camera_tf,
         resolution,
         Bounds2::unit(),
         (0.0, 1.0),
-        1.0,
-        1.0,
-        60.0
+        0.0,
+        1.0e6,
+        39.0
     );
     let camera = Box::new(camera);
     let sampler = Box::new(RandomSampler::new_with_seed(1, 1));

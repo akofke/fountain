@@ -148,6 +148,12 @@ impl Transform {
         Self { t, invt }
     }
 
+    pub fn look_at(pos: Point3f, look_at: Point3f, up: Vec3f) -> Self {
+        let t = Matrix4::look_at(pos, look_at, up);
+        let t_inv = t.inverse_transform().unwrap();
+        Self::new(t, t_inv)
+    }
+
     pub fn translate(delta: Vec3f) -> Self {
         let m = Matrix4::from_translation(delta);
         let m_inv = Matrix4::from_translation(-delta);
