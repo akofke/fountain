@@ -51,11 +51,11 @@ impl<'t> Shape for Sphere<'t> {
     }
 
     fn object_to_world<T: Transformable<O>, O>(&self, t: T) -> O {
-        unimplemented!()
+        t.transform(*self.object_to_world)
     }
 
     fn world_to_object<T: Transformable<O>, O>(&self, t: T) -> O {
-        unimplemented!()
+        t.transform(*self.world_to_object)
     }
 
     #[allow(non_snake_case)]

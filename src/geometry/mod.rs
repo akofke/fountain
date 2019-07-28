@@ -76,7 +76,7 @@ impl RayDifferential {
 }
 
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Normal3(pub Vec3f);
 
 impl Normal3 {
@@ -210,6 +210,15 @@ impl Transformable for Point3f {
 impl Transformable for Normal3 {
     fn transform(&self, t: Transform) -> Self {
         t.transform_normal(self)
+    }
+}
+
+impl Transformable for Bounds3f {
+    fn transform(&self, t: Transform) -> Self {
+        self.iter_corners().fold(Bounds3f::empty(), |b, p| {
+            let pt = Transformable::<Point3f>::transform(&p, t);
+            b.join_point(pt)
+        })
     }
 }
 

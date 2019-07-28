@@ -9,7 +9,7 @@ pub struct CameraSample {
     pub time: Float
 }
 
-pub trait Camera: Sync {
+pub trait Camera: Sync + Send {
     fn generate_ray(&self, sample: CameraSample) -> (Float, Ray);
 
     fn generate_ray_differential(&self, sample: CameraSample) -> (Float, RayDifferential) {
@@ -113,7 +113,7 @@ impl Camera for PerspectiveCamera {
         let origin = Point3f::new(0.0, 0.0, 0.0);
         let dir = (p_camera - origin).normalize();
 
-        // TDOD: depth of field
+        // TODO: depth of field
 
         let time = lerp(sample.time, self.shutter_interval.0, self.shutter_interval.1);
         let ray = Ray { origin, dir, time, t_max: INFINITY };

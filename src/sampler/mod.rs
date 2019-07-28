@@ -4,7 +4,7 @@ use cgmath::EuclideanSpace;
 
 pub mod random;
 
-pub trait Sampler: Sync {
+pub trait Sampler: Sync + Send {
     fn start_pixel(&mut self, pixel: Point2i);
 
     fn start_next_sample(&mut self) -> bool;

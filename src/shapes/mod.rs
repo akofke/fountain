@@ -8,8 +8,8 @@ pub mod sphere;
 pub trait Shape: Sync + Send {
     fn object_bound(&self) -> Bounds3f;
 
-    fn world_bound(&self) -> Bounds3f {
-        unimplemented!()
+    fn world_bound(&self) -> Bounds3f where Self: Sized {
+        self.object_to_world(self.object_bound())
     }
 
     fn object_to_world<T: Transformable<O>, O>(&self, t: T) -> O where Self: Sized;

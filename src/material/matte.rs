@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use crate::texture::Texture;
+use crate::texture::{Texture, ConstantTexture};
 use crate::spectrum::Spectrum;
 use crate::material::{Material, TransportMode};
 use crate::interaction::SurfaceInteraction;
@@ -11,6 +11,14 @@ use std::sync::Arc;
 pub struct MatteMaterial {
     diffuse: Arc<dyn Texture<Spectrum>>,
     // TODO sigma, bump map
+}
+
+impl MatteMaterial {
+    pub fn constant(diffuse: Spectrum) -> Self {
+        Self {
+            diffuse: Arc::new(ConstantTexture(diffuse))
+        }
+    }
 }
 
 impl Material for MatteMaterial {

@@ -135,7 +135,6 @@ impl<F: Filter> Film<F> {
     // this satisfies the borrow checker when borrowing mutably to merge film tile, since the tile doesn't need to hold a reference
     // to the filter table and instead it is passed every time.
     pub fn add_sample_to_tile(&self, tile: &mut FilmTile, p_film: Point2f, radiance: Spectrum, sample_weight: Float) {
-        dbg!(&tile);
         let p_film_discrete = p_film - vec2(0.5, 0.5);
         let p0: Point2i = (p_film_discrete - tile.filter_radius).map(|v| v.ceil()).cast().unwrap();
         let p1: Point2i = (p_film_discrete + tile.filter_radius).map(|v| v.floor()).cast::<i32>().unwrap() + Vec2i::new(1, 1);
@@ -143,7 +142,6 @@ impl<F: Filter> Film<F> {
         let p0 = p0.max(tile.pixel_bounds.min);
         let p1 = p1.min(tile.pixel_bounds.max);
 
-        dbg!(p1 - p0);
         let mut filter_indices_x = SmallVec::<[usize; 64]>::from_elem(0, (p1.x - p0.x) as usize);
         for x in p0.x..p1.x {
             let filt_x = ((x as Float - p_film_discrete.x) * tile.inv_filter_radius.x * FILTER_TABLE_WIDTH as Float).abs();

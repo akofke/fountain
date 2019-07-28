@@ -30,6 +30,7 @@ pub mod texture;
 pub mod sampling;
 
 pub use geometry::*;
+pub use geometry::Transform;
 pub use interaction::SurfaceInteraction;
 pub use math::*;
 pub use err_float::EFloat;

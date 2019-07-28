@@ -16,13 +16,13 @@ pub trait Primitive: Sync {
     fn material(&self) -> Option<&dyn Material>;
 }
 
-pub struct GeometricPrimitive {
-    shape: Arc<dyn Shape>,  // TODO: use generic param instead?
-    material: Option<Arc<dyn Material>>,
+pub struct GeometricPrimitive<S: Shape> {
+    pub shape: S,  // TODO: use generic param instead?
+    pub material: Option<Arc<dyn Material>>,
 
 }
 
-impl Primitive for GeometricPrimitive {
+impl<'a, S: Shape> Primitive for GeometricPrimitive<S> {
     fn world_bound(&self) -> Bounds3f {
         self.shape.world_bound()
     }

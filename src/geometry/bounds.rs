@@ -5,6 +5,7 @@ use std::fmt::Error;
 use crate::geometry::Ray;
 use std::mem::swap;
 use crate::err_float::gamma;
+use arrayvec::ArrayVec;
 
 pub type Bounds2f = Bounds2<f32>;
 pub type Bounds2i = Bounds2<i32>;
@@ -23,6 +24,10 @@ impl<S: Scalar> Bounds2<S> {
             min: Point2::max_value(),
             max: Point2::min_value()
         }
+    }
+
+    pub fn unit() -> Self {
+        Self::with_bounds(Point2::new(S::zero(), S::zero()), Point2::new(S::one(), S::one()))
     }
 
     pub fn with_bounds(min: Point2<S>, max: Point2<S>) -> Self {
@@ -119,7 +124,7 @@ impl <S: Scalar> Bounds3<S> {
         )
     }
 
-    pub fn join_point(&self, point: &Point3<S>) -> Self {
+    pub fn join_point(&self, point: Point3<S>) -> Self {
         Self::with_bounds(
             Point3::new(
                 self.min.x.min(point.x),
@@ -156,6 +161,19 @@ impl <S: Scalar> Bounds3<S> {
 
     pub fn is_point(&self) -> bool {
         self.max == self.min
+    }
+
+    pub fn iter_corners(self) -> impl Iterator<Item=Point3<S>> {
+        ArrayVec::from([
+            Point3::new(self.min.x, self.min.y, self.min.z),
+            Point3::new(self.min.x, self.min.y, self.max.z),
+            Point3::new(self.min.x, self.max.y, self.min.z),
+            Point3::new(self.min.x, self.max.y, self.max.z),
+            Point3::new(self.max.x, self.min.y, self.min.z),
+            Point3::new(self.max.x, self.min.y, self.max.z),
+            Point3::new(self.max.x, self.max.y, self.min.z),
+            Point3::new(self.max.x, self.max.y, self.max.z),
+        ]).into_iter()
     }
 }
 

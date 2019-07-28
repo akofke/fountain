@@ -18,12 +18,12 @@ pub trait Integrator {
 }
 
 pub struct SamplerIntegrator<R: IntegratorRadiance> {
-    camera: Box<dyn Camera>,
-    sampler: Box<dyn Sampler>,
-    radiance: R,
+    pub camera: Box<dyn Camera>,
+    pub sampler: Box<dyn Sampler>,
+    pub radiance: R,
 }
 
-pub trait IntegratorRadiance: Sync {
+pub trait IntegratorRadiance: Sync + Send {
     fn preprocess(&mut self, scene: &Scene, sampler: &dyn Sampler);
 
     fn incident_radiance(
@@ -149,6 +149,10 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
     fn tile_id(tile: Bounds2i, sample_bounds: Bounds2i) -> u64 {
         let n_cols = sample_bounds.max.x;
         (tile.min.y * n_cols + tile.min.x) as u64
+    }
+
+    pub fn render_with_pool(&mut self, scene: &Scene, film: &Film<BoxFilter>, pool: &rayon::ThreadPool) {
+        pool.install(|| self.render(scene, film))
     }
 
 }

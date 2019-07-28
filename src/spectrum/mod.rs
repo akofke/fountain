@@ -78,6 +78,12 @@ impl From<Spectrum<RGBSpectrum>> for [Float; 3] {
     }
 }
 
+impl From<[Float; 3]> for Spectrum<RGBSpectrum> {
+    fn from(c: [Float; 3]) -> Self {
+        Self(RGBSpectrum{ c })
+    }
+}
+
 impl<S: CoefficientSpectrum> Deref for Spectrum<S> {
     type Target = S;
 

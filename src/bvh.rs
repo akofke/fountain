@@ -17,14 +17,18 @@ pub enum SplitMethod {
     SAH
 }
 
-pub struct BVH {
-    pub prims: Vec<Box<dyn Primitive>>,
+pub struct BVH<'p> {
+    pub prims: Vec<&'p dyn Primitive>,
     nodes: Vec<LinearBVHNode>
 }
 
-impl BVH {
-    pub fn build(mut prims: Vec<Box<dyn Primitive>>) -> BVH {
+impl BVH<'_> {
+    pub fn build(mut prims: Vec<&dyn Primitive>) -> BVH {
         // TODO: figure out prims type. Rc or Box?
+
+        if prims.len() == 0 {
+            return BVH { prims, nodes: Vec::new() }
+        }
 
         let mut prim_info: Vec<BVHPrimInfo> = prims.iter().enumerate().map(|(i, p)| {
             BVHPrimInfo::new(i, p.world_bound())
@@ -66,7 +70,7 @@ impl BVH {
         // and the bounding box of all centroids
         let (node_bounds, centroid_bounds) = prim_info.iter()
             .fold((Bounds3f::empty(), Bounds3f::empty()), |(node_bb, centr_bb), prim| {
-                (node_bb.join(&prim.bounds), centr_bb.join_point(&prim.centroid))
+                (node_bb.join(&prim.bounds), centr_bb.join_point(prim.centroid))
             });
 
         let n_prims = prim_info.len();
@@ -129,6 +133,10 @@ impl BVH {
     }
 
     pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+        if self.nodes.len() == 0 {
+            return None;
+        }
+
         let inverse_dir = 1.0 / ray.dir;
         let dir_is_neg = [ray.dir.x < 0.0, ray.dir.y < 0.0, ray.dir.z < 0.0];
 
@@ -146,12 +154,12 @@ impl BVH {
                         for i in 0..n_prims as usize {
                             let prim = &self.prims[first_prim_idx as usize + i];
                             interaction = prim.intersect(ray);
+                        }
 
-                            if let Some(next_node) = nodes_to_visit.pop() {
-                                current_node_index = next_node;
-                            } else {
-                                break;
-                            }
+                        if let Some(next_node) = nodes_to_visit.pop() {
+                            current_node_index = next_node;
+                        } else {
+                            break;
                         }
                     },
 
@@ -179,6 +187,10 @@ impl BVH {
     }
 
     pub fn intersect_test(&self, ray: &Ray) -> bool {
+        if self.nodes.len() == 0 {
+            return false;
+        }
+
         let inverse_dir = 1.0 / ray.dir;
         let dir_is_neg = [ray.dir.x < 0.0, ray.dir.y < 0.0, ray.dir.z < 0.0];
 
@@ -194,12 +206,12 @@ impl BVH {
                         for i in 0..n_prims as usize {
                             let prim = &self.prims[first_prim_idx as usize + i];
                             if prim.intersect_test(ray) { return true; }
+                        }
 
-                            if let Some(next_node) = nodes_to_visit.pop() {
-                                current_node_index = next_node;
-                            } else {
-                                break;
-                            }
+                        if let Some(next_node) = nodes_to_visit.pop() {
+                            current_node_index = next_node;
+                        } else {
+                            break;
                         }
                     },
 

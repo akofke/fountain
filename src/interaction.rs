@@ -6,7 +6,7 @@ use cgmath::{EuclideanSpace, InnerSpace, Matrix2, Vector2};
 use crate::reflection::bsdf::Bsdf;
 use crate::primitive::Primitive;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct HitPoint {
     pub p: Point3f,
     pub p_err: Vec3f,
@@ -146,7 +146,7 @@ impl<'i> SurfaceInteraction<'i> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct DiffGeom {
     pub dpdu: Vec3f,
     pub dpdv: Vec3f,
@@ -155,7 +155,7 @@ pub struct DiffGeom {
 }
 
 /// Partial derivatives used for texture antialiasing.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct TextureDifferentials {
     pub dpdx: Vec3f,
     pub dpdy: Vec3f,
