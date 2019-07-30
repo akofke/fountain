@@ -50,7 +50,7 @@ pub fn main() {
     let camera = PerspectiveCamera::new(
         camera_tf,
         resolution,
-        Bounds2::unit(),
+        Bounds2::whole_screen(),
         (0.0, 1.0),
         0.0,
         1.0e6,

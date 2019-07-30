@@ -30,6 +30,10 @@ impl<S: Scalar> Bounds2<S> {
         Self::with_bounds(Point2::new(S::zero(), S::zero()), Point2::new(S::one(), S::one()))
     }
 
+    pub fn whole_screen() -> Self where S: std::ops::Neg<Output=S> {
+        Self::with_bounds(Point2::new(-S::one(), -S::one()), Point2::new(S::one(), S::one()))
+    }
+
     pub fn with_bounds(min: Point2<S>, max: Point2<S>) -> Self {
         Self { min, max }
     }

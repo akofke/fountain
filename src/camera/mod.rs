@@ -77,6 +77,7 @@ pub struct PerspectiveCamera {
 }
 
 impl PerspectiveCamera {
+    // TODO: figure out why screen_window has to be [-1, 1]
     pub fn new(
         camera_to_world: Transform,
         full_resolution: Point2i,
@@ -125,9 +126,11 @@ impl Camera for PerspectiveCamera {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Bounds3f, Bounds2i};
+    use crate::{Bounds3f, Bounds2i, NEG_INFINITY, ComponentWiseExt, Vec3f};
     use crate::sampler::random::RandomSampler;
     use crate::sampler::Sampler;
+    use cgmath::num_traits::real::Real;
+    use cgmath::{Deg, assert_abs_diff_eq};
 
     #[test]
     fn test_camera_look_at() {
@@ -136,7 +139,7 @@ mod tests {
         let camera = PerspectiveCamera::new(
             camera_tf,
             res,
-            Bounds2f::unit(),
+            Bounds2f::whole_screen(),
             (0.0, 1.0),
             0.0,
             1.0,
@@ -164,7 +167,7 @@ mod tests {
         let camera = PerspectiveCamera::new(
             camera_tf,
             res,
-            Bounds2f::unit(),
+            Bounds2f::whole_screen(),
             (0.0, 1.0),
             0.0,
             1.0,
@@ -226,5 +229,55 @@ mod tests {
 
         assert!(missed_non_filling_box);
         assert!(hit_barely_box);
+    }
+
+    #[test]
+    fn test_camera_covers_fov() {
+        let pos = (0.0, 0.0, -1.0).into();
+        let camera_tf = Transform::camera_look_at(pos, (0.0, 0.0, 0.0).into(), (0.0, 1.0, 0.0).into());
+        let fov = 90.0 as Float;
+        let res = (64, 64).into();
+        let camera = PerspectiveCamera::new(
+            camera_tf,
+            res,
+            Bounds2f::whole_screen(),
+            (0.0, 1.0),
+            0.0,
+            1.0,
+            fov
+        );
+        let mut sampler = RandomSampler::new_with_seed(32, 1);
+        let px_bounds = Bounds2i::with_bounds((0, 0).into(), res);
+
+        let plane = Bounds3f::with_bounds(
+            (-100.0, -100.0, 0.0).into(),
+            (100.0, 100.0, 0.01).into()
+        );
+
+        let mut min = Point3f::new(INFINITY, INFINITY, INFINITY);
+        let mut max = Point3f::new(NEG_INFINITY, NEG_INFINITY, NEG_INFINITY);
+        for pixel in px_bounds.iter_points() {
+            sampler.start_pixel(pixel.into());
+
+            while sampler.start_next_sample() {
+                let camera_sample = sampler.get_camera_sample(pixel.into());
+                let (_t, ray) = camera.generate_ray(camera_sample);
+                let (t0, t1) = plane.intersect_test(&ray).unwrap();
+                let p = ray.at(t0);
+                min = min.min(p);
+                max = max.max(p);
+            }
+        }
+
+        let top = Point3f::new(0.0, max.y, 0.0) - pos;
+        let bottom = Point3f::new(0.0, min.y, 0.0) - pos;
+        let left = Point3f::new(min.x, 0.0, 0.0) - pos;
+        let right = Point3f::new(max.x, 0.0, 0.0) - pos;
+
+        let angle: Deg<_> = Vec3f::angle(top, bottom).into();
+        assert_abs_diff_eq!(angle, Deg(fov), epsilon = 0.01);
+
+        let angle: Deg<_> = Vec3f::angle(right, left).into();
+        assert_abs_diff_eq!(angle, Deg(fov), epsilon = 0.01);
     }
 }

@@ -4,6 +4,7 @@ use crate::err_float::MACHINE_EPSILON;
 use cgmath::{Matrix2, SquareMatrix};
 
 pub const INFINITY: Float = std::f32::INFINITY;
+pub const NEG_INFINITY: Float = std::f32::NEG_INFINITY;
 
 pub fn lerp(t: Float, v1: Float, v2: Float) -> Float {
     (1.0 - t) * v1 + t * v2

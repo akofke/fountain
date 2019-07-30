@@ -1,4 +1,5 @@
 #![feature(const_generics)]
+#![feature(type_ascription)]
 #![feature(clamp)]
 #![feature(const_fn)]
 
@@ -175,6 +176,29 @@ where S: Copy + Signed + Ord
         Point2::new(
             S::max(self.x, other.x),
             S::max(self.y, other.y),
+        )
+    }
+}
+
+impl ComponentWiseExt for cgmath::Point3<Float>
+{
+    fn abs(self) -> Self {
+        self.map(|v| v.abs())
+    }
+
+    fn min(self, other: Self) -> Self {
+        Point3::new(
+            Float::min(self.x, other.x),
+            Float::min(self.y, other.y),
+            Float::min(self.z, other.z),
+        )
+    }
+
+    fn max(self, other: Self) -> Self {
+        Point3::new(
+            Float::max(self.x, other.x),
+            Float::max(self.y, other.y),
+            Float::max(self.z, other.z),
         )
     }
 }
