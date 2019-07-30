@@ -43,6 +43,14 @@ impl<'t> Sphere<'t> {
             phi_max: phi_max.clamp(0.0, 360.0).to_radians()
         }
     }
+
+    pub fn whole(
+        object_to_world: &'t Transform,
+        world_to_object: &'t Transform,
+        radius: Float,
+    ) -> Self {
+        Self::new(object_to_world, world_to_object, false, radius, -radius, radius, 360.0)
+    }
 }
 
 impl<'t> Shape for Sphere<'t> {
@@ -175,5 +183,46 @@ impl<'t> Shape for Sphere<'t> {
 
     fn intersect_test(&self, ray: &Ray) -> bool {
         unimplemented!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::{SeedableRng, FromEntropy};
+    use crate::sampling::rejection_sample_shere;
+
+    fn shoot_ray(from: impl Into<Point3f> + Copy, to: impl Into<Point3f> + Copy) -> Ray {
+        let dir = to.into() - from.into();
+        Ray::new(from.into(), dir)
+    }
+
+    #[test]
+    fn test_whole_sphere_intersect() {
+        let o2w = Transform::translate((0.0, 0.0, 0.0).into());
+        let w2o = o2w.inverse();
+
+        let radius = 1.0;
+        let sphere = Sphere::whole(&o2w, &w2o, radius);
+
+        let orig = Point3f::new(3.0, 3.0, 3.0);
+        let mut rng = rand::rngs::SmallRng::from_seed([4; 16]);
+        for _ in 0..100 {
+            let point_in_sphere = rejection_sample_shere(&mut rng, radius);
+            let ray = shoot_ray(orig, point_in_sphere);
+
+            let hit = sphere.intersect(&ray).is_some();
+            assert!(hit, "{:?} {:?}", ray, point_in_sphere);
+        }
+
+        let orig = Point3f::new(1.0, 0.0, -2.0);
+
+        let edge_point = Point3f::new(1.0, 0.0, 0.0);
+        let ray = shoot_ray(orig, edge_point);
+        assert!(sphere.intersect(&ray).is_some());
+
+        let close_miss = Point3f::new(1.0 + 0.0001, 0.0, 0.0);
+        let ray = shoot_ray(orig, close_miss);
+        assert!(sphere.intersect(&ray).is_none());
     }
 }
