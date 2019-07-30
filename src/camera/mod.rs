@@ -2,7 +2,7 @@ use crate::{Point2f, Float, Ray, Bounds2f, Point2i, Transformable, Point3f, lerp
 use crate::geometry::Transform;
 use cgmath::InnerSpace;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct CameraSample {
     pub p_film: Point2f,
     pub p_lens: Point2f,
@@ -119,5 +119,112 @@ impl Camera for PerspectiveCamera {
         let ray = Ray { origin, dir, time, t_max: INFINITY };
         let ray = ray.transform(self.camera_to_world);
         (1.0, ray)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Bounds3f, Bounds2i};
+    use crate::sampler::random::RandomSampler;
+    use crate::sampler::Sampler;
+
+    #[test]
+    fn test_camera_look_at() {
+        let camera_tf = Transform::camera_look_at((0.0, 0.0, 0.0).into(), (0.0, 0.0, 1.0).into(), (0.0, 1.0, 0.0).into());
+        let res = (16, 16).into();
+        let camera = PerspectiveCamera::new(
+            camera_tf,
+            res,
+            Bounds2f::unit(),
+            (0.0, 1.0),
+            0.0,
+            1.0,
+            60.0
+        );
+
+        let mut sampler = RandomSampler::new_with_seed(32, 1);
+        let px_bounds = Bounds2i::with_bounds((0, 0).into(), res);
+        for pixel in px_bounds.iter_points() {
+            sampler.start_pixel(pixel.into());
+
+            while sampler.start_next_sample() {
+                let camera_sample = sampler.get_camera_sample(pixel.into());
+                let (_t, ray) = camera.generate_ray(camera_sample);
+                assert!(ray.dir.z > 0.0, format!("{:?}", ray));
+            }
+        }
+    }
+
+    #[test]
+    fn test_camera_rays() {
+        let camera_tf = Transform::camera_look_at((0.0, 0.0, -1.0).into(), (0.0, 0.0, 0.0).into(), (0.0, 1.0, 0.0).into());
+        let fov = 90.0 as Float;
+        let res = (64, 64).into();
+        let camera = PerspectiveCamera::new(
+            camera_tf,
+            res,
+            Bounds2f::unit(),
+            (0.0, 1.0),
+            0.0,
+            1.0,
+            fov
+        );
+
+        let frustum_h = dbg!(2.0 * 1.0 * Float::tan(fov.to_radians() / 2.0));
+        let half_frust = frustum_h / 2.0;
+        let visible_box = Bounds3f::with_bounds(
+            (-half_frust, -half_frust, 0.0).into(),
+            (half_frust, half_frust, 0.01).into()
+        );
+
+        let non_filling_box = Bounds3f::with_bounds(
+            (-half_frust + 0.1, -half_frust + 0.1, 0.0).into(),
+            (half_frust - 0.1, half_frust - 0.1, 0.01).into()
+        );
+
+        let behind_box = Bounds3f::with_bounds(
+            (-100.0, -100.0, -1.01).into(),
+            (100.0, 100.0, -50.0).into()
+        );
+
+        let out_of_fov_box = Bounds3f::with_bounds(
+            (half_frust + 0.1, half_frust + 0.1, 0.0).into(),
+            (100.0, 100.0, 0.1).into()
+        );
+
+        let barely_in_view_box = Bounds3f::with_bounds(
+            (half_frust - 0.1, half_frust - 1.0, 0.0).into(),
+            (100.0, 100.0, 0.1).into()
+        );
+
+        let mut sampler = RandomSampler::new_with_seed(32, 1);
+
+        let mut hit_barely_box = false;
+        let mut missed_non_filling_box = false;
+        let px_bounds = Bounds2i::with_bounds((0, 0).into(), res);
+        for pixel in px_bounds.iter_points() {
+            sampler.start_pixel(pixel.into());
+
+            while sampler.start_next_sample() {
+                let camera_sample = sampler.get_camera_sample(pixel.into());
+                let (_t, ray) = camera.generate_ray(camera_sample);
+
+                assert!(visible_box.intersect_test(&ray).is_some(), format!("{:?} {:?}", camera_sample, ray));
+                assert!(behind_box.intersect_test(&ray).is_none(), format!("{:?} {:?}", camera_sample, ray));
+                assert!(out_of_fov_box.intersect_test(&ray).is_none(), format!("{:?} {:?}", camera_sample, ray));
+
+                if barely_in_view_box.intersect_test(&ray).is_some() {
+                    hit_barely_box = true;
+                }
+
+                if non_filling_box.intersect_test(&ray).is_none() {
+                    missed_non_filling_box = true;
+                }
+            }
+        }
+
+        assert!(missed_non_filling_box);
+        assert!(hit_barely_box);
     }
 }

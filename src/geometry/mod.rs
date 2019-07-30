@@ -1,6 +1,5 @@
 use crate::{Vec3f, Point3f, ElementAbs};
-use cgmath::prelude::*;
-use cgmath::{Matrix4, Transform as cgTransform};
+use cgmath::{Matrix4, Transform as cgTransform, InnerSpace, SquareMatrix};
 use std::ops::{Deref, Mul};
 use crate::Float;
 
@@ -29,6 +28,7 @@ pub fn offset_ray_origin(p: &Point3f, p_err: &Vec3f, n: &Normal3, dir: &Vec3f) -
     po
 }
 
+#[derive(Debug)]
 pub struct Ray {
     pub origin: Point3f,
     pub dir: Vec3f,
@@ -129,7 +129,7 @@ impl From<Normal3> for Vec3f {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Transform {
     pub t: Matrix4<Float>,
     pub invt: Matrix4<Float>
@@ -149,9 +149,22 @@ impl Transform {
     }
 
     pub fn look_at(pos: Point3f, look_at: Point3f, up: Vec3f) -> Self {
-        let t = Matrix4::look_at(pos, look_at, up);
-        let t_inv = t.inverse_transform().unwrap();
-        Self::new(t, t_inv)
+        let col3 = pos.to_homogeneous();
+        let dir = (look_at - pos).normalize();
+        let right = up.normalize().cross(dir).normalize();
+        let new_up = dir.cross(right);
+
+        let col0 = right.extend(0.0);
+        let col1 = new_up.extend(0.0);
+        let col2 = dir.extend(0.0);
+
+        let mat = Matrix4::from_cols(col0, col1, col2, col3);
+        let minv = mat.inverse_transform().unwrap();
+        Self::new(minv, mat)
+    }
+
+    pub fn camera_look_at(pos: Point3f, look_at: Point3f, up: Vec3f) -> Self {
+        Self::look_at(pos, look_at, up).inverse()
     }
 
     pub fn translate(delta: Vec3f) -> Self {
@@ -170,8 +183,8 @@ impl Transform {
         let mat = Matrix4::new(
             1.0, 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, far / (far-near), -far * near / (far - near),
-            0.0, 0.0, 1.0, 0.0
+            0.0, 0.0, far / (far-near), 1.0,
+            0.0, 0.0, -far * near / (far - near), 0.0
         );
 
         let inv_tan_ang = 1.0 / (fov.to_radians() / 2.0).tan();
@@ -392,5 +405,30 @@ impl Transformable for SurfaceInteraction<'_> {
             tex_diffs: self.tex_diffs.map(|diff| diff.transform(t)),
             primitive: self.primitive
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_look_at() {
+        let pos = (0.0, 0.0, -1.0).into();
+        let tf = Transform::camera_look_at(
+            pos,
+            (0.0, 0.0, 0.0).into(),
+            (0.0, 1.0, 0.0).into(),
+        );
+//        dbg!(tf);
+        let dir = Vec3f::new(0.0, 0.0, 1.0); // positive z-axis
+        let expected = Vec3f::new(0.0, 0.0, 1.0);
+
+        let ray = Ray::new(Point3f::new(0.0, 0.0, 0.0), dir);
+
+        let world_ray = ray.transform(tf);
+
+        assert_eq!(world_ray.dir, expected);
+        assert_eq!(world_ray.origin, pos)
     }
 }

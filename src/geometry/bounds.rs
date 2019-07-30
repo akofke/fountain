@@ -228,7 +228,8 @@ mod test {
     use super::*;
     use crate::geometry::bounds::Bounds3f;
     use crate::geometry::Ray;
-    use crate::Point2i;
+    use crate::{Point2i, Point2f};
+    use cgmath::assert_abs_diff_eq;
 
     #[test]
     fn test_bounds_iter() {
@@ -270,13 +271,17 @@ mod test {
         let bounds = bounds3f!((1, 1, 1), (2, 2, 2));
         let ray = Ray::new(point3f!(0, 0, 0), vec3f!(1, 1, 1));
 
-        assert_eq!(bounds.intersect_test(&ray), Some((1.0, 2.0)));
+        let expected = Point2f::new(1.0, 2.0);
+        let actual = bounds.intersect_test(&ray).unwrap().into();
+        assert_abs_diff_eq!(expected, actual, epsilon = 0.001);
 
         // zero component
         let bounds = bounds3f!((-0.5, -0.5, -0.5), (0.5, 0.5, 0.5));
         let ray = Ray::new(point3f!(0, 0, -2), vec3f!(0, 0, 1));
 
-        assert_eq!(bounds.intersect_test(&ray), Some((1.5, 2.5)));
+        let expected = Point2f::new(1.5, 2.5);
+        let actual = bounds.intersect_test(&ray).unwrap().into();
+        assert_abs_diff_eq!(expected, actual, epsilon = 0.001);
 
         // miss
         let bounds = bounds3f!((1, 1, 1), (2, 2, 2));
@@ -289,6 +294,8 @@ mod test {
         let bounds = bounds3f!((1, 1, 1), (2, 2, 2));
         let ray = Ray::new(point3f!(1, 1, 1), vec3f!(1, 0, 0));
 
-        assert_eq!(bounds.intersect_test(&ray), Some((0.0, 1.0)));
+        let expected = Point2f::new(0.0, 1.0);
+        let actual = bounds.intersect_test(&ray).unwrap().into();
+        assert_abs_diff_eq!(expected, actual, epsilon = 0.001);
     }
 }

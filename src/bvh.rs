@@ -385,7 +385,7 @@ mod tests {
         let prim1 = MockPrim(Bounds3f::with_bounds(Point3f::new(1.0, 1.0, 1.0), Point3f::new(2.0, 2.0, 2.0)));
         let prim2 = MockPrim(Bounds3f::with_bounds(Point3f::new(1.0, -1.0, 1.0), Point3f::new(2.0, -2.0, 2.0)));
 
-        let prims: Vec<Box<dyn Primitive>> = vec![Box::new(prim1), Box::new(prim2)];
+        let prims: Vec<&dyn Primitive> = vec![&prim1, &prim2];
 
         let bvh = BVH::build(prims);
 
