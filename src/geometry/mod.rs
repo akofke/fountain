@@ -9,14 +9,14 @@ pub mod transform;
 pub use bounds::*;
 pub use transform::*;
 use crate::err_float::{gamma, next_float_up, next_float_down};
-use crate::interaction::{SurfaceInteraction, HitPoint, DiffGeom, TextureDifferentials};
+use crate::interaction::{SurfaceInteraction, SurfaceHit, DiffGeom, TextureDifferentials};
 
 pub fn distance(p1: Point3f, p2: Point3f) -> Float {
     (p1 - p2).magnitude()
 }
 
-pub fn offset_ray_origin(p: &Point3f, p_err: &Vec3f, n: &Normal3, dir: &Vec3f) -> Point3f {
-    let d = n.map(|v| v.abs()).dot(*p_err);
+pub fn offset_ray_origin(p: Point3f, p_err: Vec3f, n: Normal3, dir: Vec3f) -> Point3f {
+    let d = n.map(|v| v.abs()).dot(p_err);
     let mut offset = d * n.0;
     if dir.dot(n.0) < 0.0 {
         offset = -offset;

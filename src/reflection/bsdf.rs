@@ -30,7 +30,7 @@ impl<'a> Bsdf<'a> {
 
     pub fn new(si: &SurfaceInteraction, eta: Float) -> Self {
         let ns = si.shading_n;
-        let ng = si.n;
+        let ng = si.hit.n;
         let ss = si.shading_geom.dpdu.normalize();
         let ts = ns.cross(ss).normalize();
         let bxdfs = ArrayVec::new();

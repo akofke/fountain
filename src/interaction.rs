@@ -6,24 +6,64 @@ use cgmath::{EuclideanSpace, InnerSpace, Matrix2, Vector2};
 use crate::reflection::bsdf::Bsdf;
 use crate::primitive::Primitive;
 
+pub const SHADOW_EPSILON: Float = 0.0001;
+
 #[derive(Clone, Copy, Debug)]
-pub struct HitPoint {
+pub struct SurfaceHit {
     pub p: Point3f,
     pub p_err: Vec3f,
     pub time: Float,
+    pub n: Normal3,
 }
 
-impl HitPoint {}
+impl SurfaceHit {
+
+    pub fn spawn_ray(&self, dir: Vec3f) -> Ray {
+        let o = offset_ray_origin(self.p, self.p_err, self.n, dir);
+        Ray {
+            origin: o,
+            dir,
+            t_max: std::f32::INFINITY,
+            time: self.time,
+        }
+    }
+
+    pub fn spawn_ray_with_dfferentials(&self, dir: Vec3f, diff: Option<Differential>) -> RayDifferential {
+        let ray = self.spawn_ray(dir);
+        RayDifferential { ray, diff }
+    }
+
+    pub fn spawn_ray_to(&self, to: Point3f) -> Ray {
+        let origin = offset_ray_origin(self.p, self.p_err, self.n, to - self.p);
+        let dir = to - origin;
+        Ray {
+            origin,
+            dir,
+            t_max: 1.0 - SHADOW_EPSILON,
+            time: self.time,
+        }
+    }
+
+    pub fn spawn_ray_to_hit(&self, to: SurfaceHit) -> Ray {
+        let origin = offset_ray_origin(self.p, self.p_err, self.n, to.p - self.p);
+        let target = offset_ray_origin(to.p, to.p_err, to.n, origin - to.p);
+        let dir = target - origin;
+        Ray {
+            origin,
+            dir,
+            t_max: 1.0 - SHADOW_EPSILON,
+            time: self.time
+        }
+    }
+}
 
 pub struct SurfaceInteraction<'i> {
-    pub hit: HitPoint,
+    pub hit: SurfaceHit,
 
     /// (u, v) coordinates from the parametrization of the surface
     pub uv: Point2f,
 
     pub wo: Vec3f,
-
-    pub n: Normal3,
 
     pub geom: DiffGeom,
 
@@ -53,10 +93,9 @@ impl<'i> SurfaceInteraction<'i> {
         geom: DiffGeom,
     ) -> Self {
         Self {
-            hit: HitPoint { p, p_err, time },
+            hit: SurfaceHit { p, p_err, time, n },
             uv,
             wo,
-            n,
             geom,
 
             shading_n: n,
@@ -67,20 +106,6 @@ impl<'i> SurfaceInteraction<'i> {
         }
     }
 
-    pub fn spawn_ray(&self, dir: Vec3f) -> Ray {
-        let o = offset_ray_origin(&self.hit.p, &self.hit.p_err, &self.n, &dir);
-        Ray {
-            origin: o,
-            dir,
-            t_max: std::f32::INFINITY,
-            time: self.hit.time,
-        }
-    }
-
-    pub fn spawn_ray_with_dfferentials(&self, dir: Vec3f, diff: Option<Differential>) -> RayDifferential {
-        let ray = self.spawn_ray(dir);
-        RayDifferential { ray, diff }
-    }
 
     pub fn compute_scattering_functions<'a>(
         &mut self,
@@ -95,17 +120,17 @@ impl<'i> SurfaceInteraction<'i> {
     }
 
     fn compute_tex_differentials(&self, ray: &RayDifferential) -> Option<TextureDifferentials> {
-        let n = self.n;
+        let n = self.hit.n;
         let diff = ray.diff?;
-        let d = self.n.dot(self.hit.p.to_vec());
+        let d = self.hit.n.dot(self.hit.p.to_vec());
 
         let px = {
-            let tx = -(self.n.dot(diff.rx_origin.to_vec()) - d) / self.n.dot(diff.rx_dir);
+            let tx = -(n.dot(diff.rx_origin.to_vec()) - d) / n.dot(diff.rx_dir);
             diff.rx_origin + tx * diff.rx_dir
         };
 
         let py = {
-            let ty = -(self.n.dot(diff.ry_origin.to_vec()) - d) / self.n.dot(diff.ry_dir);
+            let ty = -(n.dot(diff.ry_origin.to_vec()) - d) / n.dot(diff.ry_dir);
             diff.ry_origin + ty * diff.ry_dir
         };
 

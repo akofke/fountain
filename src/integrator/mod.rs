@@ -76,7 +76,7 @@ pub trait IntegratorRadiance: Sync + Send {
                 }
             });
 
-            let mut ray_diff = intersect.spawn_ray_with_dfferentials(scatter.wi, diff);
+            let mut ray_diff = intersect.hit.spawn_ray_with_dfferentials(scatter.wi, diff);
             let li = self.incident_radiance(
                 &mut ray_diff,
                 scene,

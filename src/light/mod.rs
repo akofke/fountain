@@ -1,6 +1,7 @@
 use crate::{Transform, Point2f, Vec3f, Float};
-use crate::interaction::HitPoint;
+use crate::interaction::SurfaceHit;
 use crate::spectrum::Spectrum;
+use crate::scene::Scene;
 
 pub trait Light {
     const FLAGS: LightFlags;
@@ -11,7 +12,7 @@ pub trait Light {
 
     fn n_samples(&self) -> usize { 1 }
 
-    fn sample_incident_radiance(&self, reference: &HitPoint, u: Point2f) -> LiSample;
+    fn sample_incident_radiance(&self, reference: &SurfaceHit, u: Point2f) -> LiSample;
 }
 
 pub struct LiSample {
@@ -35,5 +36,12 @@ impl LightFlags {
 }
 
 pub struct VisibilityTester {
+    pub p0: SurfaceHit,
+    pub p1: SurfaceHit,
+}
 
+impl VisibilityTester {
+    pub fn unoccluded(&self, scene: &Scene) -> bool {
+        !scene.intersect_test(&self.p0.spawn_ray_to_hit(self.p1))
+    }
 }

@@ -1,7 +1,7 @@
 use crate::{Float, Point3f, Vec3f, Normal3, Bounds3f, Ray, SurfaceInteraction, ComponentWiseExt};
 use cgmath::{Matrix4, SquareMatrix, InnerSpace, Transform as cgTransform};
 use crate::err_float::gamma;
-use crate::interaction::{HitPoint, DiffGeom, TextureDifferentials};
+use crate::interaction::{SurfaceHit, DiffGeom, TextureDifferentials};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Transform {
@@ -260,10 +260,11 @@ impl Transformable for Ray {
     }
 }
 
-impl Transformable for HitPoint {
+impl Transformable for SurfaceHit {
     fn transform(&self, t: Transform) -> Self {
         let (pt, pterr) = t.tf_err_to_err(self.p, self.p_err);
-        HitPoint { p: pt, p_err: pterr, time: self.time }
+        let n = t.transform(self.n).normalize().into();
+        SurfaceHit { p: pt, p_err: pterr, time: self.time, n }
     }
 }
 
@@ -294,7 +295,6 @@ impl Transformable for SurfaceInteraction<'_> {
             hit: self.hit.transform(t),
             uv: self.uv,
             wo: t.transform(self.wo).normalize(),
-            n: self.n.transform(t).normalize().into(),
             geom: self.geom.transform(t),
 
             shading_n: self.shading_n.transform(t).normalize().into(),
