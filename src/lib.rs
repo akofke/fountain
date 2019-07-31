@@ -29,6 +29,7 @@ pub mod fresnel;
 pub mod material;
 pub mod texture;
 pub mod sampling;
+pub mod light;
 
 pub use geometry::*;
 pub use geometry::Transform;

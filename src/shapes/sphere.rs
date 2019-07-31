@@ -58,17 +58,17 @@ impl<'t> Shape for Sphere<'t> {
         bounds3f!((-self.radius, -self.radius, self.z_min), (self.radius, self.radius, self.z_max))
     }
 
-    fn object_to_world<T: Transformable<O>, O>(&self, t: T) -> O {
-        t.transform(*self.object_to_world)
+    fn object_to_world(&self) -> &Transform {
+        self.object_to_world
     }
 
-    fn world_to_object<T: Transformable<O>, O>(&self, t: T) -> O {
-        t.transform(*self.world_to_object)
+    fn world_to_object(&self) -> &Transform {
+        self.world_to_object
     }
 
     #[allow(non_snake_case)]
     fn intersect(&self, ray: &Ray) -> Option<(Float, SurfaceInteraction)> {
-        let (ray, origin_err, dir_err) = self.world_to_object(ray);
+        let (ray, (origin_err, dir_err)) = self.world_to_object().tf_exact_to_err(*ray);
 
         let ox = EFloat::with_err(ray.origin.x, origin_err.x);
         let oy = EFloat::with_err(ray.origin.y, origin_err.y);
@@ -176,7 +176,7 @@ impl<'t> Shape for Sphere<'t> {
             DiffGeom { dpdu, dpdv, dndu, dndv }
         );
 
-        let world_intersect = self.object_to_world(interact);
+        let world_intersect = self.object_to_world().transform(interact);
 
         Some((t_shape_hit.into(), world_intersect))
     }
