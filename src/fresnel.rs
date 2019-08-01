@@ -46,13 +46,14 @@ fn fresnel_conductor(cos_theta_i: Float, eta_i: Spectrum, eta_t: Spectrum, k: Sp
 
 }
 
-pub trait Fresnel {
+pub trait Fresnel: std::fmt::Debug {
 
     /// Given the cosine of the angle made by the incoming direction and the surface normal,
     /// returns the amount of light reflected by the surface.
     fn evaluate(&self, cos_i: Float) -> Spectrum;
 }
 
+#[derive(Debug)]
 pub struct FresnelConductor {
     /// incident index of refraction
     eta_i: Spectrum,
@@ -70,6 +71,7 @@ impl Fresnel for FresnelConductor {
     }
 }
 
+#[derive(Debug)]
 pub struct FresnelDielectric {
     /// incident index of refraction
     eta_i: Float,

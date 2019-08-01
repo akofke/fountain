@@ -1,13 +1,18 @@
-use crate::{EFloat, Vec2f};
+use crate::{EFloat, Vec2f, Vec3f};
 use crate::Float;
 use crate::err_float::MACHINE_EPSILON;
-use cgmath::{Matrix2, SquareMatrix};
+//use crate::ComponentWiseExt;
+use cgmath::{Matrix2, SquareMatrix, InnerSpace};
 
 pub const INFINITY: Float = std::f32::INFINITY;
 pub const NEG_INFINITY: Float = std::f32::NEG_INFINITY;
 
 pub fn lerp(t: Float, v1: Float, v2: Float) -> Float {
     (1.0 - t) * v1 + t * v2
+}
+
+pub fn abs_dot(v1: Vec3f, v2: Vec3f) -> Float {
+    v1.dot(v2).abs()
 }
 
 pub fn quadratic(a: EFloat, b: EFloat, c: EFloat) -> Option<(EFloat, EFloat)> {

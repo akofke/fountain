@@ -181,9 +181,9 @@ impl<'t> Shape for Sphere<'t> {
         Some((t_shape_hit.into(), world_intersect))
     }
 
-    fn intersect_test(&self, ray: &Ray) -> bool {
-        unimplemented!()
-    }
+//    fn intersect_test(&self, ray: &Ray) -> bool {
+//        unimplemented!()
+//    }
 }
 
 #[cfg(test)]

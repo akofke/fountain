@@ -68,7 +68,7 @@ impl<S: CoefficientSpectrum> Spectrum<S> {
 
 impl<S: CoefficientSpectrum> std::iter::Sum for Spectrum<S> {
     fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
-        iter.fold(Self::new(0.0), Mul::mul)
+        iter.fold(Self::new(0.0), Add::add)
     }
 }
 
@@ -305,5 +305,17 @@ impl<S> Add<Float> for Spectrum<S> where S: CoefficientSpectrum {
             ret[i] = self[i] + rhs;
         }
         Spectrum(ret)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_iter_sum() {
+        let spectra = vec![Spectrum::new(1.0), Spectrum::from([0.0, 1.0, 0.5])];
+        let sum: Spectrum = spectra.into_iter().sum();
+        assert_eq!(sum, Spectrum::from([1.0, 2.0, 1.5]));
     }
 }

@@ -5,6 +5,7 @@ use crate::fresnel::{Fresnel, FresnelDielectric};
 use crate::material::TransportMode;
 use cgmath::InnerSpace;
 use crate::sampling::cosine_sample_hemisphere;
+use bitflags::_core::fmt::Debug;
 
 pub mod bsdf;
 
@@ -60,7 +61,7 @@ pub struct ScatterSample {
     pub sampled_type: BxDFType
 }
 
-pub trait BxDF {
+pub trait BxDF: Debug {
 
     fn matches_flags(&self, t: BxDFType) -> bool {
         t.contains(self.get_type())
@@ -80,7 +81,7 @@ pub trait BxDF {
 }
 
 // TODO: better name
-pub trait DefaultSampleF {
+pub trait DefaultSampleF: Debug {
     fn get_type(&self) -> BxDFType;
 
     fn f(&self, wo: Vec3f, wi: Vec3f) -> Spectrum;
@@ -113,6 +114,7 @@ impl<T> BxDF for T where T: DefaultSampleF {
     }
 }
 
+#[derive(Debug)]
 pub struct LambertianReflection {
     pub r: Spectrum,
 }
@@ -127,6 +129,7 @@ impl DefaultSampleF for LambertianReflection {
     }
 }
 
+#[derive(Debug)]
 pub struct SpecularReflection<F: Fresnel> {
     r: Spectrum,
     fresnel: F
@@ -161,6 +164,7 @@ impl<F: Fresnel> BxDF for SpecularReflection<F> {
     }
 }
 
+#[derive(Debug)]
 pub struct SpecularTransmission {
     t: Spectrum,
     eta_a: Float,

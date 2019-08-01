@@ -18,7 +18,9 @@ pub trait Shape: Sync + Send {
 
     fn intersect(&self, ray: &Ray) -> Option<(Float, SurfaceInteraction)>;
 
-    fn intersect_test(&self, ray: &Ray) -> bool;
+    fn intersect_test(&self, ray: &Ray) -> bool {
+        self.intersect(ray).is_some()
+    }
 
 }
 

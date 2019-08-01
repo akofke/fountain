@@ -13,6 +13,9 @@ use raytracer::film::Film;
 use raytracer::filter::BoxFilter;
 use std::fs::File;
 use rayon::ThreadPoolBuilder;
+use raytracer::light::point::PointLight;
+use raytracer::spectrum::Spectrum;
+use raytracer::light::Light;
 
 pub fn main() {
 
@@ -28,7 +31,7 @@ pub fn main() {
         360.0
     );
 
-    let mat = MatteMaterial::constant([0.0, 1.0, 0.0].into());
+    let mat = MatteMaterial::constant([0.5, 0.5, 0.8].into());
 
     let prim = GeometricPrimitive {
         shape: sphere,
@@ -37,7 +40,10 @@ pub fn main() {
 
     let prims: Vec<&dyn Primitive> = vec![&prim];
     let bvh = BVH::build(prims);
-    let scene = Scene { primitives_aggregate: bvh };
+
+    let light = PointLight::new(Transform::translate((2.0, 2.0, 2.0).into()), Spectrum::new(5.0));
+    let lights: Vec<&dyn Light> = vec![&light];
+    let scene = Scene { primitives_aggregate: bvh, lights };
 
     let resolution = Point2i::new(256, 256);
 

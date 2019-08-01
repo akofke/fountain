@@ -115,16 +115,6 @@ impl Scalar for i32 {
     }
 }
 
-pub trait ElementAbs {
-    fn abs(&self) -> Self;
-}
-
-impl<S: Signed + Copy> ElementAbs for cgmath::Vector3<S> {
-    fn abs(&self) -> Self {
-        self.map(|v| v.abs())
-    }
-}
-
 pub trait ComponentWiseExt {
     fn abs(self) -> Self;
 

@@ -3,8 +3,10 @@ use crate::interaction::SurfaceHit;
 use crate::spectrum::Spectrum;
 use crate::scene::Scene;
 
-pub trait Light {
-    const FLAGS: LightFlags;
+pub mod point;
+
+pub trait Light: Sync {
+    fn flags(&self) -> LightFlags;
 
     fn light_to_world(&self) -> &Transform;
 

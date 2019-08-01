@@ -1,4 +1,4 @@
-use crate::{Vec3f, Point3f, ElementAbs};
+use crate::{Vec3f, Point3f};
 use cgmath::{Matrix4, Transform as cgTransform, InnerSpace, SquareMatrix};
 use std::ops::{Deref, Mul};
 use crate::Float;

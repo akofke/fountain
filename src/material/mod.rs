@@ -4,6 +4,7 @@ use crate::reflection::bsdf::Bsdf;
 
 pub mod matte;
 
+#[derive(Debug)]
 pub enum TransportMode {
     Radiance,
     Importance,
