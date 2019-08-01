@@ -31,17 +31,29 @@ pub fn main() {
         360.0
     );
 
+    let o2w = Transform::translate((0.0, 0.0, -21.0).into());
+    let w2o = o2w.inverse();
+    let ground_sphere = Sphere::whole(
+        &o2w, &w2o, 20.0
+    );
+
     let mat = MatteMaterial::constant([0.5, 0.5, 0.8].into());
+    let mat2 = MatteMaterial::constant([0.2, 0.8, 0.2].into());
 
     let prim = GeometricPrimitive {
         shape: sphere,
         material: Some(Arc::new(mat))
     };
 
-    let prims: Vec<&dyn Primitive> = vec![&prim];
+    let ground_prim = GeometricPrimitive {
+        shape: ground_sphere,
+        material: Some(Arc::new(mat2)),
+    };
+
+    let prims: Vec<&dyn Primitive> = vec![&prim, &ground_prim];
     let bvh = BVH::build(prims);
 
-    let light = PointLight::new(Transform::translate((2.0, 2.0, 2.0).into()), Spectrum::new(5.0));
+    let light = PointLight::new(Transform::translate((2.0, 2.0, 2.0).into()), Spectrum::new(50.0));
     let lights: Vec<&dyn Light> = vec![&light];
     let scene = Scene { primitives_aggregate: bvh, lights };
 
@@ -49,7 +61,7 @@ pub fn main() {
 
 //    let camera_pos = Transform::translate((0.0, 0.0, 10000.0).into());
     let camera_tf = Transform::camera_look_at(
-        (3.0, 3.0, 3.0).into(),
+        (3.0, 3.0, 1.0).into(),
         (0.0, 0.0, 0.0).into(),
         (0.0, 0.0, 1.0).into()
     );
@@ -64,7 +76,7 @@ pub fn main() {
     );
     let camera = Box::new(camera);
     let sampler = Box::new(RandomSampler::new_with_seed(1, 1));
-    let radiance = WhittedIntegrator { max_depth: 1 };
+    let radiance = WhittedIntegrator { max_depth: 3 };
     let mut integrator = SamplerIntegrator {
         sampler,
         camera,
