@@ -1,6 +1,6 @@
-use cgmath::{Point2, Vector2, Point3, Vector3};
+use cgmath::{Point2, Vector2, Point3, Vector3, MetricSpace, EuclideanSpace};
 use num::Bounded;
-use crate::{Scalar, Vec3f, Point2i, ComponentWiseExt};
+use crate::{Scalar, Vec3f, Point2i, ComponentWiseExt, Point3f, Float};
 use std::fmt::Error;
 use crate::geometry::Ray;
 use std::mem::swap;
@@ -181,9 +181,9 @@ impl <S: Scalar> Bounds3<S> {
     }
 }
 
-impl Bounds3<f32> {
+impl Bounds3<Float> {
 
-    pub fn offset(&self, p: &Point3<f32>) -> Vec3f {
+    pub fn offset(&self, p: &Point3<Float>) -> Vec3f {
         let mut o = p - self.min;
         if self.max.x > self.min.x { o.x /= self.max.x - self.min.x };
         if self.max.y > self.min.y { o.y /= self.max.y - self.min.y };
@@ -191,7 +191,13 @@ impl Bounds3<f32> {
         o
     }
 
-    pub fn intersect_test(&self, ray: &Ray) -> Option<(f32, f32)> {
+    pub fn bounding_sphere(&self) -> (Point3f, Float) {
+        let center: Point3f = Point3f::new(0.0, 0.0, 0.0) + ((self.min.to_vec() + self.max.to_vec()) / 2.0);
+        let radius = center.distance(self.max); // TODO check for empty
+        (center, radius)
+    }
+
+    pub fn intersect_test(&self, ray: &Ray) -> Option<(Float, Float)> {
         let mut t0 = 0.0f32;
         let mut t1 = ray.t_max;
 
@@ -212,7 +218,7 @@ impl Bounds3<f32> {
         Some((t0, t1))
     }
 
-    pub fn intersect_test_fast(&self, ray: &Ray) -> Option<(f32, f32)> {
+    pub fn intersect_test_fast(&self, ray: &Ray) -> Option<(Float, Float)> {
         unimplemented!();
     }
 

@@ -2,8 +2,10 @@ use crate::{Transform, Point2f, Vec3f, Float};
 use crate::interaction::SurfaceHit;
 use crate::spectrum::Spectrum;
 use crate::scene::Scene;
+use crate::bvh::BVH;
 
 pub mod point;
+pub mod distant;
 
 pub trait Light: Sync {
     fn flags(&self) -> LightFlags;
@@ -13,6 +15,8 @@ pub trait Light: Sync {
     fn world_to_light(&self) -> &Transform;
 
     fn n_samples(&self) -> usize { 1 }
+
+    fn preprocess(&mut self, scene_prims: &BVH) {}
 
     fn sample_incident_radiance(&self, reference: &SurfaceHit, u: Point2f) -> LiSample;
 }

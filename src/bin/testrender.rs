@@ -16,6 +16,7 @@ use rayon::ThreadPoolBuilder;
 use raytracer::light::point::PointLight;
 use raytracer::spectrum::Spectrum;
 use raytracer::light::Light;
+use raytracer::light::distant::DistantLight;
 
 pub fn main() {
 
@@ -54,8 +55,9 @@ pub fn main() {
     let bvh = BVH::build(prims);
 
     let light = PointLight::new(Transform::translate((2.0, 2.0, 2.0).into()), Spectrum::new(50.0));
-    let lights: Vec<&dyn Light> = vec![&light];
-    let scene = Scene { primitives_aggregate: bvh, lights };
+    let mut dist_light = DistantLight::new(Spectrum::new(1.0), (1.0, 1.0, 1.0).into());
+    let lights: Vec<&mut dyn Light> = vec![&mut dist_light];
+    let scene = Scene::new(bvh, lights);
 
     let resolution = Point2i::new(256, 256);
 

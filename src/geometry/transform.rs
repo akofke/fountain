@@ -1,5 +1,5 @@
 use crate::{Float, Point3f, Vec3f, Normal3, Bounds3f, Ray, SurfaceInteraction, ComponentWiseExt};
-use cgmath::{Matrix4, SquareMatrix, InnerSpace, Transform as cgTransform};
+use cgmath::{Matrix4, SquareMatrix, InnerSpace, Transform as cgTransform, Zero};
 use crate::err_float::gamma;
 use crate::interaction::{SurfaceHit, DiffGeom, TextureDifferentials};
 
@@ -9,14 +9,23 @@ pub struct Transform {
     pub invt: Matrix4<Float>
 }
 
+const ZERO_MAT4: Matrix4<Float> = Matrix4::new(
+    0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0
+);
+
 impl Transform {
+
+    pub const IDENTITY: Self = Transform::new(ZERO_MAT4, ZERO_MAT4);
 
     pub fn from_mat(mat: Matrix4<Float>) -> Self {
         let m_inv = mat.invert().expect("Could not invert matrix");
         Self::new(mat, m_inv)
     }
 
-    pub fn new(mat: Matrix4<Float>, mat_inv: Matrix4<Float>) -> Self {
+    pub const fn new(mat: Matrix4<Float>, mat_inv: Matrix4<Float>) -> Self {
         let t = mat;
         let invt = mat_inv;
         Self { t, invt }
@@ -63,6 +72,10 @@ impl Transform {
 
         let inv_tan_ang = 1.0 / (fov.to_radians() / 2.0).tan();
         Transform::scale(inv_tan_ang, inv_tan_ang, 1.0) * Self::from_mat(mat)
+    }
+
+    pub fn identity() -> Self {
+        Self::new(Matrix4::zero(), Matrix4::zero())
     }
 
     pub fn inverse(&self) -> Self {

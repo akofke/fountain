@@ -19,6 +19,7 @@ pub enum SplitMethod {
 
 pub struct BVH<'p> {
     pub prims: Vec<&'p dyn Primitive>,
+    pub bounds: Bounds3f,
     nodes: Vec<LinearBVHNode>
 }
 
@@ -27,7 +28,7 @@ impl BVH<'_> {
         // TODO: figure out prims type. Rc or Box?
 
         if prims.len() == 0 {
-            return BVH { prims, nodes: Vec::new() }
+            return BVH { prims, bounds: Bounds3f::empty(), nodes: Vec::new() }
         }
 
         let mut prim_info: Vec<BVHPrimInfo> = prims.iter().enumerate().map(|(i, p)| {
@@ -46,6 +47,8 @@ impl BVH<'_> {
             SplitMethod::Middle
         );
 
+        let world_bound = root.bounds();
+
         apply_permutation(&mut prims, &mut prim_ordering);
 
         let mut flat_nodes = Vec::<LinearBVHNode>::with_capacity(prims.len());
@@ -54,6 +57,7 @@ impl BVH<'_> {
 
         BVH {
             prims,
+            bounds: world_bound,
             nodes: flat_nodes
         }
     }
