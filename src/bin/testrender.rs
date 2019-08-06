@@ -21,6 +21,7 @@ use raytracer::point3f;
 use cgmath::vec3;
 use raytracer::material::mirror::MirrorMaterial;
 use raytracer::texture::ConstantTexture;
+use raytracer::material::glass::GlassMaterial;
 
 pub fn main() {
 
@@ -57,10 +58,11 @@ pub fn main() {
     let mat = Arc::new(MatteMaterial::constant([0.5, 0.5, 0.8].into()));
     let mat2 = Arc::new(MatteMaterial::constant([0.2, 0.8, 0.2].into()));
     let mat3 = Arc::new(MirrorMaterial::new(Arc::new(ConstantTexture(Spectrum::new(0.9)))));
+    let mat4 = Arc::new(GlassMaterial::constant(Spectrum::new(1.0), Spectrum::new(1.0), 1.5));
 
     let prim = GeometricPrimitive {
         shape: sphere,
-        material: Some(mat.clone())
+        material: Some(mat4.clone())
     };
 
     let prim2 = GeometricPrimitive {
@@ -100,8 +102,8 @@ pub fn main() {
         60.0
     );
     let camera = Box::new(camera);
-    let sampler = Box::new(RandomSampler::new_with_seed(1, 1));
-    let radiance = WhittedIntegrator { max_depth: 3 };
+    let sampler = Box::new(RandomSampler::new_with_seed(4, 1));
+    let radiance = WhittedIntegrator { max_depth: 4 };
     let mut integrator = SamplerIntegrator {
         sampler,
         camera,
@@ -115,7 +117,9 @@ pub fn main() {
         1.0
     );
 
-    let pool = ThreadPoolBuilder::new().num_threads(1).build().unwrap();
+    let pool = ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build().unwrap();
     integrator.render_with_pool(&scene, &film, &pool);
 
     let img = film.into_image_buffer();

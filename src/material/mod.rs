@@ -4,6 +4,7 @@ use crate::reflection::bsdf::Bsdf;
 
 pub mod matte;
 pub mod mirror;
+pub mod glass;
 
 #[derive(Debug)]
 pub enum TransportMode {
