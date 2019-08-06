@@ -1,7 +1,7 @@
 use crate::integrator::IntegratorRadiance;
 use crate::scene::Scene;
 use crate::sampler::Sampler;
-use crate::{RayDifferential, abs_dot};
+use crate::{RayDifferential, abs_dot, background};
 use bumpalo::Bump;
 use crate::spectrum::Spectrum;
 use crate::material::TransportMode;
@@ -22,7 +22,7 @@ impl IntegratorRadiance for WhittedIntegrator {
         match scene.intersect(&mut ray.ray) {
             None => {
                 // get radiance of escaping ray
-                Spectrum::new(0.0)
+                background(ray.ray.dir)
             },
 
             Some(mut intersect) => {

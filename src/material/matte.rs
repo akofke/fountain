@@ -23,7 +23,7 @@ impl MatteMaterial {
 
 impl Material for MatteMaterial {
     fn compute_scattering_functions<'a>(&self, si: &SurfaceInteraction, arena: &'a Bump, mode: TransportMode, allow_multiple_lobes: bool) -> Bsdf<'a> {
-        let mut bsdf = Bsdf::new(si, 0.0);
+        let mut bsdf = Bsdf::new(si, 1.0);
 
         let r = self.diffuse.evaluate(si).clamp_positive();
         if !r.is_black() {

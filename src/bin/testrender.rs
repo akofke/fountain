@@ -19,6 +19,8 @@ use raytracer::light::Light;
 use raytracer::light::distant::DistantLight;
 use raytracer::point3f;
 use cgmath::vec3;
+use raytracer::material::mirror::MirrorMaterial;
+use raytracer::texture::ConstantTexture;
 
 pub fn main() {
 
@@ -34,31 +36,49 @@ pub fn main() {
         360.0
     );
 
+    let o2w = Transform::translate((2.0, -2.0, 1.0).into());
+    let w2o = o2w.inverse();
+    let sphere2 = Sphere::new(
+        &o2w,
+        &w2o,
+        false,
+        1.0,
+        -1.0,
+        1.0,
+        360.0
+    );
+
     let o2w = Transform::translate((0.0, 0.0, -21.0).into());
     let w2o = o2w.inverse();
     let ground_sphere = Sphere::whole(
         &o2w, &w2o, 20.0
     );
 
-    let mat = MatteMaterial::constant([0.5, 0.5, 0.8].into());
-    let mat2 = MatteMaterial::constant([0.2, 0.8, 0.2].into());
+    let mat = Arc::new(MatteMaterial::constant([0.5, 0.5, 0.8].into()));
+    let mat2 = Arc::new(MatteMaterial::constant([0.2, 0.8, 0.2].into()));
+    let mat3 = Arc::new(MirrorMaterial::new(Arc::new(ConstantTexture(Spectrum::new(0.9)))));
 
     let prim = GeometricPrimitive {
         shape: sphere,
-        material: Some(Arc::new(mat))
+        material: Some(mat.clone())
+    };
+
+    let prim2 = GeometricPrimitive {
+        shape: sphere2,
+        material: Some(mat3.clone())
     };
 
     let ground_prim = GeometricPrimitive {
         shape: ground_sphere,
-        material: Some(Arc::new(mat2)),
+        material: Some(mat2.clone()),
     };
 
-    let prims: Vec<&dyn Primitive> = vec![&prim, &ground_prim];
+    let prims: Vec<&dyn Primitive> = vec![&prim, &ground_prim, &prim2];
     let bvh = BVH::build(prims);
 
-    let mut light = PointLight::new(Transform::translate((0.0, 0.0, 5.0).into()), Spectrum::new(50.0));
-    let mut dist_light = DistantLight::new(Spectrum::new(1.0), vec3(0.0, 0.0, 1.0));
-    let lights: Vec<&mut dyn Light> = vec![&mut dist_light];
+    let mut light = PointLight::new(Transform::translate((-1.0, -1.0, 5.0).into()), Spectrum::new(50.0));
+    let mut dist_light = DistantLight::new(Spectrum::new(1.0), vec3(1.0, 0.0, 1.0));
+    let lights: Vec<&mut dyn Light> = vec![&mut dist_light, &mut light];
 //    let lights: Vec<&mut dyn Light> = vec![&mut light];
     let scene = Scene::new(bvh, lights);
 
@@ -77,7 +97,7 @@ pub fn main() {
         (0.0, 1.0),
         0.0,
         1.0e6,
-        39.0
+        60.0
     );
     let camera = Box::new(camera);
     let sampler = Box::new(RandomSampler::new_with_seed(1, 1));

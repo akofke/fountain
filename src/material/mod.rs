@@ -3,6 +3,7 @@ use bumpalo::Bump;
 use crate::reflection::bsdf::Bsdf;
 
 pub mod matte;
+pub mod mirror;
 
 #[derive(Debug)]
 pub enum TransportMode {

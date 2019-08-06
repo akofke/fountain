@@ -44,6 +44,7 @@ use num::{Num, Bounded, Signed, NumCast};
 use num::traits::NumAssignOps;
 use std::fmt::Debug;
 use std::any::Any;
+use crate::spectrum::Spectrum;
 
 pub type Float = f32;
 
@@ -195,9 +196,9 @@ impl ComponentWiseExt for cgmath::Point3<Float>
 }
 
 
-pub fn background(dir: &Vec3f) -> Vec3f {
+pub fn background(dir: Vec3f) -> Spectrum {
     // scale so t is between 0.0 and 1.0
-    let t = 0.5 * (dir[1] + 1.0);
+    let t = 0.5 * (dir.z + 1.0);
     // linear interpolation based on t
-    (1.0 - t) * Vec3f::new(1.0, 1.0, 1.0) + t * Vec3f::new(0.5, 0.7, 1.0)
+    (1.0 - t) * Spectrum::from([1.0, 1.0, 1.0]) + t * Spectrum::from([0.5, 0.7, 1.0])
 }

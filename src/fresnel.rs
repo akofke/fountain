@@ -92,3 +92,12 @@ impl Fresnel for FresnelDielectric {
     }
 }
 
+#[derive(Debug)]
+pub struct FresnelNoOp;
+
+impl Fresnel for FresnelNoOp {
+    fn evaluate(&self, _cos_i: Float) -> Spectrum {
+        Spectrum::new(1.0)
+    }
+}
+
