@@ -6,19 +6,24 @@ use crate::interaction::SurfaceHit;
 use std::cell::Cell;
 use crate::bvh::BVH;
 use num::Zero;
+use cgmath::InnerSpace;
 
 pub struct DistantLight {
     radiance: Spectrum,
-    dir: Vec3f,
+    dir_to_light: Vec3f,
     world_center: Point3f,
     world_radius: Float,
 }
 
 impl DistantLight {
-    pub fn new(radiance: Spectrum, dir: Vec3f) -> Self {
+    pub fn from_to(from: Point3f, to: Point3f, radiance: Spectrum) -> Self {
+        Self::new(radiance, from - to)
+    }
+    pub fn new(radiance: Spectrum, dir_to_light: Vec3f) -> Self {
+        let dir_to_light = dir_to_light.normalize();
         Self {
             radiance,
-            dir,
+            dir_to_light,
             world_center: Point3f::new(0.0, 0.0, 0.0),
             world_radius: 0.0,
         }
@@ -45,8 +50,7 @@ impl Light for DistantLight {
     }
 
     fn sample_incident_radiance(&self, reference: &SurfaceHit, u: Point2f) -> LiSample {
-        // TODO: subtract or add?
-        let p_outside = reference.p + self.dir * (2.0 * self.world_radius);
+        let p_outside = reference.p + self.dir_to_light * (2.0 * self.world_radius);
 
         let p1 = SurfaceHit {
             p: p_outside,
@@ -62,7 +66,7 @@ impl Light for DistantLight {
 
         LiSample {
             radiance: self.radiance,
-            wi: self.dir,
+            wi: self.dir_to_light,
             pdf: 1.0,
             vis,
         }

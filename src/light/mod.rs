@@ -23,8 +23,12 @@ pub trait Light: Sync {
 
 pub struct LiSample {
     pub radiance: Spectrum,
+
+    /// The direction *towards* the illumination
     pub wi: Vec3f,
+
     pub pdf: Float,
+
     pub vis: VisibilityTester,
 }
 

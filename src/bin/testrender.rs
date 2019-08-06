@@ -17,6 +17,8 @@ use raytracer::light::point::PointLight;
 use raytracer::spectrum::Spectrum;
 use raytracer::light::Light;
 use raytracer::light::distant::DistantLight;
+use raytracer::point3f;
+use cgmath::vec3;
 
 pub fn main() {
 
@@ -54,9 +56,10 @@ pub fn main() {
     let prims: Vec<&dyn Primitive> = vec![&prim, &ground_prim];
     let bvh = BVH::build(prims);
 
-    let light = PointLight::new(Transform::translate((2.0, 2.0, 2.0).into()), Spectrum::new(50.0));
-    let mut dist_light = DistantLight::new(Spectrum::new(1.0), (1.0, 1.0, 1.0).into());
+    let mut light = PointLight::new(Transform::translate((0.0, 0.0, 5.0).into()), Spectrum::new(50.0));
+    let mut dist_light = DistantLight::new(Spectrum::new(1.0), vec3(0.0, 0.0, 1.0));
     let lights: Vec<&mut dyn Light> = vec![&mut dist_light];
+//    let lights: Vec<&mut dyn Light> = vec![&mut light];
     let scene = Scene::new(bvh, lights);
 
     let resolution = Point2i::new(256, 256);
