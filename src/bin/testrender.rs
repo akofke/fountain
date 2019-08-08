@@ -56,13 +56,13 @@ pub fn main() {
     );
 
     let mat = Arc::new(MatteMaterial::constant([0.5, 0.5, 0.8].into()));
-    let mat2 = Arc::new(MatteMaterial::constant([0.2, 0.8, 0.2].into()));
+    let mat2 = Arc::new(MatteMaterial::constant([0.7, 0.2, 0.2].into()));
     let mat3 = Arc::new(MirrorMaterial::new(Arc::new(ConstantTexture(Spectrum::new(0.9)))));
-    let mat4 = Arc::new(GlassMaterial::constant(Spectrum::new(1.0), Spectrum::new(1.0), 1.5));
+    let mat4 = Arc::new(GlassMaterial::constant(Spectrum::new(1.0), Spectrum::new(0.0), 1.5));
 
     let prim = GeometricPrimitive {
         shape: sphere,
-        material: Some(mat4.clone())
+        material: Some(mat3.clone())
     };
 
     let prim2 = GeometricPrimitive {
@@ -75,12 +75,19 @@ pub fn main() {
         material: Some(mat2.clone()),
     };
 
-    let prims: Vec<&dyn Primitive> = vec![&prim, &ground_prim, &prim2];
+    let prims: Vec<&dyn Primitive> = vec![
+        &prim,
+        &ground_prim,
+//        &prim2,
+    ];
     let bvh = BVH::build(prims);
 
     let mut light = PointLight::new(Transform::translate((-1.0, -1.0, 5.0).into()), Spectrum::new(50.0));
-    let mut dist_light = DistantLight::new(Spectrum::new(1.0), vec3(1.0, 0.0, 1.0));
-    let lights: Vec<&mut dyn Light> = vec![&mut dist_light, &mut light];
+    let mut dist_light = DistantLight::new(Spectrum::new(1.0), vec3(0.0, 2.0, 1.0));
+    let lights: Vec<&mut dyn Light> = vec![
+        &mut dist_light,
+//        &mut light,
+    ];
 //    let lights: Vec<&mut dyn Light> = vec![&mut light];
     let scene = Scene::new(bvh, lights);
 
@@ -88,7 +95,7 @@ pub fn main() {
 
 //    let camera_pos = Transform::translate((0.0, 0.0, 10000.0).into());
     let camera_tf = Transform::camera_look_at(
-        (3.0, 3.0, 1.0).into(),
+        (3.0, 3.0, 3.0).into(),
         (0.0, 0.0, 0.0).into(),
         (0.0, 0.0, 1.0).into()
     );
@@ -102,7 +109,7 @@ pub fn main() {
         60.0
     );
     let camera = Box::new(camera);
-    let sampler = Box::new(RandomSampler::new_with_seed(4, 1));
+    let sampler = Box::new(RandomSampler::new_with_seed(8, 1));
     let radiance = WhittedIntegrator { max_depth: 4 };
     let mut integrator = SamplerIntegrator {
         sampler,

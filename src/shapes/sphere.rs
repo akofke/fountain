@@ -1,4 +1,4 @@
-use crate::{Float, distance, Normal3, Point3f, Vec3f, Point2f};
+use crate::{Float, distance, Normal3, Point3f, Vec3f, Point2f, ComponentWiseExt};
 use crate::EFloat;
 use crate::err_float::gamma;
 use crate::interaction::DiffGeom;
@@ -7,7 +7,7 @@ use crate::geometry::{Transform, Ray, Transformable};
 use crate::shapes::Shape;
 use crate::geometry::bounds::Bounds3;
 use crate::interaction::SurfaceInteraction;
-use cgmath::{InnerSpace};
+use cgmath::{InnerSpace, EuclideanSpace};
 
 pub struct Sphere<'t> {
     object_to_world: &'t Transform,
@@ -164,7 +164,7 @@ impl<'t> Shape for Sphere<'t> {
 
         let dndv = Normal3((g * F - f * G) * invEGF2 * dpdu + (f * F - g * E) * invEGF2 * dpdv);
 
-        let p_err: Vec3f = gamma(5) * (p_hit - point3f!(0, 0, 0));
+        let p_err: Vec3f = gamma(5) * p_hit.to_vec().abs();
 
         let interact = SurfaceInteraction::new(
             p_hit,
@@ -191,6 +191,7 @@ mod tests {
     use super::*;
     use rand::{SeedableRng, FromEntropy};
     use crate::sampling::rejection_sample_shere;
+    use cgmath::assert_abs_diff_eq;
 
     fn shoot_ray(from: impl Into<Point3f> + Copy, to: impl Into<Point3f> + Copy) -> Ray {
         let dir = to.into() - from.into();
@@ -211,15 +212,21 @@ mod tests {
             let point_in_sphere = rejection_sample_shere(&mut rng, radius);
             let ray = shoot_ray(orig, point_in_sphere);
 
-            let hit = sphere.intersect(&ray).is_some();
-            assert!(hit, "{:?} {:?}", ray, point_in_sphere);
+            let isect = sphere.intersect(&ray);
+            assert!(isect.is_some(), "{:?} {:?}", ray, point_in_sphere);
+            let err = isect.unwrap().1.hit.p_err;
+            assert_abs_diff_eq!(err, Vec3f::new(0.0, 0.0, 0.0), epsilon = 0.0001);
         }
 
         let orig = Point3f::new(1.0, 0.0, -2.0);
 
         let edge_point = Point3f::new(1.0, 0.0, 0.0);
         let ray = shoot_ray(orig, edge_point);
-        assert!(sphere.intersect(&ray).is_some());
+        let isect = sphere.intersect(&ray);
+        assert!(isect.is_some());
+        let err = isect.unwrap().1.hit.p_err;
+        assert_abs_diff_eq!(err, Vec3f::new(0.0, 0.0, 0.0), epsilon = 0.0001);
+
 
         let close_miss = Point3f::new(1.0 + 0.0001, 0.0, 0.0);
         let ray = shoot_ray(orig, close_miss);

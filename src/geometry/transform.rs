@@ -140,14 +140,15 @@ impl TransformableErr for Vec3f {
         let y = self.y;
         let z = self.z;
 
-        let x_abs_sum = (m[0][0] * x).abs() + (m[0][1] * y).abs() + (m[0][2] * z).abs();
-        let y_abs_sum = (m[1][0] * x).abs() + (m[1][1] * y).abs() + (m[1][2] * z).abs();
-        let z_abs_sum = (m[2][0] * x).abs() + (m[2][1] * y).abs() + (m[2][2] * z).abs();
+        let x_abs_sum = (m[0][0] * x).abs() + (m[1][0] * y).abs() + (m[2][0] * z).abs();
+        let y_abs_sum = (m[0][1] * x).abs() + (m[1][1] * y).abs() + (m[2][1] * z).abs();
+        let z_abs_sum = (m[0][2] * x).abs() + (m[1][2] * y).abs() + (m[2][2] * z).abs();
 
         let v_error = vec3f!(x_abs_sum, y_abs_sum, z_abs_sum) * gamma(3);
         (vt, v_error)
     }
 
+    // TODO: can write partially in terms of tf_exact_to_err
     fn tf_err_to_err(&self, err: Self::Err, t: Transform) -> (Self, Self::Err) {
         let v = self;
         let verr = err;
@@ -155,16 +156,16 @@ impl TransformableErr for Vec3f {
         let m = t.t;
 
         let xerr = (gamma(3) + 1.0) *
-            (m[0][0] * verr.x).abs() + (m[0][1] * verr.y).abs() + (m[0][2] * verr.z).abs() +
-            gamma(3) * (m[0][0] * v.x).abs() + (m[0][1] * v.y).abs() + (m[0][2] * v.z).abs();
+            ((m[0][0] * verr.x).abs() + (m[1][0] * verr.y).abs() + (m[2][0] * verr.z).abs()) +
+            gamma(3) * ((m[0][0] * v.x).abs() + (m[1][0] * v.y).abs() + (m[2][0] * v.z).abs());
 
         let yerr = (gamma(3) + 1.0) *
-            (m[1][0] * verr.x).abs() + (m[1][1] * verr.y).abs() + (m[1][2] * verr.z).abs() +
-            gamma(3) * (m[1][0] * v.x).abs() + (m[1][1] * v.y).abs() + (m[1][2] * v.z).abs();
+            ((m[0][1] * verr.x).abs() + (m[1][1] * verr.y).abs() + (m[2][1] * verr.z).abs()) +
+            gamma(3) * ((m[0][1] * v.x).abs() + (m[1][1] * v.y).abs() + (m[2][1] * v.z).abs());
 
         let zerr = (gamma(3) + 1.0) *
-            (m[2][0] * verr.x).abs() + (m[2][1] * verr.y).abs() + (m[2][2] * verr.z).abs() +
-            gamma(3) * (m[2][0] * v.x).abs() + (m[2][1] * v.y).abs() + (m[2][2] * v.z).abs();
+            ((m[0][2] * verr.x).abs() + (m[1][2] * verr.y).abs() + (m[2][2] * verr.z).abs()) +
+            gamma(3) * ((m[0][2] * v.x).abs() + (m[1][2] * v.y).abs() + (m[2][2] * v.z).abs());
 
         let v_error = vec3f!(xerr, yerr, zerr);
         (vt, v_error)
@@ -185,9 +186,9 @@ impl TransformableErr for Point3f {
         let y = self.y;
         let z = self.z;
 
-        let x_abs_sum = (m[0][0] * x).abs() + (m[0][1] * y).abs() + (m[0][2] * z).abs() + m[0][3].abs();
-        let y_abs_sum = (m[1][0] * x).abs() + (m[1][1] * y).abs() + (m[1][2] * z).abs() + m[1][3].abs();
-        let z_abs_sum = (m[2][0] * x).abs() + (m[2][1] * y).abs() + (m[2][2] * z).abs() + m[2][3].abs();
+        let x_abs_sum = (m[0][0] * x).abs() + (m[1][0] * y).abs() + (m[2][0] * z).abs() + m[3][0].abs();
+        let y_abs_sum = (m[0][1] * x).abs() + (m[1][1] * y).abs() + (m[2][1] * z).abs() + m[3][1].abs();
+        let z_abs_sum = (m[0][2] * x).abs() + (m[1][2] * y).abs() + (m[2][2] * z).abs() + m[3][2].abs();
 
         let p_error = vec3f!(x_abs_sum, y_abs_sum, z_abs_sum) * gamma(3);
         (pt, p_error)
@@ -200,16 +201,16 @@ impl TransformableErr for Point3f {
         let m = t.t;
 
         let xerr = (gamma(3) + 1.0) *
-            (m[0][0] * perr.x).abs() + (m[0][1] * perr.y).abs() + (m[0][2] * perr.z).abs() +
-            gamma(3) * (m[0][0] * p.x).abs() + (m[0][1] * p.y).abs() + (m[0][2] * p.z).abs() + m[0][3].abs();
+            ((m[0][0]).abs() * perr.x + (m[1][0]).abs() * perr.y + (m[2][0]).abs() * perr.z) +
+            gamma(3) * ((m[0][0] * p.x).abs() + (m[1][0] * p.y).abs() + (m[2][0] * p.z).abs() + m[3][0].abs());
 
         let yerr = (gamma(3) + 1.0) *
-            (m[1][0] * perr.x).abs() + (m[1][1] * perr.y).abs() + (m[1][2] * perr.z).abs() +
-            gamma(3) * (m[1][0] * p.x).abs() + (m[1][1] * p.y).abs() + (m[1][2] * p.z).abs() + m[1][3].abs();
+            ((m[0][1]).abs() * perr.x + (m[1][1]).abs() * perr.y + (m[2][1]).abs() * perr.z) +
+            gamma(3) * ((m[0][1] * p.x).abs() + (m[1][1] * p.y).abs() + (m[2][1] * p.z).abs() + m[3][1].abs());
 
         let zerr = (gamma(3) + 1.0) *
-            (m[2][0] * perr.x).abs() + (m[2][1] * perr.y).abs() + (m[2][2] * perr.z).abs() +
-            gamma(3) * (m[2][0] * p.x).abs() + (m[2][1] * p.y).abs() + (m[2][2] * p.z).abs() + m[2][3].abs();
+            ((m[0][2] * perr.x).abs() + (m[1][2] * perr.y).abs() + (m[2][2] * perr.z).abs()) +
+            gamma(3) * ((m[0][2] * p.x).abs() + (m[1][2] * p.y).abs() + (m[2][2] * p.z).abs() + m[3][2].abs());
 
         let p_error = vec3f!(xerr, yerr, zerr);
         (pt, p_error)
@@ -322,6 +323,8 @@ impl Transformable for SurfaceInteraction<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use cgmath::vec3;
+    use cgmath::{assert_abs_diff_eq, assert_ulps_eq};
 
     #[test]
     fn test_look_at() {
@@ -339,7 +342,37 @@ mod tests {
 
         let world_ray = ray.transform(tf);
 
-        assert_eq!(world_ray.dir, expected);
-        assert_eq!(world_ray.origin, pos)
+        assert_abs_diff_eq!(world_ray.dir, expected, epsilon = 0.00001);
+        assert_abs_diff_eq!(world_ray.origin, pos, epsilon = 0.00001);
+    }
+
+    #[test]
+    fn test_point_transform() {
+        // translate, then scale
+        let tf = Transform::scale(2.0, 2.0, 2.0) *
+            Transform::translate(vec3(1.0, 1.0, 1.0));
+
+
+        let p = Point3f::new(1.0, 1.0, 1.0);
+        let perr = Vec3f::new(0.0001, 0.0001, 0.0001);
+        let (pt, pterr) = tf.tf_err_to_err(p, perr);
+
+        assert_abs_diff_eq!(Point3f::new(4.0, 4.0, 4.0), pt, epsilon = 0.00001);
+        assert_abs_diff_eq!(2.0 * perr, pterr, epsilon = 0.000001);
+    }
+
+    #[test]
+    fn test_vec_transform() {
+        // translate, then scale. Translate should do nothing as opposed to point.
+        let tf = Transform::scale(2.0, 2.0, 2.0) *
+            Transform::translate(vec3(1.0, 1.0, 1.0));
+
+
+        let v = Vec3f::new(1.0, 1.0, 1.0);
+        let verr = Vec3f::new(0.0001, 0.0001, 0.0001);
+        let (vt, vterr) = tf.tf_err_to_err(v, verr);
+
+        assert_abs_diff_eq!(Vec3f::new(2.0, 2.0, 2.0), vt, epsilon = 0.00001);
+        assert_abs_diff_eq!(2.0 * verr, vterr, epsilon = 0.000001);
     }
 }
