@@ -64,6 +64,13 @@ impl<S: CoefficientSpectrum> Spectrum<S> {
         }
         true
     }
+
+    pub fn has_nans(&self) -> bool {
+        for i in 0..S::N_SAMPLES {
+            if self.0[i].is_nan() { return true }
+        }
+        false
+    }
 }
 
 impl<S: CoefficientSpectrum> std::iter::Sum for Spectrum<S> {

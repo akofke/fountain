@@ -37,9 +37,21 @@ pub fn main() {
         360.0
     );
 
-    let o2w = Transform::translate((2.0, -2.0, 1.0).into());
+    let o2w = Transform::translate((2.0, 0.0, 0.0).into());
     let w2o = o2w.inverse();
     let sphere2 = Sphere::new(
+        &o2w,
+        &w2o,
+        false,
+        1.0,
+        -1.0,
+        1.0,
+        360.0
+    );
+
+    let o2w = Transform::translate((-1.0, -1.0, 0.0).into());
+    let w2o = o2w.inverse();
+    let sphere3 = Sphere::new(
         &o2w,
         &w2o,
         false,
@@ -55,35 +67,42 @@ pub fn main() {
         &o2w, &w2o, 20.0
     );
 
-    let mat = Arc::new(MatteMaterial::constant([0.5, 0.5, 0.8].into()));
-    let mat2 = Arc::new(MatteMaterial::constant([0.7, 0.2, 0.2].into()));
+    let blue = Arc::new(MatteMaterial::constant([0.2, 0.2, 0.7].into()));
+    let red = Arc::new(MatteMaterial::constant([0.7, 0.2, 0.2].into()));
+    let green = Arc::new(MatteMaterial::constant([0.2, 0.7, 0.2].into()));
     let mat3 = Arc::new(MirrorMaterial::new(Arc::new(ConstantTexture(Spectrum::new(0.9)))));
     let mat4 = Arc::new(GlassMaterial::constant(Spectrum::new(1.0), Spectrum::new(0.0), 1.5));
 
     let prim = GeometricPrimitive {
         shape: sphere,
-        material: Some(mat3.clone())
+        material: Some(mat4.clone())
     };
 
     let prim2 = GeometricPrimitive {
         shape: sphere2,
-        material: Some(mat3.clone())
+        material: Some(green.clone())
+    };
+
+    let prim3 = GeometricPrimitive {
+        shape: sphere3,
+        material: Some(blue.clone())
     };
 
     let ground_prim = GeometricPrimitive {
         shape: ground_sphere,
-        material: Some(mat2.clone()),
+        material: Some(red.clone()),
     };
 
     let prims: Vec<&dyn Primitive> = vec![
         &prim,
         &ground_prim,
-//        &prim2,
+        &prim2,
+        &prim3,
     ];
     let bvh = BVH::build(prims);
 
-    let mut light = PointLight::new(Transform::translate((-1.0, -1.0, 5.0).into()), Spectrum::new(50.0));
-    let mut dist_light = DistantLight::new(Spectrum::new(1.0), vec3(0.0, 2.0, 1.0));
+    let mut light = PointLight::new(Transform::translate((0.0, 0.0, 3.0).into()), Spectrum::new(10.0));
+    let mut dist_light = DistantLight::new(Spectrum::new(1.0), vec3(3.0, 3.0, 3.0));
     let lights: Vec<&mut dyn Light> = vec![
         &mut dist_light,
 //        &mut light,
@@ -91,11 +110,11 @@ pub fn main() {
 //    let lights: Vec<&mut dyn Light> = vec![&mut light];
     let scene = Scene::new(bvh, lights);
 
-    let resolution = Point2i::new(256, 256);
+    let resolution = Point2i::new(512, 512);
 
 //    let camera_pos = Transform::translate((0.0, 0.0, 10000.0).into());
     let camera_tf = Transform::camera_look_at(
-        (3.0, 3.0, 3.0).into(),
+        (0.0, 4.0, 4.0).into(),
         (0.0, 0.0, 0.0).into(),
         (0.0, 0.0, 1.0).into()
     );
@@ -125,7 +144,7 @@ pub fn main() {
     );
 
     let pool = ThreadPoolBuilder::new()
-        .num_threads(1)
+//        .num_threads(1)
         .build().unwrap();
     integrator.render_with_pool(&scene, &film, &pool);
 

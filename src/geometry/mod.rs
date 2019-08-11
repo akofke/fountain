@@ -78,7 +78,7 @@ impl RayDifferential {
 }
 
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Normal3(pub Vec3f);
 
 impl Normal3 {

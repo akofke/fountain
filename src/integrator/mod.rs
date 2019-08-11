@@ -126,7 +126,8 @@ impl<R: IntegratorRadiance> Integrator for SamplerIntegrator<R> {
                             &arena,
                             0,
                         );
-                        // TODO: check value
+
+                        check_radiance(&radiance, pixel);
                     }
 
                     film.add_sample_to_tile(
@@ -155,4 +156,8 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
         pool.install(|| self.render(scene, film))
     }
 
+}
+
+fn check_radiance(l: &Spectrum, pixel: (i32, i32)) {
+    assert!(!l.has_nans(), "NaN radiance value for pixel {:?}", pixel);
 }

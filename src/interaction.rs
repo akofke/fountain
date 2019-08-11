@@ -8,7 +8,7 @@ use crate::primitive::Primitive;
 
 pub const SHADOW_EPSILON: Float = 0.0001;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SurfaceHit {
     pub p: Point3f,
     pub p_err: Vec3f,
@@ -171,7 +171,7 @@ impl<'i> SurfaceInteraction<'i> {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DiffGeom {
     pub dpdu: Vec3f,
     pub dpdv: Vec3f,
@@ -180,7 +180,7 @@ pub struct DiffGeom {
 }
 
 /// Partial derivatives used for texture antialiasing.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TextureDifferentials {
     pub dpdx: Vec3f,
     pub dpdy: Vec3f,

@@ -157,7 +157,7 @@ impl BVH<'_> {
                     LinearNodeKind::Leaf {first_prim_idx, n_prims} => {
                         for i in 0..n_prims as usize {
                             let prim = &self.prims[first_prim_idx as usize + i];
-                            interaction = prim.intersect(ray);
+                            interaction = prim.intersect(ray); // FIXME
                         }
 
                         if let Some(next_node) = nodes_to_visit.pop() {
@@ -355,6 +355,14 @@ mod tests {
     use super::*;
     use pretty_assertions as pa;
     use crate::material::Material;
+    use crate::shapes::sphere::Sphere;
+    use crate::Transform;
+    use cgmath::{vec3, Vector3};
+    use rand::{thread_rng, Rng};
+    use rand::distributions::{Standard, UnitSphereSurface};
+    use crate::primitive::GeometricPrimitive;
+    use crate::sampling::rejection_sample_shere;
+    use rand::prelude::*;
 
     #[test]
     fn test_permutation() {
@@ -418,5 +426,78 @@ mod tests {
         let expected_tree = vec![node1, node2, node3];
 
         pa::assert_eq!(bvh.nodes, expected_tree);
+    }
+
+    #[test]
+    fn test_bvh_intersect() {
+        let o2w = Transform::translate(vec3(5.0, 5.0, 5.0));
+        let sphere1 = Sphere::whole(&o2w, &o2w.inverse(), 1.0);
+
+        let o2w = Transform::translate(vec3(5.0, 5.0, -5.0));
+        let sphere2 = Sphere::whole(&o2w, &o2w.inverse(), 1.0);
+
+        let o2w = Transform::translate(vec3(5.0, -5.0, -5.0));
+        let sphere3 = Sphere::whole(&o2w, &o2w.inverse(), 1.0);
+
+        let o2w = Transform::translate(vec3(-5.0, -5.0, -5.0));
+        let sphere4 = Sphere::whole(&o2w, &o2w.inverse(), 1.0);
+    }
+
+    #[test]
+    fn test_bvh_intersect_many_nodes() {
+        let mut rng = thread_rng();
+        let tfs: Vec<(Transform, Transform)> = rng.sample_iter(&Standard)
+            .take(100)
+            .map(|v: Vec3f| {
+                let v = v * 10.0;
+                let o2w = Transform::translate(v);
+                (o2w, o2w.inverse())
+            })
+            .collect();
+
+        let prims: Vec<GeometricPrimitive<Sphere>> = tfs.iter()
+            .map(|(o2w, w2o)| {
+                let sphere = Sphere::whole(o2w, w2o, rng.gen_range(0.5, 5.0));
+                GeometricPrimitive { shape: sphere, material: None }
+            })
+            .collect();
+
+        let mut prim_refs: Vec<&dyn Primitive> = vec![];
+        for p in &prims {
+            prim_refs.push(p);
+        }
+
+        let bvh = BVH::build(prim_refs.clone());
+
+        let mut sphere_surf = UnitSphereSurface::new();
+        for _ in 0..100 {
+            let dir = sphere_surf.sample(&mut rng);
+            let dir: Vec3f = Vector3::from(dir).cast().unwrap();
+            let mut ray = Ray::new((0.0, 0.0, 0.0).into(), dir);
+
+            let mut bvh_ray = ray.clone();
+            let bvh_isect_test = bvh.intersect_test(&bvh_ray);
+            let bvh_isect = bvh.intersect(&mut bvh_ray);
+
+            let expected_test = intersect_test_list(&ray, &prim_refs);
+            let expected_isect = intersect_list(&mut ray, &prim_refs);
+
+            assert_eq!(bvh_isect_test, expected_test);
+            assert_eq!(bvh_isect.map(|i| i.hit), expected_isect.map(|i| i.hit));
+        }
+    }
+
+    fn intersect_test_list(ray: &Ray, prims: &[&dyn Primitive]) -> bool {
+        prims.iter().any(|prim| {
+            prim.intersect_test(ray)
+        })
+    }
+
+    fn intersect_list<'p>(ray: &mut Ray, prims: &'p [&dyn Primitive]) -> Option<SurfaceInteraction<'p>> {
+        let mut isect = None;
+        for prim in prims {
+            isect = prim.intersect(ray).or(isect);
+        }
+        isect
     }
 }
