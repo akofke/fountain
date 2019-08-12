@@ -448,7 +448,7 @@ mod tests {
     fn test_bvh_intersect_many_nodes() {
         let mut rng = StdRng::from_seed([3; 32]);
         let distr = Uniform::new_inclusive(-10.0, 10.0);
-        let tfs: Vec<(Transform, Transform)> = (0..100)
+        let tfs: Vec<(Transform, Transform)> = (0..5)
             .map(|_| {
                 let v = Vec3f::new(rng.sample(distr), rng.sample(distr), rng.sample(distr));
                 let o2w = Transform::translate(v);
@@ -471,7 +471,7 @@ mod tests {
         let bvh = BVH::build(prim_refs.clone());
 
         let mut sphere_surf = UnitSphereSurface::new();
-        for _ in 0..100 {
+        for i in 0..100 {
             let dir = sphere_surf.sample(&mut rng);
             let dir: Vec3f = Vector3::from(dir).cast().unwrap();
             let mut ray = Ray::new((0.0, 0.0, 0.0).into(), dir);
@@ -483,10 +483,10 @@ mod tests {
             let expected_test = intersect_test_list(&ray, &prim_refs);
             let expected_isect = intersect_list(&mut ray, &prim_refs);
 
-            assert_eq!(expected_test, expected_isect.is_some());
-            assert_eq!(bvh_isect_test, bvh_isect.is_some());
-            assert_eq!(bvh_isect_test, expected_test);
-            assert_eq!(bvh_isect.map(|i| i.hit), expected_isect.map(|i| i.hit));
+            assert_eq!(expected_test, expected_isect.is_some(), "Iteration {}", i);
+            assert_eq!(bvh_isect_test, bvh_isect.is_some(), "Iteration {}", i);
+            assert_eq!(bvh_isect.map(|i| i.hit), expected_isect.map(|i| i.hit), "Iteration {}", i);
+            assert_eq!(bvh_isect_test, expected_test, "Iteration {}", i);
         }
     }
 
