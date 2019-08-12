@@ -53,8 +53,8 @@ impl BVH<'_> {
 
         let mut flat_nodes = Vec::<LinearBVHNode>::with_capacity(prims.len());
 
-        Self::flatten_tree(&mut flat_nodes, root, 0);
-
+        let tree_len = Self::flatten_tree(&mut flat_nodes, root);
+        assert_eq!(flat_nodes.len(), tree_len);
         BVH {
             prims,
             bounds: world_bound,
@@ -113,7 +113,7 @@ impl BVH<'_> {
     }
 
     // Returns subtree length
-    fn flatten_tree(flat_nodes: &mut Vec<LinearBVHNode>, node: &BVHBuildNode, idx: usize) -> usize {
+    fn flatten_tree(flat_nodes: &mut Vec<LinearBVHNode>, node: &BVHBuildNode) -> usize {
         let subtree_len = match node {
             &BVHBuildNode::Leaf {bounds, first_prim_idx, n_prims} => {
                 let leaf = LinearBVHNode::new_leaf(bounds, first_prim_idx, n_prims);
@@ -124,14 +124,17 @@ impl BVH<'_> {
             &BVHBuildNode::Interior {bounds, children, split_axis} => {
                 let interior = LinearBVHNode::new_interior(bounds, 0, split_axis);
                 flat_nodes.push(interior);
-                let interior_idx = flat_nodes.len() - 1;
-                let first_subtree_len = Self::flatten_tree(flat_nodes, children[0], idx + 1);
-                let second_idx = idx + first_subtree_len + 1;
-                if let LinearNodeKind::Interior {ref mut second_child_idx, ..} = flat_nodes[interior_idx].kind {
+                let my_idx = flat_nodes.len() - 1;
+                let first_subtree_len = Self::flatten_tree(flat_nodes, children[0]);
+                let second_idx = my_idx + first_subtree_len + 1;
+                if let LinearNodeKind::Interior {ref mut second_child_idx, ..} = flat_nodes[my_idx].kind {
                     *second_child_idx = second_idx as u32;
                 } else { unreachable!() } // unchecked?
 
-                first_subtree_len + Self::flatten_tree(flat_nodes, children[1], second_idx)
+                let second_subtree_len = Self::flatten_tree(flat_nodes, children[1]);
+                // The length of this subtree is the length of this interior node's child subtrees
+                // plus one for this node
+                first_subtree_len + second_subtree_len + 1
             }
         };
         subtree_len
@@ -158,7 +161,10 @@ impl BVH<'_> {
                     LinearNodeKind::Leaf {first_prim_idx, n_prims} => {
                         for i in 0..n_prims as usize {
                             let prim = &self.prims[first_prim_idx as usize + i];
-                            interaction = prim.intersect(ray).or(interaction); // FIXME
+                            // sets the variable to be the new (closer, because of the ray t value)
+                            // interaction if intersect is Some, or keeps the current interaction
+                            // if intersect returns None.
+                            interaction = prim.intersect(ray).or(interaction);
                         }
 
                         if let Some(next_node) = nodes_to_visit.pop() {
@@ -448,7 +454,7 @@ mod tests {
     fn test_bvh_intersect_many_nodes() {
         let mut rng = StdRng::from_seed([3; 32]);
         let distr = Uniform::new_inclusive(-10.0, 10.0);
-        let tfs: Vec<(Transform, Transform)> = (0..5)
+        let tfs: Vec<(Transform, Transform)> = (0..100)
             .map(|_| {
                 let v = Vec3f::new(rng.sample(distr), rng.sample(distr), rng.sample(distr));
                 let o2w = Transform::translate(v);
@@ -458,7 +464,7 @@ mod tests {
 
         let prims: Vec<GeometricPrimitive<Sphere>> = tfs.iter()
             .map(|(o2w, w2o)| {
-                let sphere = Sphere::whole(o2w, w2o, rng.gen_range(0.5, 5.0));
+                let sphere = Sphere::whole(o2w, w2o, rng.gen_range(0.5, 3.0));
                 GeometricPrimitive { shape: sphere, material: None }
             })
             .collect();
@@ -471,7 +477,7 @@ mod tests {
         let bvh = BVH::build(prim_refs.clone());
 
         let mut sphere_surf = UnitSphereSurface::new();
-        for i in 0..100 {
+        for i in 0..500 {
             let dir = sphere_surf.sample(&mut rng);
             let dir: Vec3f = Vector3::from(dir).cast().unwrap();
             let mut ray = Ray::new((0.0, 0.0, 0.0).into(), dir);
