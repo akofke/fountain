@@ -124,9 +124,10 @@ impl BVH<'_> {
             &BVHBuildNode::Interior {bounds, children, split_axis} => {
                 let interior = LinearBVHNode::new_interior(bounds, 0, split_axis);
                 flat_nodes.push(interior);
+                let interior_idx = flat_nodes.len() - 1;
                 let first_subtree_len = Self::flatten_tree(flat_nodes, children[0], idx + 1);
                 let second_idx = idx + first_subtree_len + 1;
-                if let LinearNodeKind::Interior {ref mut second_child_idx, ..} = flat_nodes[idx].kind {
+                if let LinearNodeKind::Interior {ref mut second_child_idx, ..} = flat_nodes[interior_idx].kind {
                     *second_child_idx = second_idx as u32;
                 } else { unreachable!() } // unchecked?
 
@@ -157,7 +158,7 @@ impl BVH<'_> {
                     LinearNodeKind::Leaf {first_prim_idx, n_prims} => {
                         for i in 0..n_prims as usize {
                             let prim = &self.prims[first_prim_idx as usize + i];
-                            interaction = prim.intersect(ray); // FIXME
+                            interaction = prim.intersect(ray).or(interaction); // FIXME
                         }
 
                         if let Some(next_node) = nodes_to_visit.pop() {
@@ -359,7 +360,7 @@ mod tests {
     use crate::Transform;
     use cgmath::{vec3, Vector3};
     use rand::{thread_rng, Rng};
-    use rand::distributions::{Standard, UnitSphereSurface};
+    use rand::distributions::{Standard, UnitSphereSurface, Uniform};
     use crate::primitive::GeometricPrimitive;
     use crate::sampling::rejection_sample_shere;
     use rand::prelude::*;
@@ -445,11 +446,11 @@ mod tests {
 
     #[test]
     fn test_bvh_intersect_many_nodes() {
-        let mut rng = thread_rng();
-        let tfs: Vec<(Transform, Transform)> = rng.sample_iter(&Standard)
-            .take(100)
-            .map(|v: Vec3f| {
-                let v = v * 10.0;
+        let mut rng = StdRng::from_seed([3; 32]);
+        let distr = Uniform::new_inclusive(-10.0, 10.0);
+        let tfs: Vec<(Transform, Transform)> = (0..100)
+            .map(|_| {
+                let v = Vec3f::new(rng.sample(distr), rng.sample(distr), rng.sample(distr));
                 let o2w = Transform::translate(v);
                 (o2w, o2w.inverse())
             })
@@ -482,6 +483,8 @@ mod tests {
             let expected_test = intersect_test_list(&ray, &prim_refs);
             let expected_isect = intersect_list(&mut ray, &prim_refs);
 
+            assert_eq!(expected_test, expected_isect.is_some());
+            assert_eq!(bvh_isect_test, bvh_isect.is_some());
             assert_eq!(bvh_isect_test, expected_test);
             assert_eq!(bvh_isect.map(|i| i.hit), expected_isect.map(|i| i.hit));
         }
