@@ -70,12 +70,12 @@ pub fn main() {
     let blue = Arc::new(MatteMaterial::constant([0.2, 0.2, 0.7].into()));
     let red = Arc::new(MatteMaterial::constant([0.7, 0.2, 0.2].into()));
     let green = Arc::new(MatteMaterial::constant([0.2, 0.7, 0.2].into()));
-    let mat3 = Arc::new(MirrorMaterial::new(Arc::new(ConstantTexture(Spectrum::new(0.9)))));
-    let mat4 = Arc::new(GlassMaterial::constant(Spectrum::new(1.0), Spectrum::new(0.0), 1.5));
+    let mirror = Arc::new(MirrorMaterial::new(Arc::new(ConstantTexture(Spectrum::new(0.9)))));
+    let glass = Arc::new(GlassMaterial::constant(Spectrum::new(0.9), Spectrum::new(0.0), 1.5));
 
     let prim = GeometricPrimitive {
         shape: sphere,
-        material: Some(mat4.clone())
+        material: Some(glass.clone())
     };
 
     let prim2 = GeometricPrimitive {
@@ -105,7 +105,7 @@ pub fn main() {
     let mut dist_light = DistantLight::new(Spectrum::new(1.0), vec3(3.0, 3.0, 3.0));
     let lights: Vec<&mut dyn Light> = vec![
         &mut dist_light,
-//        &mut light,
+        &mut light,
     ];
 //    let lights: Vec<&mut dyn Light> = vec![&mut light];
     let scene = Scene::new(bvh, lights);

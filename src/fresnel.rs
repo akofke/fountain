@@ -2,10 +2,11 @@ use crate::Float;
 use crate::spectrum::Spectrum;
 
 fn fresnel_dielectric(cos_theta_i: Float, mut eta_i: Float, mut eta_t: Float) -> Float {
-    let cos_theta_i = cos_theta_i.clamp(-1.0, 1.0);
-    let entering = cos_theta_i > 1.0;
+    let mut cos_theta_i = cos_theta_i.clamp(-1.0, 1.0);
+    let entering = cos_theta_i > 0.0;
     if !entering {
-        std::mem::swap(&mut eta_i, &mut eta_t)
+        std::mem::swap(&mut eta_i, &mut eta_t);
+        cos_theta_i = cos_theta_i.abs();
     }
 
     // compute cos_theta_t using snell's law
@@ -98,6 +99,20 @@ pub struct FresnelNoOp;
 impl Fresnel for FresnelNoOp {
     fn evaluate(&self, _cos_i: Float) -> Spectrum {
         Spectrum::new(1.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fresnel_dielectric() {
+        let fresnel = FresnelDielectric::new(1.0, 1.5);
+        // arbitrary values taken from pbrt as ground truth
+        let cos_theta_wi = 0.087642014;
+        let expected = Spectrum::new(0.611180067);
+        assert_eq!(fresnel.evaluate(cos_theta_wi), expected)
     }
 }
 
