@@ -37,7 +37,7 @@ pub fn main() {
         360.0
     );
 
-    let o2w = Transform::translate((2.0, 0.0, 0.0).into());
+    let o2w = Transform::translate((2.0, 1.0, 0.0).into());
     let w2o = o2w.inverse();
     let sphere2 = Sphere::new(
         &o2w,
@@ -49,7 +49,7 @@ pub fn main() {
         360.0
     );
 
-    let o2w = Transform::translate((-1.0, -1.0, 0.0).into());
+    let o2w = Transform::translate((0.0, -2.0, 0.0).into());
     let w2o = o2w.inverse();
     let sphere3 = Sphere::new(
         &o2w,
@@ -71,7 +71,7 @@ pub fn main() {
     let red = Arc::new(MatteMaterial::constant([0.7, 0.2, 0.2].into()));
     let green = Arc::new(MatteMaterial::constant([0.2, 0.7, 0.2].into()));
     let mirror = Arc::new(MirrorMaterial::new(Arc::new(ConstantTexture(Spectrum::new(0.9)))));
-    let glass = Arc::new(GlassMaterial::constant(Spectrum::new(0.9), Spectrum::new(0.0), 1.5));
+    let glass = Arc::new(GlassMaterial::constant(Spectrum::new(1.0), Spectrum::new(1.0), 1.1));
 
     let prim = GeometricPrimitive {
         shape: sphere,

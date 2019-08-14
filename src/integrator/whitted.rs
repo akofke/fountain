@@ -58,6 +58,7 @@ impl IntegratorRadiance for WhittedIntegrator {
 
                     if depth + 1 < self.max_depth {
                         radiance += self.specular_reflect(ray, &intersect, &bsdf, scene, sampler, arena, depth);
+                        radiance += self.specular_transmit(ray, &intersect, &bsdf, scene, sampler, arena, depth);
                     }
                 } else {
                     unimplemented!()

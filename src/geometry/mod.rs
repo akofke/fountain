@@ -111,11 +111,27 @@ impl std::ops::Mul<Float> for Normal3 {
     }
 }
 
+impl std::ops::Mul<Normal3> for Float {
+    type Output = Normal3;
+
+    fn mul(self, rhs: Normal3) -> Self::Output {
+        Normal3(self * rhs.0)
+    }
+}
+
 impl std::ops::Add<Normal3> for Normal3 {
     type Output = Self;
 
     fn add(self, rhs: Normal3) -> Self::Output {
         Self(self.0 + rhs.0)
+    }
+}
+
+impl std::ops::Neg for Normal3 {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self(-self.0)
     }
 }
 

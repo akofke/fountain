@@ -4,12 +4,12 @@ use crate::filter::BoxFilter;
 use crate::sampler::Sampler;
 use crate::scene::Scene;
 use crate::spectrum::{RGBSpectrum, Spectrum};
-use crate::{Bounds2i, Float, RayDifferential, SurfaceInteraction, Normal3, Differential};
+use crate::{Bounds2i, Float, RayDifferential, SurfaceInteraction, Normal3, Differential, abs_dot, Vec3f};
 use bumpalo::Bump;
 use rayon::prelude::*;
 use crate::reflection::bsdf::Bsdf;
 use crate::reflection::BxDFType;
-use cgmath::InnerSpace;
+use cgmath::{InnerSpace, Array};
 
 pub mod whitted;
 
@@ -50,6 +50,11 @@ pub trait IntegratorRadiance: Sync + Send {
         let bxdf_type = BxDFType::REFLECTION | BxDFType::SPECULAR;
 
         if let Some(scatter) = bsdf.sample_f(wo, sampler.get_2d(), bxdf_type) {
+
+            if abs_dot(scatter.wi, intersect.shading_n.0) == 0.0 {
+                return Spectrum::new(0.0);
+            }
+
             let diff = ray.diff.map(|diff| {
                 let tex_diff = intersect.tex_diffs.unwrap(); // TODO make this cleaner. It must have them at this point
                 let rx_origin = intersect.hit.p + tex_diff.dpdx;
@@ -84,6 +89,89 @@ pub trait IntegratorRadiance: Sync + Send {
                 arena,
                 depth + 1
             );
+            // TODO check for 0 abs_dot
+            return scatter.f * li * scatter.wi.dot(intersect.shading_n.0).abs() / scatter.pdf;
+        } else {
+            return Spectrum::new(0.0);
+        }
+    }
+
+    #[allow(non_snake_case)]
+    fn specular_transmit(
+        &self,
+        ray: &mut RayDifferential,
+        intersect: &SurfaceInteraction,
+        bsdf: &Bsdf,
+        scene: &Scene,
+        sampler: &mut dyn Sampler,
+        arena: &Bump,
+        depth: u16,
+    ) -> Spectrum {
+        let wo = intersect.wo;
+        let bxdf_type = BxDFType::TRANSMISSION | BxDFType::SPECULAR;
+
+        if let Some(scatter) = bsdf.sample_f(wo, sampler.get_2d(), bxdf_type) {
+
+            if abs_dot(scatter.wi, intersect.shading_n.0) == 0.0 {
+                return Spectrum::new(0.0);
+            }
+
+            let diff = ray.diff.map(|diff| {
+                let tex_diff = intersect.tex_diffs.unwrap(); // TODO make this cleaner. It must have them at this point
+                let rx_origin = intersect.hit.p + tex_diff.dpdx;
+                let ry_origin = intersect.hit.p + tex_diff.dpdy;
+
+                let shading = intersect.shading_geom;
+                let mut dndx = shading.dndu * tex_diff.dudx + shading.dndv * tex_diff.dvdx;
+                let mut dndy = shading.dndu * tex_diff.dudy + shading.dndv * tex_diff.dvdy;
+                let mut shading_n = intersect.shading_n;
+
+                // first assume the ray is entering the object and compute relative IOR
+                let mut eta = 1.0 / bsdf.eta;
+                if wo.dot(intersect.shading_n.0) < 0.0 {
+                    eta = bsdf.eta;
+                    shading_n = -shading_n;
+                    dndx = -dndx;
+                    dndy = -dndy;
+                }
+
+                let dwo_dx = -diff.rx_dir - wo;
+                let dwo_dy = -diff.ry_dir - wo;
+
+                let dDN_dx = dwo_dx.dot(intersect.shading_n.0) + wo.dot(dndx.0);
+                let dDN_dy = dwo_dy.dot(intersect.shading_n.0) + wo.dot(dndy.0);
+
+                let mu = eta * wo.dot(shading_n.0) - abs_dot(scatter.wi, shading_n.0);
+                let dmu_dx =
+                    (eta -
+                        (eta * eta * wo.dot(shading_n.0)) / scatter.wi.dot(shading_n.0))
+                        * dDN_dx;
+
+                let dmu_dy =
+                    (eta -
+                        (eta * eta * wo.dot(shading_n.0)) / scatter.wi.dot(shading_n.0))
+                        * dDN_dy;
+
+                let rx_dir = scatter.wi - (eta * dwo_dx) + (mu * dndx + dmu_dx * shading_n).0;
+                let ry_dir = scatter.wi - (eta * dwo_dy) + (mu * dndy + dmu_dy * shading_n).0;
+
+                Differential {
+                    rx_origin,
+                    rx_dir,
+                    ry_origin,
+                    ry_dir
+                }
+            });
+
+            let mut ray_diff = intersect.hit.spawn_ray_with_dfferentials(scatter.wi, diff);
+            let li = self.incident_radiance(
+                &mut ray_diff,
+                scene,
+                sampler,
+                arena,
+                depth + 1
+            );
+            // TODO check for 0 abs_dot
             return scatter.f * li * scatter.wi.dot(intersect.shading_n.0).abs() / scatter.pdf;
         } else {
             return Spectrum::new(0.0);
