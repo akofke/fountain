@@ -1,13 +1,14 @@
-use crate::{Float, distance, Normal3, Point3f, Vec3f, Point2f, ComponentWiseExt};
+use cgmath::{EuclideanSpace, InnerSpace};
+
+use crate::{ComponentWiseExt, distance, Float, Normal3, Point2f, Vec3f};
 use crate::EFloat;
 use crate::err_float::gamma;
-use crate::interaction::DiffGeom;
-use crate::math::quadratic;
-use crate::geometry::{Transform, Ray, Transformable};
-use crate::shapes::Shape;
+use crate::geometry::{Ray, Transform};
 use crate::geometry::bounds::Bounds3;
+use crate::interaction::DiffGeom;
 use crate::interaction::SurfaceInteraction;
-use cgmath::{InnerSpace, EuclideanSpace};
+use crate::math::quadratic;
+use crate::shapes::Shape;
 
 pub struct Sphere<'t> {
     object_to_world: &'t Transform,
@@ -67,6 +68,7 @@ impl<'t> Shape for Sphere<'t> {
     }
 
     #[allow(non_snake_case)]
+    #[allow(clippy::many_single_char_names)]
     fn intersect(&self, ray: &Ray) -> Option<(Float, SurfaceInteraction)> {
         let (ray, (origin_err, dir_err)) = self.world_to_object().tf_exact_to_err(*ray);
 
@@ -188,10 +190,13 @@ impl<'t> Shape for Sphere<'t> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use rand::{SeedableRng, FromEntropy};
-    use crate::sampling::rejection_sample_shere;
     use cgmath::assert_abs_diff_eq;
+    use rand::SeedableRng;
+
+    use crate::Point3f;
+    use crate::sampling::rejection_sample_shere;
+
+    use super::*;
 
     fn shoot_ray(from: impl Into<Point3f> + Copy, to: impl Into<Point3f> + Copy) -> Ray {
         let dir = to.into() - from.into();

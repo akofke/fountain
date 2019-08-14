@@ -1,6 +1,7 @@
-use crate::{Float, Point2f, Point2i, Vec2f};
-use crate::camera::CameraSample;
 use cgmath::EuclideanSpace;
+
+use crate::{Float, Point2f, Point2i};
+use crate::camera::CameraSample;
 
 pub mod random;
 

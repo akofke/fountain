@@ -1,15 +1,16 @@
+use bumpalo::Bump;
+use cgmath::InnerSpace;
+use rayon::prelude::*;
+
+use crate::{abs_dot, Bounds2i, Differential, Float, RayDifferential, SurfaceInteraction};
 use crate::camera::Camera;
 use crate::film::Film;
 use crate::filter::BoxFilter;
+use crate::reflection::bsdf::Bsdf;
+use crate::reflection::BxDFType;
 use crate::sampler::Sampler;
 use crate::scene::Scene;
 use crate::spectrum::{RGBSpectrum, Spectrum};
-use crate::{Bounds2i, Float, RayDifferential, SurfaceInteraction, Normal3, Differential, abs_dot, Vec3f};
-use bumpalo::Bump;
-use rayon::prelude::*;
-use crate::reflection::bsdf::Bsdf;
-use crate::reflection::BxDFType;
-use cgmath::{InnerSpace, Array};
 
 pub mod whitted;
 
@@ -89,7 +90,6 @@ pub trait IntegratorRadiance: Sync + Send {
                 arena,
                 depth + 1
             );
-            // TODO check for 0 abs_dot
             return scatter.f * li * scatter.wi.dot(intersect.shading_n.0).abs() / scatter.pdf;
         } else {
             return Spectrum::new(0.0);
@@ -171,7 +171,6 @@ pub trait IntegratorRadiance: Sync + Send {
                 arena,
                 depth + 1
             );
-            // TODO check for 0 abs_dot
             return scatter.f * li * scatter.wi.dot(intersect.shading_n.0).abs() / scatter.pdf;
         } else {
             return Spectrum::new(0.0);

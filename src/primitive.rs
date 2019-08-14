@@ -1,10 +1,9 @@
-use crate::geometry::bounds::Bounds3f;
-use crate::{Ray, SurfaceInteraction};
-use crate::material::Material;
-use std::rc::Rc;
-use crate::shapes::Shape;
-use std::borrow::Borrow;
 use std::sync::Arc;
+
+use crate::{Ray, SurfaceInteraction};
+use crate::geometry::bounds::Bounds3f;
+use crate::material::Material;
+use crate::shapes::Shape;
 
 pub trait Primitive: Sync {
     fn world_bound(&self) -> Bounds3f;

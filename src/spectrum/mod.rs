@@ -1,19 +1,21 @@
 use crate::Float;
 use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, Div, DivAssign, Index, IndexMut, Deref};
 
+#[allow(clippy::excessive_precision)]
 pub fn xyz_to_rgb(xyz: [Float; 3]) -> [Float; 3] {
     let mut rgb = [0.0; 3];
-    rgb[0] =  3.240479*xyz[0] - 1.537150*xyz[1] - 0.498535*xyz[2];
-    rgb[1] = -0.969256*xyz[0] + 1.875991*xyz[1] + 0.041556*xyz[2];
-    rgb[2] =  0.055648*xyz[0] - 0.204043*xyz[1] + 1.057311*xyz[2];
+    rgb[0] = 3.240479 * xyz[0] - 1.537150 * xyz[1] - 0.498535 * xyz[2];
+    rgb[1] = -0.969256 * xyz[0] + 1.875991 * xyz[1] + 0.041556 * xyz[2];
+    rgb[2] = 0.055648 * xyz[0] - 0.204043 * xyz[1] + 1.057311 * xyz[2];
     rgb
 }
 
+#[allow(clippy::excessive_precision)]
 pub fn rgb_to_xyz(rgb: [Float; 3]) -> [Float; 3] {
     let mut xyz = [0.0; 3];
-    xyz[0] = 0.412453*rgb[0] + 0.357580*rgb[1] + 0.180423*rgb[2];
-    xyz[1] = 0.212671*rgb[0] + 0.715160*rgb[1] + 0.072169*rgb[2];
-    xyz[2] = 0.019334*rgb[0] + 0.119193*rgb[1] + 0.950227*rgb[2];
+    xyz[0] = 0.412453 * rgb[0] + 0.357580 * rgb[1] + 0.180423 * rgb[2];
+    xyz[1] = 0.212671 * rgb[0] + 0.715160 * rgb[1] + 0.072169 * rgb[2];
+    xyz[2] = 0.019334 * rgb[0] + 0.119193 * rgb[1] + 0.950227 * rgb[2];
     xyz
 }
 
@@ -28,7 +30,7 @@ pub trait CoefficientSpectrum: Index<usize, Output=Float> + IndexMut<usize, Outp
 }
 
 #[derive(Clone, Copy, PartialEq, Debug, Default)]
-pub struct Spectrum<S: CoefficientSpectrum=RGBSpectrum>(S);
+pub struct Spectrum<S: CoefficientSpectrum = RGBSpectrum>(S);
 
 impl<S: CoefficientSpectrum> Spectrum<S> {
     pub fn new(v: Float) -> Self {
@@ -67,7 +69,7 @@ impl<S: CoefficientSpectrum> Spectrum<S> {
 
     pub fn has_nans(&self) -> bool {
         for i in 0..S::N_SAMPLES {
-            if self.0[i].is_nan() { return true }
+            if self.0[i].is_nan() { return true; }
         }
         false
     }
@@ -87,7 +89,7 @@ impl From<Spectrum<RGBSpectrum>> for [Float; 3] {
 
 impl From<[Float; 3]> for Spectrum<RGBSpectrum> {
     fn from(c: [Float; 3]) -> Self {
-        Self(RGBSpectrum{ c })
+        Self(RGBSpectrum { c })
     }
 }
 
@@ -105,14 +107,13 @@ pub struct RGBSpectrum {
     c: [Float; 3]
 }
 
-impl RGBSpectrum {
-}
+impl RGBSpectrum {}
 
 impl CoefficientSpectrum for RGBSpectrum {
     const N_SAMPLES: usize = 3;
 
     fn new(v: Float) -> Self {
-        Self {c: [v; 3]}
+        Self { c: [v; 3] }
     }
 
     fn to_xyz(&self) -> [Float; 3] {
@@ -133,7 +134,6 @@ impl Index<usize> for RGBSpectrum {
 }
 
 impl IndexMut<usize> for RGBSpectrum {
-
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.c[index]
     }

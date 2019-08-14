@@ -25,12 +25,11 @@ pub fn cosine_sample_hemisphere(u: Point2f) -> Vec3f {
 }
 
 pub fn rejection_sample_shere(rng: &mut impl Rng, radius: Float) -> Point3f {
-    let p = loop {
+    loop {
         let x = rng.gen_range(-radius, radius);
         let y = rng.gen_range(-radius, radius);
         let z = rng.gen_range(-radius, radius);
         let d = x * x + y * y + z * z;
         if d < radius * radius { break Point3f::new(x, y, z) }
-    };
-    p
+    }
 }

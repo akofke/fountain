@@ -1,11 +1,12 @@
-use crate::integrator::IntegratorRadiance;
-use crate::scene::Scene;
-use crate::sampler::Sampler;
-use crate::{RayDifferential, abs_dot, background};
 use bumpalo::Bump;
-use crate::spectrum::Spectrum;
+
+use crate::{abs_dot, RayDifferential};
+use crate::integrator::IntegratorRadiance;
 use crate::material::TransportMode;
 use crate::reflection::BxDFType;
+use crate::sampler::Sampler;
+use crate::scene::Scene;
+use crate::spectrum::Spectrum;
 
 pub struct WhittedIntegrator {
     pub max_depth: u16,

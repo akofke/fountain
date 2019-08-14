@@ -119,6 +119,7 @@ impl<'i> SurfaceInteraction<'i> {
         Some(material.compute_scattering_functions(self, arena, mode, allow_multiple_lobes))
     }
 
+    #[allow(non_snake_case)]
     fn compute_tex_differentials(&self, ray: &RayDifferential) -> Option<TextureDifferentials> {
         let n = self.hit.n;
         let diff = ray.diff?;

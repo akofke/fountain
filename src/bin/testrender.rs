@@ -1,3 +1,5 @@
+#![allow(clippy::all)]
+#![allow(unused_imports, unused_variables)]
 use raytracer::integrator::{SamplerIntegrator, Integrator};
 use raytracer::sampler::random::RandomSampler;
 use raytracer::camera::PerspectiveCamera;
@@ -149,7 +151,7 @@ pub fn main() {
     integrator.render_with_pool(&scene, &film, &pool);
 
     let img = film.into_image_buffer();
-    let mut file = File::create("testrender.hdr").unwrap();
+    let file = File::create("testrender.hdr").unwrap();
     let encoder = image::hdr::HDREncoder::new(file);
     let pixels: Vec<_> = img.pixels().map(|p| *p).collect();
     encoder.encode(pixels.as_slice(), img.width() as usize, img.height() as usize).unwrap();

@@ -1,12 +1,12 @@
-use crate::spectrum::Spectrum;
-use crate::{Vec3f, Point3f, Float, Transform, Point2f, Normal3};
+use cgmath::InnerSpace;
+use num::Zero;
+
+use crate::{Float, Normal3, Point2f, Point3f, Transform, Vec3f};
+use crate::bvh::BVH;
+use crate::interaction::SurfaceHit;
 use crate::light::{Light, LightFlags, LiSample, VisibilityTester};
 use crate::scene::Scene;
-use crate::interaction::SurfaceHit;
-use std::cell::Cell;
-use crate::bvh::BVH;
-use num::Zero;
-use cgmath::InnerSpace;
+use crate::spectrum::Spectrum;
 
 pub struct DistantLight {
     radiance: Spectrum,
@@ -49,7 +49,7 @@ impl Light for DistantLight {
         self.world_radius = world_radius;
     }
 
-    fn sample_incident_radiance(&self, reference: &SurfaceHit, u: Point2f) -> LiSample {
+    fn sample_incident_radiance(&self, reference: &SurfaceHit, _u: Point2f) -> LiSample {
         let p_outside = reference.p + self.dir_to_light * (2.0 * self.world_radius);
 
         let p1 = SurfaceHit {

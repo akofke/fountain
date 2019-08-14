@@ -1,7 +1,7 @@
-use crate::geometry::bounds::Bounds3f;
-use crate::geometry::{Ray, Transformable};
-use crate::interaction::SurfaceInteraction;
 use crate::{Float, Transform};
+use crate::geometry::Ray;
+use crate::geometry::bounds::Bounds3f;
+use crate::interaction::SurfaceInteraction;
 
 pub mod sphere;
 
@@ -21,9 +21,5 @@ pub trait Shape: Sync + Send {
     fn intersect_test(&self, ray: &Ray) -> bool {
         self.intersect(ray).is_some()
     }
-
-}
-
-pub struct ShapeBase {
 
 }

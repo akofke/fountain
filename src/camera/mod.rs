@@ -1,6 +1,7 @@
-use crate::{Point2f, Float, Ray, Bounds2f, Point2i, Transformable, Point3f, lerp, INFINITY, RayDifferential, Vec2i, Vec2f, Differential};
-use crate::geometry::Transform;
 use cgmath::InnerSpace;
+
+use crate::{Bounds2f, Differential, Float, INFINITY, lerp, Point2f, Point2i, Point3f, Ray, RayDifferential, Transformable, Vec2f};
+use crate::geometry::Transform;
 
 #[derive(Clone, Copy, Debug)]
 pub struct CameraSample {
@@ -125,12 +126,14 @@ impl Camera for PerspectiveCamera {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{Bounds3f, Bounds2i, NEG_INFINITY, ComponentWiseExt, Vec3f};
+    use cgmath::{assert_abs_diff_eq, Deg};
+    use cgmath::num_traits::real::Real;
+
+    use crate::{Bounds2i, Bounds3f, ComponentWiseExt, NEG_INFINITY, Vec3f};
     use crate::sampler::random::RandomSampler;
     use crate::sampler::Sampler;
-    use cgmath::num_traits::real::Real;
-    use cgmath::{Deg, assert_abs_diff_eq};
+
+    use super::*;
 
     #[test]
     fn test_camera_look_at() {

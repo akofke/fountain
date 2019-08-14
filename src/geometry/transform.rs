@@ -133,9 +133,9 @@ impl Transformable for Vec3f {
 impl TransformableErr for Vec3f {
     type Err = Vec3f;
 
-    fn tf_exact_to_err(&self, t: Transform) -> (Self, Self::Err) {
-        let vt = t.t.transform_vector(*self);
-        let m = t.t;
+    fn tf_exact_to_err(&self, tf: Transform) -> (Self, Self::Err) {
+        let vt = tf.t.transform_vector(*self);
+        let m = tf.t;
         let x = self.x;
         let y = self.y;
         let z = self.z;
@@ -149,11 +149,11 @@ impl TransformableErr for Vec3f {
     }
 
     // TODO: can write partially in terms of tf_exact_to_err
-    fn tf_err_to_err(&self, err: Self::Err, t: Transform) -> (Self, Self::Err) {
+    fn tf_err_to_err(&self, err: Self::Err, tf: Transform) -> (Self, Self::Err) {
         let v = self;
         let verr = err;
-        let vt = t.t.transform_vector(*v);
-        let m = t.t;
+        let vt = tf.t.transform_vector(*v);
+        let m = tf.t;
 
         let xerr = (gamma(3) + 1.0) *
             ((m[0][0] * verr.x).abs() + (m[1][0] * verr.y).abs() + (m[2][0] * verr.z).abs()) +
@@ -179,9 +179,9 @@ impl Transformable for Point3f {
 impl TransformableErr for Point3f {
     type Err = Vec3f;
 
-    fn tf_exact_to_err(&self, t: Transform) -> (Self, Self::Err) {
-        let pt = t.t.transform_point(*self);
-        let m = t.t;
+    fn tf_exact_to_err(&self, tf: Transform) -> (Self, Self::Err) {
+        let pt = tf.t.transform_point(*self);
+        let m = tf.t;
         let x = self.x;
         let y = self.y;
         let z = self.z;
@@ -194,11 +194,11 @@ impl TransformableErr for Point3f {
         (pt, p_error)
     }
 
-    fn tf_err_to_err(&self, err: Self::Err, t: Transform) -> (Self, Self::Err) {
+    fn tf_err_to_err(&self, err: Self::Err, tf: Transform) -> (Self, Self::Err) {
         let p = self;
         let perr = err;
-        let pt = t.t.transform_point(*p);
-        let m = t.t;
+        let pt = tf.t.transform_point(*p);
+        let m = tf.t;
 
         let xerr = (gamma(3) + 1.0) *
             ((m[0][0]).abs() * perr.x + (m[1][0]).abs() * perr.y + (m[2][0]).abs() * perr.z) +
@@ -269,8 +269,7 @@ impl Transformable for Ray {
             t_max -= dt;
         }
 
-        let ray_t = Ray { origin: ot, dir, t_max, time: self.time };
-        ray_t
+        Ray { origin: ot, dir, t_max, time: self.time }
     }
 }
 

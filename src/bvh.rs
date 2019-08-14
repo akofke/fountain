@@ -1,14 +1,12 @@
-use crate::primitive::Primitive;
-use crate::{Vec3f, Ray, SurfaceInteraction};
+use arrayvec::ArrayVec;
 use bumpalo::Bump;
-use std::ops::{Range, DerefMut};
+
 use partition::partition;
-use std::rc::Rc;
-use std::fmt::Debug;
+
+use crate::{Ray, SurfaceInteraction};
 use crate::geometry::bounds::Bounds3f;
 use crate::Point3f;
-use arrayvec::ArrayVec;
-use std::sync::Arc;
+use crate::primitive::Primitive;
 
 #[derive(Copy, Clone)]
 pub enum SplitMethod {
@@ -27,7 +25,7 @@ impl BVH<'_> {
     pub fn build(mut prims: Vec<&dyn Primitive>) -> BVH {
         // TODO: figure out prims type. Rc or Box?
 
-        if prims.len() == 0 {
+        if prims.is_empty() {
             return BVH { prims, bounds: Bounds3f::empty(), nodes: Vec::new() }
         }
 
@@ -37,12 +35,10 @@ impl BVH<'_> {
 
         let arena = Bump::new();
         let mut prim_ordering: Vec<isize> = Vec::with_capacity(prims.len());
-        let range = 0..prim_info.len();
 
         let root = Self::recursive_build(
             &arena,
             &mut prim_info,
-//            range,
             &mut prim_ordering,
             SplitMethod::Middle
         );
@@ -114,14 +110,14 @@ impl BVH<'_> {
 
     // Returns subtree length
     fn flatten_tree(flat_nodes: &mut Vec<LinearBVHNode>, node: &BVHBuildNode) -> usize {
-        let subtree_len = match node {
-            &BVHBuildNode::Leaf {bounds, first_prim_idx, n_prims} => {
+        let subtree_len = match *node {
+            BVHBuildNode::Leaf {bounds, first_prim_idx, n_prims} => {
                 let leaf = LinearBVHNode::new_leaf(bounds, first_prim_idx, n_prims);
                 flat_nodes.push(leaf);
                 1
             },
 
-            &BVHBuildNode::Interior {bounds, children, split_axis} => {
+            BVHBuildNode::Interior {bounds, children, split_axis} => {
                 let interior = LinearBVHNode::new_interior(bounds, 0, split_axis);
                 flat_nodes.push(interior);
                 let my_idx = flat_nodes.len() - 1;
@@ -141,7 +137,7 @@ impl BVH<'_> {
     }
 
     pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
-        if self.nodes.len() == 0 {
+        if self.nodes.is_empty() {
             return None;
         }
 
@@ -198,7 +194,7 @@ impl BVH<'_> {
     }
 
     pub fn intersect_test(&self, ray: &Ray) -> bool {
-        if self.nodes.len() == 0 {
+        if self.nodes.is_empty() {
             return false;
         }
 
@@ -359,17 +355,18 @@ fn apply_permutation<T>(items: &mut [T], indices: &mut [isize]) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use pretty_assertions as pa;
-    use crate::material::Material;
-    use crate::shapes::sphere::Sphere;
-    use crate::Transform;
     use cgmath::{vec3, Vector3};
-    use rand::{thread_rng, Rng};
-    use rand::distributions::{Standard, UnitSphereSurface, Uniform};
-    use crate::primitive::GeometricPrimitive;
-    use crate::sampling::rejection_sample_shere;
+    use pretty_assertions as pa;
+    use rand::{Rng, thread_rng};
+    use rand::distributions::{Standard, Uniform, UnitSphereSurface};
     use rand::prelude::*;
+
+    use crate::{Transform, Vec3f};
+    use crate::material::Material;
+    use crate::primitive::GeometricPrimitive;
+    use crate::shapes::sphere::Sphere;
+
+    use super::*;
 
     #[test]
     fn test_permutation() {

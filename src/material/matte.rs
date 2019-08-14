@@ -1,12 +1,13 @@
-use std::rc::Rc;
-use crate::texture::{Texture, ConstantTexture};
-use crate::spectrum::Spectrum;
-use crate::material::{Material, TransportMode};
-use crate::interaction::SurfaceInteraction;
+use std::sync::Arc;
+
 use bumpalo::Bump;
+
+use crate::interaction::SurfaceInteraction;
+use crate::material::{Material, TransportMode};
 use crate::reflection::bsdf::Bsdf;
 use crate::reflection::LambertianReflection;
-use std::sync::Arc;
+use crate::spectrum::Spectrum;
+use crate::texture::{ConstantTexture, Texture};
 
 pub struct MatteMaterial {
     diffuse: Arc<dyn Texture<Spectrum>>,

@@ -11,7 +11,7 @@ pub mod bsdf;
 
 bitflags! {
     pub struct BxDFType: u8 {
-        const REFLECTION = 1 << 0;
+        const REFLECTION = 1;
         const TRANSMISSION = 1 << 1;
         const DIFFUSE = 1 << 2;
         const GLOSSY = 1 << 3;
@@ -146,11 +146,11 @@ impl<F: Fresnel> BxDF for SpecularReflection<F> {
         BxDFType::REFLECTION | BxDFType::SPECULAR
     }
 
-    fn f(&self, wo: Vec3f, wi: Vec3f) -> Spectrum {
+    fn f(&self, _wo: Vec3f, _wi: Vec3f) -> Spectrum {
         Spectrum::new(0.0)
     }
 
-    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> Option<ScatterSample> {
+    fn sample_f(&self, wo: Vec3f, _sample: Point2f) -> Option<ScatterSample> {
         let wi = Vec3f::new(-wo.x, -wo.y, wo.z);
         let pdf = 1.0f32;
 
@@ -190,7 +190,7 @@ impl BxDF for SpecularTransmission {
         Spectrum::new(0.0)
     }
 
-    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> Option<ScatterSample> {
+    fn sample_f(&self, wo: Vec3f, _sample: Point2f) -> Option<ScatterSample> {
         let entering = cos_theta(wo) > 0.0;
         let eta_i = if entering { self.eta_a } else { self.eta_b };
         let eta_t = if entering { self.eta_b } else { self.eta_a };
@@ -211,7 +211,7 @@ impl BxDF for SpecularTransmission {
         })
     }
 
-    fn pdf(&self, wo: Vec3f, wi: Vec3f) -> Float {
+    fn pdf(&self, _wo: Vec3f, _wi: Vec3f) -> Float {
         0.0
     }
 

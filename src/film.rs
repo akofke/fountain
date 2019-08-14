@@ -56,7 +56,7 @@ impl<F: Filter> Film<F> {
             Point2i::new(high_x, high_y)
         );
 
-        let mut pixels = vec![Default::default(); cropped_pixel_bounds.area() as usize];
+        let pixels = vec![Default::default(); cropped_pixel_bounds.area() as usize];
 
         let mut filter_table = [[0.0f32; FILTER_TABLE_WIDTH]; FILTER_TABLE_WIDTH];
         for (y, row) in filter_table.iter_mut().enumerate() {
@@ -66,7 +66,7 @@ impl<F: Filter> Film<F> {
                     (y as Float + 0.5) * filter.radius().0.y / FILTER_TABLE_WIDTH as Float
                 );
 
-                *val = filter.evaluate(&p);
+                *val = filter.evaluate(p);
             }
         }
 
@@ -186,12 +186,11 @@ impl<F: Filter> Film<F> {
         }).collect();
 
         let (width, height) = self.cropped_pixel_bounds.dimensions();
-        let img_buf = ImageBuffer::from_vec(
+        ImageBuffer::from_vec(
             width as u32,
             height as u32,
             rgb_flat_buffer
-        ).expect("Invalid dimensions when creating image buffer");
-        img_buf
+        ).expect("Invalid dimensions when creating image buffer")
     }
 }
 

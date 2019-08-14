@@ -1,15 +1,16 @@
-use crate::{Vec3f, Point3f};
-use cgmath::{Matrix4, Transform as cgTransform, InnerSpace, SquareMatrix};
-use std::ops::{Deref, Mul};
+use std::ops::Deref;
+
+use cgmath::InnerSpace;
+
+pub use bounds::*;
+pub use transform::*;
+
+use crate::{Point3f, Vec3f};
+use crate::err_float::{next_float_down, next_float_up};
 use crate::Float;
 
 pub mod bounds;
 pub mod transform;
-
-pub use bounds::*;
-pub use transform::*;
-use crate::err_float::{gamma, next_float_up, next_float_down};
-use crate::interaction::{SurfaceInteraction, SurfaceHit, DiffGeom, TextureDifferentials};
 
 pub fn distance(p1: Point3f, p2: Point3f) -> Float {
     (p1 - p2).magnitude()

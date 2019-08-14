@@ -1,9 +1,10 @@
-use crate::{Transform, Point3f, Float, Point2f, Vec3f, Normal3};
-use crate::spectrum::Spectrum;
-use crate::light::{Light, LightFlags, LiSample, VisibilityTester};
-use crate::interaction::SurfaceHit;
 use cgmath::{InnerSpace, MetricSpace};
 use num::Zero;
+
+use crate::{Float, Normal3, Point2f, Point3f, Transform, Vec3f};
+use crate::interaction::SurfaceHit;
+use crate::light::{Light, LightFlags, LiSample, VisibilityTester};
+use crate::spectrum::Spectrum;
 
 pub struct PointLight {
     l2w: Transform,
@@ -39,7 +40,7 @@ impl Light for PointLight {
         &self.w2l
     }
 
-    fn sample_incident_radiance(&self, reference: &SurfaceHit, u: Point2f) -> LiSample {
+    fn sample_incident_radiance(&self, reference: &SurfaceHit, _u: Point2f) -> LiSample {
         let wi = (self.world_point - reference.p).normalize();
         let pdf = 1.0;
         let p1 = SurfaceHit {
