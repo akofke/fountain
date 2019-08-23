@@ -57,7 +57,7 @@ pub trait IntegratorRadiance: Sync + Send {
             }
 
             let diff = ray.diff.map(|diff| {
-                let tex_diff = intersect.tex_diffs.unwrap(); // TODO make this cleaner. It must have them at this point
+                let tex_diff = intersect.tex_diffs;
                 let rx_origin = intersect.hit.p + tex_diff.dpdx;
                 let ry_origin = intersect.hit.p + tex_diff.dpdy;
 
@@ -117,7 +117,7 @@ pub trait IntegratorRadiance: Sync + Send {
             }
 
             let diff = ray.diff.map(|diff| {
-                let tex_diff = intersect.tex_diffs.unwrap(); // TODO make this cleaner. It must have them at this point
+                let tex_diff = intersect.tex_diffs;
                 let rx_origin = intersect.hit.p + tex_diff.dpdx;
                 let ry_origin = intersect.hit.p + tex_diff.dpdy;
 

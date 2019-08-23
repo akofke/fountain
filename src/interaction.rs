@@ -71,7 +71,7 @@ pub struct SurfaceInteraction<'i> {
 
     pub shading_geom: DiffGeom,
 
-    pub tex_diffs: Option<TextureDifferentials>,
+    pub tex_diffs: TextureDifferentials,
 
     // TODO: CHANGE THIS
     pub primitive: Option<&'i dyn Primitive>
@@ -101,7 +101,7 @@ impl<'i> SurfaceInteraction<'i> {
             shading_n: n,
             shading_geom: geom,
 
-            tex_diffs: None,
+            tex_diffs: TextureDifferentials::default(),
             primitive: None
         }
     }
@@ -114,7 +114,7 @@ impl<'i> SurfaceInteraction<'i> {
         allow_multiple_lobes: bool,
         mode: TransportMode,
     ) -> Option<Bsdf<'a>> {
-        self.tex_diffs = self.compute_tex_differentials(ray);
+        self.tex_diffs = self.compute_tex_differentials(ray).unwrap_or_default();
         let material = self.primitive.expect("Should have a prim at this point").material()?;
         Some(material.compute_scattering_functions(self, arena, mode, allow_multiple_lobes))
     }

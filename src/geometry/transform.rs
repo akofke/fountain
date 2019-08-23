@@ -313,7 +313,7 @@ impl Transformable for SurfaceInteraction<'_> {
             shading_n: self.shading_n.transform(t).normalize().into(),
             shading_geom: self.shading_geom.transform(t),
 
-            tex_diffs: self.tex_diffs.map(|diff| diff.transform(t)),
+            tex_diffs: self.tex_diffs.transform(t),
             primitive: self.primitive
         }
     }
