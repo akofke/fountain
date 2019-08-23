@@ -217,3 +217,20 @@ impl BxDF for SpecularTransmission {
 
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Ray, SurfaceInteraction, Transform};
+    use crate::shapes::sphere::Sphere;
+    use crate::shapes::Shape;
+
+//    fn get_test_surface_interaction(ray: &Ray) -> SurfaceInteraction {
+//        let sphere = Sphere::whole(&Transform::IDENTITY, &Transform::IDENTITY, 1.0);
+//    }
+
+    #[test]
+    fn test_specular_reflection() {
+
+    }
+}
+

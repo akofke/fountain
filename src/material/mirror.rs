@@ -9,11 +9,11 @@ use crate::reflection::SpecularReflection;
 use crate::fresnel::FresnelNoOp;
 
 pub struct MirrorMaterial {
-    reflectance: Arc<dyn Texture<Spectrum>>,
+    reflectance: Arc<dyn Texture<Output = Spectrum>>,
 }
 
 impl MirrorMaterial {
-    pub fn new(reflectance: Arc<dyn Texture<Spectrum>>) -> Self {
+    pub fn new(reflectance: Arc<dyn Texture<Output = Spectrum>>) -> Self {
         Self { reflectance }
     }
 }

@@ -10,7 +10,7 @@ use crate::spectrum::Spectrum;
 use crate::texture::{ConstantTexture, Texture};
 
 pub struct MatteMaterial {
-    diffuse: Arc<dyn Texture<Spectrum>>,
+    diffuse: Arc<dyn Texture<Output = Spectrum>>,
     // TODO sigma, bump map
 }
 

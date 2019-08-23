@@ -9,9 +9,9 @@ use crate::reflection::{SpecularReflection, SpecularTransmission};
 use crate::fresnel::FresnelDielectric;
 
 pub struct GlassMaterial {
-    reflectance: Arc<dyn Texture<Spectrum>>,
-    transmittance: Arc<dyn Texture<Spectrum>>,
-    eta: Arc<dyn Texture<Float>>,
+    reflectance: Arc<dyn Texture<Output = Spectrum>>,
+    transmittance: Arc<dyn Texture<Output = Spectrum>>,
+    eta: Arc<dyn Texture<Output = Float>>,
 }
 
 impl GlassMaterial {

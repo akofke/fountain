@@ -2,7 +2,7 @@ use crate::geometry::Normal3;
 use crate::material::TransportMode;
 use crate::{offset_ray_origin, Float, Point2f, Point3f, Ray, RayDifferential, Vec3f, Vec2f, solve_linear_system_2x2, Differential};
 use bumpalo::Bump;
-use cgmath::{EuclideanSpace, InnerSpace, Matrix2, Vector2};
+use cgmath::{EuclideanSpace, InnerSpace, Matrix2, Vector2, Zero};
 use crate::reflection::bsdf::Bsdf;
 use crate::primitive::Primitive;
 
@@ -191,4 +191,17 @@ pub struct TextureDifferentials {
 
     pub dudy: Float,
     pub dvdy: Float,
+}
+
+impl Default for TextureDifferentials {
+    fn default() -> Self {
+        Self {
+            dpdx: Vec3f::zero(),
+            dpdy: Vec3f::zero(),
+            dudx: 0.0,
+            dvdx: 0.0,
+            dudy: 0.0,
+            dvdy: 0.0
+        }
+    }
 }

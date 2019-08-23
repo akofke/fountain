@@ -6,6 +6,7 @@ use crate::bvh::BVH;
 
 pub mod point;
 pub mod distant;
+pub mod infinite;
 
 pub trait Light: Sync {
     fn flags(&self) -> LightFlags;
