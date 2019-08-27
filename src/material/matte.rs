@@ -15,6 +15,9 @@ pub struct MatteMaterial {
 }
 
 impl MatteMaterial {
+    pub fn new(diffuse: Arc<dyn Texture<Output=Spectrum>>) -> Self {
+        Self { diffuse }
+    }
     pub fn constant(diffuse: Spectrum) -> Self {
         Self {
             diffuse: Arc::new(ConstantTexture(diffuse))

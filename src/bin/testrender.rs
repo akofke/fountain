@@ -24,6 +24,8 @@ use cgmath::vec3;
 use raytracer::material::mirror::MirrorMaterial;
 use raytracer::texture::ConstantTexture;
 use raytracer::material::glass::GlassMaterial;
+use raytracer::texture::uv::UVTexture;
+use raytracer::texture::mapping::UVMapping;
 
 pub fn main() {
 
@@ -72,6 +74,7 @@ pub fn main() {
     let blue = Arc::new(MatteMaterial::constant([0.2, 0.2, 0.7].into()));
     let red = Arc::new(MatteMaterial::constant([0.7, 0.2, 0.2].into()));
     let green = Arc::new(MatteMaterial::constant([0.2, 0.7, 0.2].into()));
+    let uv = Arc::new(MatteMaterial::new(Arc::new(UVTexture::new(UVMapping::default()))));
     let mirror = Arc::new(MirrorMaterial::new(Arc::new(ConstantTexture(Spectrum::new(0.9)))));
     let glass = Arc::new(GlassMaterial::constant(Spectrum::new(1.0), Spectrum::new(1.0), 1.1));
 
@@ -87,7 +90,7 @@ pub fn main() {
 
     let prim3 = GeometricPrimitive {
         shape: sphere3,
-        material: Some(blue.clone())
+        material: Some(uv.clone())
     };
 
     let ground_prim = GeometricPrimitive {
@@ -104,7 +107,7 @@ pub fn main() {
     let bvh = BVH::build(prims);
 
     let mut light = PointLight::new(Transform::translate((0.0, 0.0, 3.0).into()), Spectrum::new(10.0));
-    let mut dist_light = DistantLight::new(Spectrum::new(1.0), vec3(3.0, 3.0, 3.0));
+    let mut dist_light = DistantLight::new(Spectrum::new(1.5), vec3(3.0, 3.0, 3.0));
     let lights: Vec<&mut dyn Light> = vec![
         &mut dist_light,
         &mut light,

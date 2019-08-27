@@ -4,6 +4,8 @@ use crate::spectrum::Spectrum;
 use crate::Float;
 
 pub mod mapping;
+pub mod uv;
+pub mod checkerboard;
 
 pub trait Texture: Sync + Send {
     type Output;
