@@ -26,6 +26,7 @@ use raytracer::texture::ConstantTexture;
 use raytracer::material::glass::GlassMaterial;
 use raytracer::texture::uv::UVTexture;
 use raytracer::texture::mapping::UVMapping;
+use raytracer::texture::checkerboard::Checkerboard2DTexture;
 
 pub fn main() {
 
@@ -75,6 +76,7 @@ pub fn main() {
     let red = Arc::new(MatteMaterial::constant([0.7, 0.2, 0.2].into()));
     let green = Arc::new(MatteMaterial::constant([0.2, 0.7, 0.2].into()));
     let uv = Arc::new(MatteMaterial::new(Arc::new(UVTexture::new(UVMapping::default()))));
+    let check = Arc::new(MatteMaterial::new(Arc::new(Checkerboard2DTexture::default())));
     let mirror = Arc::new(MirrorMaterial::new(Arc::new(ConstantTexture(Spectrum::new(0.9)))));
     let glass = Arc::new(GlassMaterial::constant(Spectrum::new(1.0), Spectrum::new(1.0), 1.1));
 
@@ -95,7 +97,7 @@ pub fn main() {
 
     let ground_prim = GeometricPrimitive {
         shape: ground_sphere,
-        material: Some(red.clone()),
+        material: Some(check.clone()),
     };
 
     let prims: Vec<&dyn Primitive> = vec![

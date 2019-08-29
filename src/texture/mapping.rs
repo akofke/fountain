@@ -18,6 +18,14 @@ pub struct UVMapping {
     pub offset_v: Float,
 }
 
+impl UVMapping {
+    pub fn new(scale_u: Float, scale_v: Float, offset_u: Float, offset_v: Float) -> Self {
+        Self {
+            scale_u, scale_v, offset_u, offset_v
+        }
+    }
+}
+
 impl Default for UVMapping {
     fn default() -> Self {
         Self {
