@@ -16,6 +16,23 @@ pub fn distance(p1: Point3f, p2: Point3f) -> Float {
     (p1 - p2).magnitude()
 }
 
+// TODO: make generic?
+pub fn permute_point(p: Point3f, ix: usize, iy: usize, iz: usize) -> Point3f {
+    Point3f::new(p[ix], p[iy], p[iz])
+}
+
+pub fn permute_vec(v: Vec3f, ix: usize, iy: usize, iz: usize) -> Vec3f {
+    Vec3f::new(v[ix], v[iy], v[iz])
+}
+
+pub fn max_dimension(v: Vec3f) -> usize {
+    if v.x > v.y {
+        if v.x > v.z { 0 } else { 2 }
+    } else {
+        if v.y > v.z { 1 } else { 2 }
+    }
+}
+
 pub fn offset_ray_origin(p: Point3f, p_err: Vec3f, n: Normal3, dir: Vec3f) -> Point3f {
     let d = n.map(|v| v.abs()).dot(p_err);
     let mut offset = d * n.0;

@@ -4,6 +4,7 @@ use crate::geometry::bounds::Bounds3f;
 use crate::interaction::SurfaceInteraction;
 
 pub mod sphere;
+pub mod triangle;
 
 pub trait Shape: Sync + Send {
     fn object_bound(&self) -> Bounds3f;
