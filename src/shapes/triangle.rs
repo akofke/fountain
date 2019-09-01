@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::convert::TryInto;
 use crate::shapes::Shape;
 use cgmath::EuclideanSpace;
+use crate::interaction::DiffGeom;
 
 pub struct TriangleMesh {
     pub n_triangles: u32,
@@ -211,7 +212,25 @@ impl<'m> Shape for Triangle<'m> {
 
         // TODO: alpha mask
 
+        let diff_geom = DiffGeom {
+            dpdu,
+            dpdv,
+            dndu: Normal3::new(0.0, 0.0, 0.0),
+            dndv: Normal3::new(0.0, 0.0, 0.0),
+        };
 
+        let p_err = Vec3f::new(0.0, 0.0, 0.0);
+        let geom_normal = Normal3(dp02.cross(dp12).normalize());
+
+        let mut isect = SurfaceInteraction::new(
+            p_hit,
+            p_err,
+            ray.time,
+            uv_hit,
+            -ray.dir,
+            geom_normal,
+            diff_geom
+        );
         unimplemented!()
     }
 

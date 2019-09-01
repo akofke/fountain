@@ -33,6 +33,17 @@ pub fn max_dimension(v: Vec3f) -> usize {
     }
 }
 
+pub fn coordinate_system(v1: Vec3f) -> (Vec3f, Vec3f) {
+    let v2 = if v1.x.abs() > v1.y.abs() {
+        Vec3f::new(-v1.z, 0.0, v1.x).normalize()
+    } else {
+        Vec3f::new(0.0, v1.z, -v1.y).normalize()
+    };
+
+    let v3 = v1.cross(v2);
+    (v2, v3)
+}
+
 pub fn offset_ray_origin(p: Point3f, p_err: Vec3f, n: Normal3, dir: Vec3f) -> Point3f {
     let d = n.map(|v| v.abs()).dot(p_err);
     let mut offset = d * n.0;
