@@ -3,7 +3,7 @@
 use raytracer::integrator::{SamplerIntegrator, Integrator};
 use raytracer::sampler::random::RandomSampler;
 use raytracer::camera::PerspectiveCamera;
-use raytracer::{Transform, Point2i, Bounds2};
+use raytracer::{Transform, Point2i, Bounds2, Point3f};
 use raytracer::integrator::whitted::WhittedIntegrator;
 use raytracer::scene::Scene;
 use raytracer::bvh::BVH;
@@ -27,6 +27,7 @@ use raytracer::material::glass::GlassMaterial;
 use raytracer::texture::uv::UVTexture;
 use raytracer::texture::mapping::UVMapping;
 use raytracer::texture::checkerboard::Checkerboard2DTexture;
+use raytracer::shapes::triangle::TriangleMesh;
 
 pub fn main() {
 
@@ -72,6 +73,22 @@ pub fn main() {
         &o2w, &w2o, 20.0
     );
 
+    let points = vec![
+        Point3f::new(0.0, 0.0, 0.0),
+        Point3f::new(0.0, 0.0, 1.0),
+        Point3f::new(1.0, 0.0, 0.0),
+        Point3f::new(1.0, 0.0, 1.0),
+    ];
+    let mesh = TriangleMesh::new(
+        Transform::identity(),
+        vec![0, 1, 2, 2, 1, 3],
+        points,
+        None,
+        None,
+        None,
+        false
+    );
+
     let blue = Arc::new(MatteMaterial::constant([0.2, 0.2, 0.7].into()));
     let red = Arc::new(MatteMaterial::constant([0.7, 0.2, 0.2].into()));
     let green = Arc::new(MatteMaterial::constant([0.2, 0.7, 0.2].into()));
@@ -100,12 +117,22 @@ pub fn main() {
         material: Some(check.clone()),
     };
 
-    let prims: Vec<&dyn Primitive> = vec![
-        &prim,
+    let mut tri_prims: Vec<Box<dyn Primitive>> = mesh.iter_triangles()
+        .map(|tri| {
+            Box::new(GeometricPrimitive {
+                shape: tri,
+                material: Some(blue.clone())
+            }) as Box<dyn Primitive>
+        })
+        .collect();
+
+    let mut prims: Vec<&dyn Primitive> = vec![
+//        &prim,
         &ground_prim,
-        &prim2,
-        &prim3,
+//        &prim2,
+//        &prim3,
     ];
+    prims.extend(tri_prims.iter().map(|b| b.as_ref()));
     let bvh = BVH::build(prims);
 
     let mut light = PointLight::new(Transform::translate((0.0, 0.0, 3.0).into()), Spectrum::new(10.0));
@@ -151,7 +178,7 @@ pub fn main() {
     );
 
     let pool = ThreadPoolBuilder::new()
-//        .num_threads(1)
+        .num_threads(1)
         .build().unwrap();
     integrator.render_with_pool(&scene, &film, &pool);
 

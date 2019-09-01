@@ -1,8 +1,8 @@
-use crate::{Point3f, Transform, Bounds3f, Ray, Float, SurfaceInteraction, Normal3, Vec3f, Point2f, ComponentWiseExt, max_dimension, permute_vec, permute_point};
+use crate::{Point3f, Transform, Bounds3f, Ray, Float, SurfaceInteraction, Normal3, Vec3f, Point2f, ComponentWiseExt, max_dimension, permute_vec, permute_point, coordinate_system, faceforward};
 use std::sync::Arc;
 use std::convert::TryInto;
 use crate::shapes::Shape;
-use cgmath::EuclideanSpace;
+use cgmath::{EuclideanSpace, InnerSpace};
 use crate::interaction::DiffGeom;
 
 pub struct TriangleMesh {
@@ -17,16 +17,21 @@ pub struct TriangleMesh {
     tangents: Option<Vec<Vec3f>>,
 
     tex_coords: Option<Vec<Point2f>>,
+
+    reverse_orientation: bool,
+
+    object_to_world: Transform,
 }
 
 impl TriangleMesh {
     pub fn new(
-        object_to_world: &Transform,
+        object_to_world: Transform,
         vertex_indices: Vec<u32>,
         mut vertices: Vec<Point3f>,
         mut normals: Option<Vec<Normal3>>,
         mut tangents: Option<Vec<Vec3f>>,
         mut tex_coords: Option<Vec<Point2f>>,
+        reverse_orientation: bool,
     ) -> Self {
         assert_eq!(vertex_indices.len() % 3, 0);
         let n_triangles = vertex_indices.len() as u32 / 3;
@@ -60,8 +65,16 @@ impl TriangleMesh {
             vertices,
             normals,
             tangents,
-            tex_coords
+            tex_coords,
+            reverse_orientation,
+            object_to_world
         }
+    }
+
+    pub fn iter_triangles<'m>(&'m self) -> impl Iterator<Item=Triangle> + 'm {
+        (0..self.n_triangles).map(move |tri_id| {
+            Triangle::new(&self, tri_id)
+        })
     }
 }
 
@@ -104,15 +117,23 @@ impl<'m> Shape for Triangle<'m> {
     }
 
     fn world_bound(&self) -> Bounds3f {
-        unimplemented!()
+        let v = self.vertex_indices;
+        let p0 = self.mesh.vertices[v[0] as usize];
+        let p1 = self.mesh.vertices[v[1] as usize];
+        let p2 = self.mesh.vertices[v[2] as usize];
+        Bounds3f::empty().join_point(p0).join_point(p1).join_point(p2)
     }
 
     fn object_to_world(&self) -> &Transform {
-        unimplemented!()
+        &self.mesh.object_to_world
     }
 
     fn world_to_object(&self) -> &Transform {
         unimplemented!()
+    }
+
+    fn reverse_orientation(&self) -> bool {
+        self.mesh.reverse_orientation
     }
 
     fn intersect(&self, ray: &Ray) -> Option<(Float, SurfaceInteraction)> {
@@ -196,8 +217,9 @@ impl<'m> Shape for Triangle<'m> {
         let dp12 = p1 - p2;
 
         let determinant = duv02[0] * duv12[1] - duv02[1] * duv12[0];
+        let degenerate_uv = determinant.abs() < 1.0e-8;
 
-        let (dpdu, dpdv) = if determinant == 0.0 {
+        let (dpdu, dpdv) = if degenerate_uv {
             unimplemented!(); // TODO
         } else {
             let inv_det = 1.0 / determinant;
@@ -231,10 +253,67 @@ impl<'m> Shape for Triangle<'m> {
             geom_normal,
             diff_geom
         );
-        unimplemented!()
+
+        if self.mesh.normals.is_some() || self.mesh.tangents.is_some() {
+            // compute shading normal
+            let ns = if let Some(normals) = &self.mesh.normals {
+                Normal3((b0 * normals[v[0] as usize] + b1 * normals[v[1] as usize] + b2 * normals[v[2] as usize]).normalize())
+            } else {
+                isect.hit.n
+            };
+
+            // compute shading tangent
+            let ss = if let Some(tangents) = &self.mesh.tangents {
+                (b0 * tangents[v[0] as usize] + b1 * tangents[v[1] as usize] + b2 * tangents[v[2] as usize]).normalize()
+            } else {
+                isect.geom.dpdu.normalize()
+            };
+
+            // compute shading bitangent ts and adjust shading tangent ss
+            let ts = ns.cross(ss);
+            let (ts, ss) = if ts.magnitude2() > 0.0 {
+                let ts = ts.normalize();
+                let ss = ts.cross(ns.0);
+                (ts, ss)
+            } else {
+                coordinate_system(ns.0)
+            };
+
+            let (dndu, dndv) = if let Some(normals) = &self.mesh.normals {
+                let dn1 = normals[v[0] as usize] - normals[v[2] as usize];
+                let dn2 = normals[v[1] as usize] - normals[v[2] as usize];
+
+                if degenerate_uv {
+                    unimplemented!()
+                } else {
+                    let dndu = (duv12[1] * dn1 - duv02[1] * dn2) * inv_det;
+                    let dndv = (-duv12[0] * dn1 + duv02[0] * dn2) * inv_det;
+                    (dndu, dndv)
+                }
+            } else {
+                (Normal3::new(0.0, 0.0, 0.0), Normal3::new(0.0, 0.0, 0.0))
+            };
+
+            let shading_geom = DiffGeom {
+                dpdu: ss,
+                dpdv: ts,
+                dndu,
+                dndv,
+            };
+            isect.shading_geom = shading_geom;
+
+            isect.shading_n = ns;
+            if self.flip_normals() {
+                isect.shading_n = -isect.shading_n;
+            }
+
+            // TODO: clean up orientation
+            isect.hit.n = Normal3(faceforward(isect.hit.n.0, isect.shading_n.0));
+        }
+        Some((t, isect))
     }
 
-    fn intersect_test(&self, ray: &Ray) -> bool {
-        unimplemented!()
-    }
+//    fn intersect_test(&self, ray: &Ray) -> bool {
+//        false
+//    }
 }

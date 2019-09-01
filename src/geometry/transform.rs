@@ -9,16 +9,16 @@ pub struct Transform {
     pub invt: Matrix4<Float>
 }
 
-const ZERO_MAT4: Matrix4<Float> = Matrix4::new(
-    0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0
+const IDENTITY_MAT4: Matrix4<Float> = Matrix4::new(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0
 );
 
 impl Transform {
 
-    pub const IDENTITY: Self = Transform::new(ZERO_MAT4, ZERO_MAT4);
+    pub const IDENTITY: Self = Transform::new(IDENTITY_MAT4, IDENTITY_MAT4);
 
     pub fn from_mat(mat: Matrix4<Float>) -> Self {
         let m_inv = mat.invert().expect("Could not invert matrix");
@@ -75,11 +75,15 @@ impl Transform {
     }
 
     pub fn identity() -> Self {
-        Self::new(Matrix4::zero(), Matrix4::zero())
+        Self::new(Matrix4::identity(), Matrix4::identity())
     }
 
     pub fn inverse(&self) -> Self {
         Self::new(self.invt, self.t)
+    }
+
+    pub fn swaps_handedness(&self) -> bool {
+        self.t.determinant() < 0.0
     }
 
     pub fn transform_normal(&self, n: &Normal3) -> Normal3 {
@@ -373,5 +377,14 @@ mod tests {
 
         assert_abs_diff_eq!(Vec3f::new(2.0, 2.0, 2.0), vt, epsilon = 0.00001);
         assert_abs_diff_eq!(2.0 * verr, vterr, epsilon = 0.000001);
+    }
+
+    #[test]
+    fn test_identity() {
+        let tf = Transform::IDENTITY;
+        let p = Point3f::new(0.0, 0.0, 0.0);
+
+        let pt = tf.transform(p);
+        assert_abs_diff_eq!(Point3f::new(0.0, 0.0, 0.0), pt, epsilon = 0.000001);
     }
 }

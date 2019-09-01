@@ -6,6 +6,7 @@ use crate::geometry::Ray;
 use std::mem::swap;
 use crate::err_float::gamma;
 use arrayvec::ArrayVec;
+use cgmath::num_traits::real::Real;
 
 pub type Bounds2f = Bounds2<f32>;
 pub type Bounds2i = Bounds2<i32>;
@@ -106,6 +107,20 @@ pub struct Bounds3<S: Scalar> {
 impl <S: Scalar> Bounds3<S> {
     pub fn with_bounds(min: Point3<S>, max: Point3<S>) -> Self {
         Self {min, max}
+    }
+
+    pub fn new(p1: Point3<S>, p2: Point3<S>) -> Self {
+        let min= Point3::new(
+            p1.x.min(p2.x),
+        p1.y.min(p2.y),
+        p1.z.min(p2.z)
+        );
+        let max = Point3::new(
+            p1.x.max(p2.x),
+            p1.y.max(p2.y),
+            p1.z.max(p2.z),
+        );
+        Self::with_bounds(min, max)
     }
 
     pub fn empty() -> Self {

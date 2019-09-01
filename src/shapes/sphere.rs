@@ -67,6 +67,10 @@ impl<'t> Shape for Sphere<'t> {
         self.world_to_object
     }
 
+    fn reverse_orientation(&self) -> bool {
+        false // TODO
+    }
+
     #[allow(non_snake_case)]
     #[allow(clippy::many_single_char_names)]
     fn intersect(&self, ray: &Ray) -> Option<(Float, SurfaceInteraction)> {

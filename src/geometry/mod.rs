@@ -44,6 +44,14 @@ pub fn coordinate_system(v1: Vec3f) -> (Vec3f, Vec3f) {
     (v2, v3)
 }
 
+pub fn faceforward(v1: Vec3f, v2: Vec3f) -> Vec3f {
+    if v1.dot(v2) < 0.0 {
+        -v1
+    } else {
+        v1
+    }
+}
+
 pub fn offset_ray_origin(p: Point3f, p_err: Vec3f, n: Normal3, dir: Vec3f) -> Point3f {
     let d = n.map(|v| v.abs()).dot(p_err);
     let mut offset = d * n.0;
@@ -153,6 +161,14 @@ impl std::ops::Add<Normal3> for Normal3 {
 
     fn add(self, rhs: Normal3) -> Self::Output {
         Self(self.0 + rhs.0)
+    }
+}
+
+impl std::ops::Sub<Normal3> for Normal3 {
+    type Output = Self;
+
+    fn sub(self, rhs: Normal3) -> Self::Output {
+        Self(self.0 - rhs.0)
     }
 }
 
