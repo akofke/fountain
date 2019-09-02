@@ -93,7 +93,9 @@ pub fn main() {
     let red = Arc::new(MatteMaterial::constant([0.7, 0.2, 0.2].into()));
     let green = Arc::new(MatteMaterial::constant([0.2, 0.7, 0.2].into()));
     let uv = Arc::new(MatteMaterial::new(Arc::new(UVTexture::new(UVMapping::default()))));
-    let check = Arc::new(MatteMaterial::new(Arc::new(Checkerboard2DTexture::default())));
+    let check = Arc::new(MatteMaterial::new(Arc::new(
+        Checkerboard2DTexture::new(ConstantTexture(Spectrum::new(0.0)), ConstantTexture(Spectrum::new(1.0)), UVMapping::new(100.0, 100.0, 0.0, 0.0))
+    )));
     let mirror = Arc::new(MirrorMaterial::new(Arc::new(ConstantTexture(Spectrum::new(0.9)))));
     let glass = Arc::new(GlassMaterial::constant(Spectrum::new(1.0), Spectrum::new(1.0), 1.1));
 

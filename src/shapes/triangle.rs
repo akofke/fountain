@@ -4,6 +4,7 @@ use std::convert::TryInto;
 use crate::shapes::Shape;
 use cgmath::{EuclideanSpace, InnerSpace};
 use crate::interaction::DiffGeom;
+use crate::err_float::gamma;
 
 pub struct TriangleMesh {
     pub n_triangles: u32,
@@ -87,7 +88,7 @@ pub struct Triangle<'m> {
 impl<'m> Triangle<'m> {
     pub fn new(mesh: &'m TriangleMesh, tri_id: u32) -> Self {
         let idx = tri_id as usize;
-        let vertex_indices: &[u32; 3] = mesh.vertex_indices[idx .. idx + 3].try_into().unwrap();
+        let vertex_indices: &[u32; 3] = mesh.vertex_indices[3*idx .. 3*idx + 3].try_into().unwrap();
 
         Self {
             mesh,
@@ -209,6 +210,24 @@ impl<'m> Shape for Triangle<'m> {
         let b2 = e2 * inv_det;
         let t = t_scaled * inv_det;
 
+        // Ensure that the computed triangle t is conservatively greater than 0.
+        // Compute delta_z term for triangle t error bounds.
+        let max_zt = p0t.z.abs().max(p1t.z.abs()).max(p2t.z.abs());
+        let delta_z = gamma(3) * max_zt;
+
+        // Compute delta_x and delta_y terms for triangle t error bounds.
+        let max_xt = p0t.x.abs().max(p1t.x.abs()).max(p2t.x.abs());
+        let max_yt = p0t.y.abs().max(p1t.y.abs()).max(p2t.y.abs());
+        let delta_x = gamma(5) * (max_xt + max_zt);
+        let delta_y = gamma(5) * (max_yt + max_zt);
+
+        let delta_e = 2.0 * (gamma(2) * max_xt * max_yt + delta_y * max_xt + delta_x * max_yt);
+
+        let max_e = e0.abs().max(e1.abs()).max(e2.abs());
+        let delta_t = 3.0 * (gamma(3) * max_e * max_zt + delta_e * max_zt + delta_z * max_e) *
+            inv_det.abs();
+        if t <= delta_t { return None; }
+
         // compute triangle partial derivatives.
         let uv = self.get_uvs();
         let duv02 = uv[0] - uv[2];
@@ -228,6 +247,12 @@ impl<'m> Shape for Triangle<'m> {
             (dpdu, dpdv)
         };
 
+        // Compute error bounds for triangle intersection point
+        let x_abs_sum = (b0 * p0.x).abs() + (b1 * p1.x).abs() + (b2 * p2.x).abs();
+        let y_abs_sum = (b0 * p0.y).abs() + (b1 * p1.y).abs() + (b2 * p2.y).abs();
+        let z_abs_sum = (b0 * p0.z).abs() + (b1 * p1.z).abs() + (b2 * p2.z).abs();
+        let p_err = gamma(7) * Vec3f::new(x_abs_sum, y_abs_sum, z_abs_sum);
+
         // interpolate uv coordinates and hit point using barycentric coordinates
         let p_hit = Point3f::from_vec(b0 * p0.to_vec() + b1 * p1.to_vec() + b2 * p2.to_vec());
         let uv_hit = Point2f::from_vec(b0 * uv[0].to_vec() + b1 * uv[1].to_vec() + b2 * uv[2].to_vec());
@@ -241,7 +266,6 @@ impl<'m> Shape for Triangle<'m> {
             dndv: Normal3::new(0.0, 0.0, 0.0),
         };
 
-        let p_err = Vec3f::new(0.0, 0.0, 0.0);
         let geom_normal = Normal3(dp02.cross(dp12).normalize());
 
         let mut isect = SurfaceInteraction::new(
