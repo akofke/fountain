@@ -94,11 +94,19 @@ impl BVH<'_> {
         let (part1, part2) = match split_method {
             SplitMethod::Middle => {
                 let midpoint = (centroid_bounds.min[ax] + centroid_bounds.max[ax]) / 2.0;
-                partition(prim_info, |prim| {
+                let (part1, part2) = partition(prim_info, |prim| {
                     prim.centroid[ax] < midpoint
-                })
-
+                });
+                if part1.len() == 0 || part2.len() == 0 {
+                    Self::partition_equal_counts(prim_info, ax)
+                } else {
+                    (part1, part2)
+                }
             },
+
+            SplitMethod::EqualCounts => {
+                Self::partition_equal_counts(prim_info, ax)
+            }
             _ => unimplemented!()
         };
 
@@ -106,6 +114,16 @@ impl BVH<'_> {
         let child2 = Self::recursive_build(arena, part2, prim_ordering, split_method);
 
         arena.alloc(BVHBuildNode::new_interior([child1, child2], ax as u8))
+    }
+
+    fn partition_equal_counts(prim_info: &mut [BVHPrimInfo], ax: usize)
+        -> (&mut [BVHPrimInfo], &mut [BVHPrimInfo])
+    {
+        let mid = prim_info.len() / 2;
+        prim_info.partition_at_index_by(mid, |a, b| {
+            a.centroid[ax].partial_cmp(&b.centroid[ax]).unwrap()
+        });
+        prim_info.split_at_mut(mid)
     }
 
     // Returns subtree length

@@ -239,7 +239,14 @@ impl<'m> Shape for Triangle<'m> {
         let degenerate_uv = determinant.abs() < 1.0e-8;
 
         let (dpdu, dpdv) = if degenerate_uv {
-            unimplemented!(); // TODO
+            // TODO: zero-length normal
+            let ng = (p2 - p0).cross(p1 - p0);
+            if ng.magnitude2() == 0.0 {
+                // triangle is actually degenerate
+                return None;
+            } else {
+                coordinate_system(ng.normalize())
+            }
         } else {
             let inv_det = 1.0 / determinant;
             let dpdu = (duv12[1] * dp02 - duv02[1] * dp12) * inv_det;
@@ -308,7 +315,14 @@ impl<'m> Shape for Triangle<'m> {
                 let dn2 = normals[v[1] as usize] - normals[v[2] as usize];
 
                 if degenerate_uv {
-                    unimplemented!()
+                    let dn = (normals[v[2] as usize] - normals[v[0] as usize]).0
+                        .cross((normals[v[1] as usize] - normals[v[0] as usize]).0);
+                    if dn.magnitude2() == 0.0 {
+                        (Normal3::new(0.0, 0.0, 0.0), Normal3::new(0.0, 0.0, 0.0))
+                    } else {
+                        let (dndu, dndv) = coordinate_system(dn);
+                        (Normal3(dndu), Normal3(dndv))
+                    }
                 } else {
                     let dndu = (duv12[1] * dn1 - duv02[1] * dn2) * inv_det;
                     let dndv = (-duv12[0] * dn1 + duv02[0] * dn2) * inv_det;

@@ -3,7 +3,7 @@
 use raytracer::integrator::{SamplerIntegrator, Integrator};
 use raytracer::sampler::random::RandomSampler;
 use raytracer::camera::PerspectiveCamera;
-use raytracer::{Transform, Point2i, Bounds2, Point3f};
+use raytracer::{Transform, Point2i, Bounds2, Point3f, Vec3f, Normal3, Point2f};
 use raytracer::integrator::whitted::WhittedIntegrator;
 use raytracer::scene::Scene;
 use raytracer::bvh::BVH;
@@ -28,6 +28,9 @@ use raytracer::texture::uv::UVTexture;
 use raytracer::texture::mapping::UVMapping;
 use raytracer::texture::checkerboard::Checkerboard2DTexture;
 use raytracer::shapes::triangle::TriangleMesh;
+use std::path::Path;
+use tobj::load_obj;
+use std::error::Error;
 
 pub fn main() {
 
@@ -67,7 +70,7 @@ pub fn main() {
         360.0
     );
 
-    let o2w = Transform::translate((0.0, 0.0, -21.0).into());
+    let o2w = Transform::translate((0.0, 0.0, -31.0).into());
     let w2o = o2w.inverse();
     let ground_sphere = Sphere::whole(
         &o2w, &w2o, 20.0
@@ -88,6 +91,8 @@ pub fn main() {
         None,
         false
     );
+
+    let meshes = mesh_from_obj("seahorse.obj");
 
     let blue = Arc::new(MatteMaterial::constant([0.2, 0.2, 0.7].into()));
     let red = Arc::new(MatteMaterial::constant([0.7, 0.2, 0.2].into()));
@@ -119,14 +124,16 @@ pub fn main() {
         material: Some(check.clone()),
     };
 
-    let mut tri_prims: Vec<Box<dyn Primitive>> = mesh.iter_triangles()
-        .map(|tri| {
-            Box::new(GeometricPrimitive {
-                shape: tri,
-                material: Some(blue.clone())
-            }) as Box<dyn Primitive>
-        })
-        .collect();
+
+    let tri_prims: Vec<Box<dyn Primitive>> = meshes.iter().flat_map(|mesh| {
+        mesh.iter_triangles()
+            .map(|tri| {
+                Box::new(GeometricPrimitive {
+                    shape: tri,
+                    material: Some(blue.clone())
+                }) as Box<dyn Primitive>
+            })
+    }).collect();
 
     let mut prims: Vec<&dyn Primitive> = vec![
 //        &prim,
@@ -136,9 +143,10 @@ pub fn main() {
     ];
     prims.extend(tri_prims.iter().map(|b| b.as_ref()));
     let bvh = BVH::build(prims);
+    dbg!(bvh.bounds);
 
     let mut light = PointLight::new(Transform::translate((0.0, 0.0, 3.0).into()), Spectrum::new(10.0));
-    let mut dist_light = DistantLight::new(Spectrum::new(1.5), vec3(3.0, 3.0, 3.0));
+    let mut dist_light = DistantLight::new(Spectrum::new(10.5), vec3(3.0, 3.0, 3.0));
     let lights: Vec<&mut dyn Light> = vec![
         &mut dist_light,
         &mut light,
@@ -146,11 +154,11 @@ pub fn main() {
 //    let lights: Vec<&mut dyn Light> = vec![&mut light];
     let scene = Scene::new(bvh, lights);
 
-    let resolution = Point2i::new(512, 512);
+    let resolution = Point2i::new(1024, 1024);
 
 //    let camera_pos = Transform::translate((0.0, 0.0, 10000.0).into());
     let camera_tf = Transform::camera_look_at(
-        (0.0, 4.0, 4.0).into(),
+        (0.0, 10.0, 10.0).into(),
         (0.0, 0.0, 0.0).into(),
         (0.0, 0.0, 1.0).into()
     );
@@ -189,4 +197,41 @@ pub fn main() {
     let encoder = image::hdr::HDREncoder::new(file);
     let pixels: Vec<_> = img.pixels().map(|p| *p).collect();
     encoder.encode(pixels.as_slice(), img.width() as usize, img.height() as usize).unwrap();
+}
+
+fn mesh_from_obj(path: impl AsRef<Path>) -> Vec<TriangleMesh> {
+    let (models, materials) = match tobj::load_obj(path.as_ref()) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("{}", e.description());
+            panic!();
+        }
+    };
+    models.into_iter().map(|model| {
+        let vertices = model.mesh.positions
+            .chunks_exact(3)
+            .map(|v| Point3f::new(v[0], v[1], v[2]))
+            .collect();
+        let normals = model.mesh.normals
+            .chunks_exact(3)
+            .map(|v| Normal3::new(v[0], v[1], v[2]))
+            .collect();
+//        let tex_coords = model.mesh.texcoords
+//            .chunks_exact(2)
+//            .map(|v| Point2f::new(v[0], v[1]))
+//            .collect();
+
+        let tf = Transform::scale(1.0 / 10.0, 1.0/10.0, 1.0/10.0);
+        let tf = Transform::translate((3.0, -2.0, 25.0).into()) * tf;
+        let mesh = TriangleMesh::new(
+            tf,
+            model.mesh.indices,
+            vertices,
+            Some(normals),
+            None,
+            None,
+            false
+        );
+        mesh
+    }).collect()
 }

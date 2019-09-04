@@ -2,6 +2,7 @@
 #![feature(type_ascription)]
 #![feature(clamp)]
 #![feature(const_fn)]
+#![feature(slice_partition_at_index)]
 
 #![deny(bare_trait_objects)]
 
