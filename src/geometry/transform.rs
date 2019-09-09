@@ -1,5 +1,5 @@
 use crate::{Float, Point3f, Vec3f, Normal3, Bounds3f, Ray, SurfaceInteraction, ComponentWiseExt};
-use cgmath::{Matrix4, SquareMatrix, InnerSpace, Transform as cgTransform, Zero};
+use cgmath::{Matrix4, SquareMatrix, InnerSpace, Transform as cgTransform, Zero, Rad};
 use crate::err_float::gamma;
 use crate::interaction::{SurfaceHit, DiffGeom, TextureDifferentials};
 
@@ -62,6 +62,30 @@ impl Transform {
         Self::new(m, m_inv)
     }
 
+    pub fn rotate_x(theta: impl Into<Rad<Float>>) -> Self {
+        let m = Matrix4::from_angle_x(theta);
+        let m_inv = m.inverse_transform().unwrap();
+        Self::new(m, m_inv)
+    }
+
+    pub fn rotate_y(theta: impl Into<Rad<Float>>) -> Self {
+        let m = Matrix4::from_angle_y(theta);
+        let m_inv = m.inverse_transform().unwrap();
+        Self::new(m, m_inv)
+    }
+
+    pub fn rotate_z(theta: impl Into<Rad<Float>>) -> Self {
+        let m = Matrix4::from_angle_z(theta);
+        let m_inv = m.inverse_transform().unwrap();
+        Self::new(m, m_inv)
+    }
+
+    pub fn fit_to_bounds(subject: Bounds3f, target: Bounds3f) -> Self {
+        let displacement = target.centroid() - subject.centroid();
+        let scale = target.diagonal().magnitude() / subject.diagonal().magnitude();
+        Self::translate(displacement).then(Self::scale(scale, scale, scale))
+    }
+
     pub fn perspective(fov: Float, near: Float, far: Float) -> Self {
         let mat = Matrix4::new(
             1.0, 0.0, 0.0, 0.0,
@@ -84,6 +108,10 @@ impl Transform {
 
     pub fn swaps_handedness(&self) -> bool {
         self.t.determinant() < 0.0
+    }
+
+    pub fn then(self, next: Self) -> Self {
+        next * self
     }
 
     pub fn transform_normal(&self, n: &Normal3) -> Normal3 {

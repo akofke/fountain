@@ -3,7 +3,7 @@
 use raytracer::integrator::{SamplerIntegrator, Integrator};
 use raytracer::sampler::random::RandomSampler;
 use raytracer::camera::PerspectiveCamera;
-use raytracer::{Transform, Point2i, Bounds2, Point3f, Vec3f, Normal3, Point2f};
+use raytracer::{Transform, Point2i, Bounds2, Point3f, Vec3f, Normal3, Point2f, Vec2f};
 use raytracer::integrator::whitted::WhittedIntegrator;
 use raytracer::scene::Scene;
 use raytracer::bvh::BVH;
@@ -20,7 +20,7 @@ use raytracer::spectrum::Spectrum;
 use raytracer::light::Light;
 use raytracer::light::distant::DistantLight;
 use raytracer::point3f;
-use cgmath::vec3;
+use cgmath::{vec3, Deg, Angle};
 use raytracer::material::mirror::MirrorMaterial;
 use raytracer::texture::ConstantTexture;
 use raytracer::material::glass::GlassMaterial;
@@ -92,7 +92,7 @@ pub fn main() {
         false
     );
 
-    let meshes = mesh_from_obj("seahorse.obj");
+    let meshes = mesh_from_obj("bunny.obj");
 
     let blue = Arc::new(MatteMaterial::constant([0.2, 0.2, 0.7].into()));
     let red = Arc::new(MatteMaterial::constant([0.7, 0.2, 0.2].into()));
@@ -130,14 +130,14 @@ pub fn main() {
             .map(|tri| {
                 Box::new(GeometricPrimitive {
                     shape: tri,
-                    material: Some(blue.clone())
+                    material: Some(uv.clone())
                 }) as Box<dyn Primitive>
             })
     }).collect();
 
     let mut prims: Vec<&dyn Primitive> = vec![
 //        &prim,
-        &ground_prim,
+//        &ground_prim,
 //        &prim2,
 //        &prim3,
     ];
@@ -208,28 +208,36 @@ fn mesh_from_obj(path: impl AsRef<Path>) -> Vec<TriangleMesh> {
         }
     };
     models.into_iter().map(|model| {
+//        dbg!(&model.mesh.positions);
         let vertices = model.mesh.positions
             .chunks_exact(3)
             .map(|v| Point3f::new(v[0], v[1], v[2]))
             .collect();
-        let normals = model.mesh.normals
+//        dbg!(&model.mesh.indices);
+        let normals: Vec<Normal3> = model.mesh.normals
             .chunks_exact(3)
             .map(|v| Normal3::new(v[0], v[1], v[2]))
             .collect();
-//        let tex_coords = model.mesh.texcoords
-//            .chunks_exact(2)
-//            .map(|v| Point2f::new(v[0], v[1]))
-//            .collect();
+        let normals = if normals.is_empty() { None } else { Some(normals) };
+        let tex_coords: Vec<Point2f> = model.mesh.texcoords
+            .chunks_exact(2)
+            .map(|v| Point2f::new(v[0], v[1]))
+            .collect();
+        let tex_coords = if tex_coords.is_empty() { None } else { Some(tex_coords) };
 
-        let tf = Transform::scale(1.0 / 10.0, 1.0/10.0, 1.0/10.0);
-        let tf = Transform::translate((3.0, -2.0, 25.0).into()) * tf;
+        let tf = Transform::identity();
+        let tf = Transform::scale(4.0, 4.0, 4.0) * tf;
+        let tf = Transform::rotate_z(Deg::turn_div_2()) * tf;
+        let tf = Transform::rotate_x(Deg(-45.0)) * tf;
+//        let tf = Transform::scale(1.0 / 45.0, 1.0/45.0, 1.0/45.0) * tf;
+//        let tf = Transform::translate((0.0, 0.0, 2.0).into()) * tf;
         let mesh = TriangleMesh::new(
             tf,
             model.mesh.indices,
             vertices,
-            Some(normals),
+            normals,
             None,
-            None,
+            tex_coords,
             false
         );
         mesh

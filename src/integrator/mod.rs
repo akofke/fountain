@@ -182,6 +182,8 @@ impl<R: IntegratorRadiance> Integrator for SamplerIntegrator<R> {
     fn render(&mut self, scene: &Scene, film: &Film<BoxFilter>) {
         // preprocess
         let sample_bounds = film.sample_bounds();
+//        let total_samples = sample_bounds.area() * self.sampler.samples_per_pixel() as i32;
+//        let progress = indicatif::ProgressBar::new(total_samples as u64);
         sample_bounds.iter_tiles(16).par_bridge().for_each(|tile| {
             let mut arena = Bump::new();
 
@@ -225,11 +227,13 @@ impl<R: IntegratorRadiance> Integrator for SamplerIntegrator<R> {
                     );
 
                     arena.reset();
+//                    progress.inc(1);
                 }
             }
 
             film.merge_film_tile(film_tile);
         });
+//        progress.finish();
     }
 }
 
