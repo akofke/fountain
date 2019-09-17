@@ -2,6 +2,26 @@ use std::mem::MaybeUninit;
 
 use crate::Float;
 
+pub fn array<F: FnMut(usize) -> Float, const N: usize>(mut init: F) -> [Float; N] {
+    let mut arr = MaybeUninit::<[Float; N]>::uninit();
+    let arr_pointer = arr.as_mut_ptr() as *mut Float;
+
+    for i in 0..N {
+        unsafe {
+            // Safe since i is always inbounds
+            arr_pointer.add(i).write(init(i));
+        }
+    }
+
+    // Safe since we have initialized every place in the array
+    let arr = unsafe { arr.assume_init() };
+    arr
+}
+
+pub fn zip<F: Fn(Float, Float) -> Float, const N: usize>(a: [Float; N], b: [Float; N], f: F) -> [Float; N] {
+    array(|i| f(a[i], b[i]))
+}
+
 #[repr(transparent)]
 #[derive(Clone, Copy)]
 pub struct CoefficientSpectrum<const N: usize>([Float; N]);
@@ -9,27 +29,15 @@ pub struct CoefficientSpectrum<const N: usize>([Float; N]);
 impl<const N: usize> CoefficientSpectrum<{N}> {
 
     #[inline]
-    pub fn new_with(init: impl Fn(usize) -> Float) -> Self {
-        let mut arr: MaybeUninit<Self> = MaybeUninit::uninit();
-        let arr_pointer: *mut Float = unsafe {
-            // Safe since Self is repr(transparent).
-            std::mem::transmute(&mut arr)
-        };
-
-        for i in 0..N {
-            unsafe {
-                // Safe since i is always inbounds
-                arr_pointer.add(i).write(init(i));
-            }
-        }
-
-        // Safe since we have initialized every place in the array
-        unsafe { arr.assume_init() }
+    pub fn new_with<F: FnMut(usize) -> Float>(mut init: F) -> Self {
+        let arr = array(init);
+        Self(arr)
     }
 
     #[inline]
     pub fn zip<F: Fn(Float, Float) -> Float>(&self, other: &Self, f: F) -> Self {
-        Self::new_with(|i| f(self.0[i], other.0[i]))
+        let arr = zip(self.0, other.0, f);
+        Self(arr)
     }
 }
 
@@ -51,7 +59,8 @@ impl<const N: usize> std::ops::Add for CoefficientSpectrum<{N}> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        self.zip(&rhs, |x, y| x + y)
+        let arr = zip(self.0, rhs.0, |x, y| x + y);
+        Self(arr)
     }
 }
 

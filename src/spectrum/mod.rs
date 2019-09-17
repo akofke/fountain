@@ -1,7 +1,7 @@
 use crate::Float;
 use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, Div, DivAssign, Index, IndexMut, Deref};
 
-//pub mod spectrum2;
+pub mod spectrum2;
 
 #[allow(clippy::excessive_precision)]
 pub fn xyz_to_rgb(xyz: [Float; 3]) -> [Float; 3] {
