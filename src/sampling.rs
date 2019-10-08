@@ -33,3 +33,19 @@ pub fn rejection_sample_shere(rng: &mut impl Rng, radius: Float) -> Point3f {
         if d < radius * radius { break Point3f::new(x, y, z) }
     }
 }
+
+pub fn uniform_sample_sphere(u: Point2f) -> Vec3f {
+    let z = 1.0 - 2.0 * u[0];
+    let r = 0.0.max(1.0 - z * z).sqrt();
+    let phi = 2.0 * std::f32::consts::PI * u[1];
+    Vec3f::new(r * phi.cos(), r * phi.sin(), z)
+}
+
+pub const fn uniform_sphere_pdf() -> Float {
+    std::f32::consts::FRAC_1_PI * 4.0
+}
+
+pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
+    let su0 = u[0].sqrt();
+    Point2f::new(1 - su0, u[1] * su0)
+}

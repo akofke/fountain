@@ -16,6 +16,10 @@ pub fn distance(p1: Point3f, p2: Point3f) -> Float {
     (p1 - p2).magnitude()
 }
 
+pub fn distance_sq(p1: Point3f, p2: Point3f) -> Float {
+    (p1 - p2).magnitude2()
+}
+
 // TODO: make generic?
 pub fn permute_point(p: Point3f, ix: usize, iy: usize, iz: usize) -> Point3f {
     Point3f::new(p[ix], p[iy], p[iz])

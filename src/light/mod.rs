@@ -7,6 +7,7 @@ use crate::bvh::BVH;
 pub mod point;
 pub mod distant;
 pub mod infinite;
+pub mod diffuse;
 
 pub trait Light: Sync {
     fn flags(&self) -> LightFlags;
@@ -20,6 +21,15 @@ pub trait Light: Sync {
     fn preprocess(&mut self, scene_prims: &BVH) {}
 
     fn sample_incident_radiance(&self, reference: &SurfaceHit, u: Point2f) -> LiSample;
+
+    /// The probability density with respect to solid angle for the light's
+    /// `sample_incident_radiance` method to sample the direction `wi` from the reference
+    /// point `reference`.
+    fn pdf_incident_radiance(&self, reference: &SurfaceHit, wi: Vec3f) -> Float;
+}
+
+pub trait AreaLight: Light {
+    fn emitted_radiance(&self, hit: SurfaceHit, w: Vec3f) -> Spectrum;
 }
 
 pub struct LiSample {

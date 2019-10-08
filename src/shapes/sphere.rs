@@ -1,14 +1,15 @@
 use cgmath::{EuclideanSpace, InnerSpace};
 
-use crate::{ComponentWiseExt, distance, Float, Normal3, Point2f, Vec3f};
+use crate::{ComponentWiseExt, distance, Float, Normal3, Point2f, Vec3f, Point3f};
 use crate::EFloat;
 use crate::err_float::gamma;
 use crate::geometry::{Ray, Transform};
 use crate::geometry::bounds::Bounds3;
-use crate::interaction::DiffGeom;
+use crate::interaction::{DiffGeom, SurfaceHit};
 use crate::interaction::SurfaceInteraction;
 use crate::math::quadratic;
 use crate::shapes::Shape;
+use crate::sampling::uniform_sample_sphere;
 
 pub struct Sphere<'t> {
     object_to_world: &'t Transform,
@@ -69,6 +70,10 @@ impl<'t> Shape for Sphere<'t> {
 
     fn reverse_orientation(&self) -> bool {
         false // TODO
+    }
+
+    fn area(&self) -> Float {
+        self.phi_max * self.radius * (self.z_max - self.z_min)
     }
 
     #[allow(non_snake_case)]
@@ -185,6 +190,24 @@ impl<'t> Shape for Sphere<'t> {
         let world_intersect = self.object_to_world().transform(interact);
 
         Some((t_shape_hit.into(), world_intersect))
+    }
+
+    fn sample(&self, u: Point2f) -> SurfaceHit {
+        let mut p_obj = Point3f::new(0.0, 0.0, 0.0) + self.radius * uniform_sample_sphere(u);
+        let mut n = Normal3(self.object_to_world.transform(Normal3(p_obj.into())).normalize());
+        if self.reverse_orientation {
+            n *= -1.0;
+        }
+        // re-project p_obj to sphere surface
+        p_obj *= self.radius / distance(p_obj, Point3f::new(0.0, 0.0, 0.0));
+        let p_obj_err = gamma(5) * p_obj.to_vec().abs();
+        let (p, p_err) = self.object_to_world.tf_err_to_err(p_obj, p_obj_err);
+        SurfaceHit {
+            p,
+            p_err,
+            time: 0.0,
+            n
+        }
     }
 
 //    fn intersect_test(&self, ray: &Ray) -> bool {

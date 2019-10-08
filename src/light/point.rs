@@ -61,4 +61,8 @@ impl Light for PointLight {
             pdf
         }
     }
+
+    fn pdf_incident_radiance(&self, reference: &SurfaceHit, wi: Vec3f) -> f32 {
+        0.0
+    }
 }

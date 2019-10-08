@@ -3,8 +3,9 @@ use std::sync::Arc;
 use std::convert::TryInto;
 use crate::shapes::Shape;
 use cgmath::{EuclideanSpace, InnerSpace};
-use crate::interaction::DiffGeom;
+use crate::interaction::{DiffGeom, SurfaceHit};
 use crate::err_float::gamma;
+use crate::sampling::uniform_sample_triangle;
 
 pub struct TriangleMesh {
     pub n_triangles: u32,
@@ -97,6 +98,24 @@ impl<'m> Triangle<'m> {
         }
     }
 
+    fn get_vertices(&self) -> [Point3f; 3] {
+        let v = self.vertex_indices;
+        let p0 = self.mesh.vertices[v[0] as usize];
+        let p1 = self.mesh.vertices[v[1] as usize];
+        let p2 = self.mesh.vertices[v[2] as usize];
+        [p0, p1, p2]
+    }
+
+    fn get_normals(&self) -> Option<[Normal3; 3]> {
+        self.mesh.normals.map(|normals| {
+            let v = self.vertex_indices;
+            let n0 = normals[v[0] as usize];
+            let n1 =normals[v[1] as usize];
+            let n2 =normals[v[2] as usize];
+            [n0, n1, n2]
+        })
+    }
+
     fn get_uvs(&self) -> [Point2f; 3] {
         self.mesh.tex_coords.as_ref().map_or_else(
             || [(0.0, 0.0).into(), (1.0, 0.0).into(), (1.0, 1.0).into()],
@@ -135,6 +154,10 @@ impl<'m> Shape for Triangle<'m> {
 
     fn reverse_orientation(&self) -> bool {
         self.mesh.reverse_orientation
+    }
+
+    fn area(&self) -> Float {
+        unimplemented!()
     }
 
     fn intersect(&self, ray: &Ray) -> Option<(Float, SurfaceInteraction)> {
@@ -349,6 +372,28 @@ impl<'m> Shape for Triangle<'m> {
             isect.hit.n = Normal3(faceforward(isect.hit.n.0, isect.shading_n.0));
         }
         Some((t, isect))
+    }
+
+    fn sample(&self, u: Point2f) -> SurfaceHit {
+        let b = uniform_sample_triangle(u);
+        let [p0, p1, p2] = self.get_vertices();
+        let sample_p = b[0] * p0 + b[1] * p1 + (1.0 - b[0] - b[1]) * p2;
+
+        let sample_n = if let Some([n0, n1, n2]) = self.get_normals() {
+            Normal3((b[0] * n0 + b[1] * n1 + (1.0 - b[0] - b[1]) * n2).normalize())
+        } else {
+            Normal3((p1 - p0).cross(p2 - p0).normalize())
+        };
+
+        let p_abs_sum = (b[0] * p0).abs() + (b[1] * p1).abs() + ((1.0 - b[0] - b[1]) * p2).abs();
+        let p_err = gamma(6) * p_abs_sum;
+        
+        SurfaceHit {
+            p: sample_p,
+            p_err,
+            time: 0.0,
+            n: sample_n
+        }
     }
 
 //    fn intersect_test(&self, ray: &Ray) -> bool {

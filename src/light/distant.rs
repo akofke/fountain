@@ -71,4 +71,8 @@ impl Light for DistantLight {
             vis,
         }
     }
+
+    fn pdf_incident_radiance(&self, reference: &SurfaceHit, wi: Vec3f) -> f32 {
+        0.0
+    }
 }
