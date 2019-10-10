@@ -29,6 +29,8 @@ pub trait Light: Sync {
 }
 
 pub trait AreaLight: Light {
+    /// Given a point on the area light's surface represented by `hit`, evaluate the area light's
+    /// emitted radiance `L` in the given outgoing direction `w`.
     fn emitted_radiance(&self, hit: SurfaceHit, w: Vec3f) -> Spectrum;
 }
 
