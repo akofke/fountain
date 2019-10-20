@@ -184,6 +184,12 @@ impl std::ops::Neg for Normal3 {
     }
 }
 
+impl std::ops::MulAssign<Float> for Normal3 {
+    fn mul_assign(&mut self, rhs: Float) {
+        self.0 *= rhs;
+    }
+}
+
 impl From<Vec3f> for Normal3 {
     fn from(v: Vec3f) -> Self {
         Self(v)

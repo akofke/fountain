@@ -194,7 +194,7 @@ impl<'t> Shape for Sphere<'t> {
 
     fn sample(&self, u: Point2f) -> SurfaceHit {
         let mut p_obj = Point3f::new(0.0, 0.0, 0.0) + self.radius * uniform_sample_sphere(u);
-        let mut n = Normal3(self.object_to_world.transform(Normal3(p_obj.into())).normalize());
+        let mut n = Normal3(self.object_to_world.transform(Normal3(p_obj.to_vec())).normalize());
         if self.reverse_orientation {
             n *= -1.0;
         }

@@ -13,6 +13,7 @@ use crate::scene::Scene;
 use crate::spectrum::{RGBSpectrum, Spectrum};
 
 pub mod whitted;
+pub mod direct_lighting;
 
 pub trait Integrator {
     fn render(&mut self, scene: &Scene, film: &Film<BoxFilter>);
@@ -25,7 +26,7 @@ pub struct SamplerIntegrator<R: IntegratorRadiance> {
 }
 
 pub trait IntegratorRadiance: Sync + Send {
-    fn preprocess(&mut self, scene: &Scene, sampler: &dyn Sampler);
+    fn preprocess(&mut self, scene: &Scene, sampler: &mut dyn Sampler);
 
     fn incident_radiance(
         &self,

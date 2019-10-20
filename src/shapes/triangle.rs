@@ -106,12 +106,20 @@ impl<'m> Triangle<'m> {
         [p0, p1, p2]
     }
 
+    fn get_vertices_as_vectors(&self) -> [Vec3f; 3] {
+        let v = self.vertex_indices;
+        let p0 = self.mesh.vertices[v[0] as usize];
+        let p1 = self.mesh.vertices[v[1] as usize];
+        let p2 = self.mesh.vertices[v[2] as usize];
+        [p0.to_vec(), p1.to_vec(), p2.to_vec()]
+    }
+
     fn get_normals(&self) -> Option<[Normal3; 3]> {
-        self.mesh.normals.map(|normals| {
+        self.mesh.normals.as_ref().map(|normals| {
             let v = self.vertex_indices;
             let n0 = normals[v[0] as usize];
-            let n1 =normals[v[1] as usize];
-            let n2 =normals[v[2] as usize];
+            let n1 = normals[v[1] as usize];
+            let n2 = normals[v[2] as usize];
             [n0, n1, n2]
         })
     }
@@ -376,7 +384,7 @@ impl<'m> Shape for Triangle<'m> {
 
     fn sample(&self, u: Point2f) -> SurfaceHit {
         let b = uniform_sample_triangle(u);
-        let [p0, p1, p2] = self.get_vertices();
+        let [p0, p1, p2] = self.get_vertices_as_vectors();
         let sample_p = b[0] * p0 + b[1] * p1 + (1.0 - b[0] - b[1]) * p2;
 
         let sample_n = if let Some([n0, n1, n2]) = self.get_normals() {
@@ -389,7 +397,7 @@ impl<'m> Shape for Triangle<'m> {
         let p_err = gamma(6) * p_abs_sum;
         
         SurfaceHit {
-            p: sample_p,
+            p: Point3f::new(0.0, 0.0, 0.0) + sample_p,
             p_err,
             time: 0.0,
             n: sample_n

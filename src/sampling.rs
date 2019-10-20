@@ -35,8 +35,8 @@ pub fn rejection_sample_shere(rng: &mut impl Rng, radius: Float) -> Point3f {
 }
 
 pub fn uniform_sample_sphere(u: Point2f) -> Vec3f {
-    let z = 1.0 - 2.0 * u[0];
-    let r = 0.0.max(1.0 - z * z).sqrt();
+    let z: Float = 1.0 - 2.0 * u[0];
+    let r: Float = (1.0 - z * z).max(0.0).sqrt();
     let phi = 2.0 * std::f32::consts::PI * u[1];
     Vec3f::new(r * phi.cos(), r * phi.sin(), z)
 }
@@ -47,5 +47,5 @@ pub const fn uniform_sphere_pdf() -> Float {
 
 pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
     let su0 = u[0].sqrt();
-    Point2f::new(1 - su0, u[1] * su0)
+    Point2f::new(1.0 - su0, u[1] * su0)
 }

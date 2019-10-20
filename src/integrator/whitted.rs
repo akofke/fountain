@@ -13,7 +13,7 @@ pub struct WhittedIntegrator {
 }
 
 impl IntegratorRadiance for WhittedIntegrator {
-    fn preprocess(&mut self, scene: &Scene, sampler: &dyn Sampler) {
+    fn preprocess(&mut self, scene: &Scene, sampler: &mut dyn Sampler) {
         unimplemented!()
     }
 

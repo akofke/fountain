@@ -1,32 +1,39 @@
 use crate::{Point2i, Point2f, Float};
 use rand_xoshiro::Xoshiro256Plus;
 use rand::{SeedableRng, Rng};
-use crate::sampler::Sampler;
+use crate::sampler::{Sampler, SamplerState};
+use cgmath::Point2;
+use crate::spectrum::xyz_to_rgb;
 
 pub struct RandomSampler {
-    samples_per_pixel: u64,
     rng: Xoshiro256Plus,
-    current_pixel_sample_num: u64,
+    state: SamplerState,
 }
 
 impl RandomSampler {
-    pub fn new_with_seed(samples_per_pixel: u64, seed: u64) -> Self {
+    pub fn new_with_seed(samples_per_pixel: usize, seed: u64) -> Self {
         Self {
-            samples_per_pixel,
             rng: Xoshiro256Plus::seed_from_u64(seed),
-            current_pixel_sample_num: 0
+            state: SamplerState::new(samples_per_pixel),
         }
     }
 }
 
 impl Sampler for RandomSampler {
     fn start_pixel(&mut self, pixel: Point2i) {
-        self.current_pixel_sample_num = 0;
+        self.state.start_pixel(pixel);
+        let rng = &mut self.rng;
+        self.state.sample_array_1d.iter_mut().flatten().for_each(|x| {
+            *x = rng.gen();
+        });
+
+        self.state.sample_array_2d.iter_mut().flatten().for_each(|p| {
+            *p = Point2f::new(rng.gen(), rng.gen());
+        });
     }
 
     fn start_next_sample(&mut self) -> bool {
-        self.current_pixel_sample_num += 1;
-        self.current_pixel_sample_num <= self.samples_per_pixel
+        self.state.start_next_sample()
     }
 
     fn get_1d(&mut self) -> Float {
@@ -38,19 +45,31 @@ impl Sampler for RandomSampler {
     }
 
     fn request_1d_array(&mut self, len: usize) {
-        unimplemented!()
+        self.state.request_1d_array(len)
     }
 
     fn request_2d_array(&mut self, len: usize) {
-        unimplemented!()
+        self.state.request_2d_array(len);
+    }
+
+    fn get_1d_array(&mut self, len: usize) -> &[f32] {
+        self.state.get_1d_array(len)
+    }
+
+    fn get_2d_array(&mut self, len: usize) -> &[Point2<f32>] {
+        self.state.get_2d_array(len)
     }
 
     fn clone_with_seed(&self, seed: u64) -> Box<dyn Sampler> {
         // TODO: how to base off initial seed or do we need to?
-        Box::new(Self::new_with_seed(self.samples_per_pixel, seed))
+        Box::new(Self::new_with_seed(self.state.samples_per_pixel, seed))
     }
 
-    fn samples_per_pixel(&self) -> u64 {
-        self.samples_per_pixel
+    fn samples_per_pixel(&self) -> usize {
+        self.state.samples_per_pixel
+    }
+
+    fn set_sample_number(&mut self, sample_num: u64) -> bool {
+        unimplemented!()
     }
 }

@@ -10,23 +10,25 @@ pub struct DiffuseAreaLight<'s> {
     emit: Spectrum,
     shape: &'s dyn Shape,
     l2w: Transform,
+    w2l: Transform,
     area: Float,
     n_samples: usize
 }
 
 impl<'s> DiffuseAreaLight<'s> {
-    pub fn new(emit: Spectrum, shape: &dyn Shape, light_to_world: Transform, n_samples: usize) -> Self {
+    pub fn new(emit: Spectrum, shape: &'s dyn Shape, light_to_world: Transform, n_samples: usize) -> Self {
         Self {
             emit,
             shape,
             l2w: light_to_world,
+            w2l: light_to_world.inverse(),
             area: shape.area(),
             n_samples
         }
     }
 }
 
-impl AreaLight for DiffuseAreaLight {
+impl AreaLight for DiffuseAreaLight<'_> {
     fn emitted_radiance(&self, hit: SurfaceHit, w: Vec3f) -> Spectrum {
         if hit.n.dot(w) > 0.0 {
             self.emit
@@ -36,7 +38,7 @@ impl AreaLight for DiffuseAreaLight {
     }
 }
 
-impl Light for DiffuseAreaLight {
+impl Light for DiffuseAreaLight<'_> {
     fn flags(&self) -> LightFlags {
         LightFlags::Area
     }
@@ -46,7 +48,7 @@ impl Light for DiffuseAreaLight {
     }
 
     fn world_to_light(&self) -> &Transform {
-        &self.l2w.inverse()
+        &self.w2l
     }
 
     fn n_samples(&self) -> usize {
