@@ -4,6 +4,7 @@ use bumpalo::Bump;
 use crate::RayDifferential;
 use crate::spectrum::{RGBSpectrum, Spectrum};
 use crate::scene::Scene;
+use crate::material::TransportMode;
 
 pub enum LightStrategy {
     UniformSampleAll, UniformSampleOne
@@ -11,7 +12,7 @@ pub enum LightStrategy {
 
 pub struct DirectLightingIntegrator {
     strategy: LightStrategy,
-    max_depth: u32,
+    max_depth: u16,
     n_light_samples: Vec<usize>,
 }
 
@@ -30,7 +31,7 @@ impl IntegratorRadiance for DirectLightingIntegrator {
                 .collect();
 
             for _ in 0..self.max_depth {
-                for n_samples in self.n_light_samples {
+                for &n_samples in &self.n_light_samples {
                     sampler.request_2d_array(n_samples);
                     sampler.request_2d_array(n_samples);
                 }
@@ -39,6 +40,39 @@ impl IntegratorRadiance for DirectLightingIntegrator {
     }
 
     fn incident_radiance(&self, ray: &mut RayDifferential, scene: &Scene, sampler: &mut dyn Sampler, arena: &Bump, depth: u16) -> Spectrum {
-        unimplemented!()
+        let mut radiance: Spectrum = Spectrum::new(0.0);
+
+        match scene.intersect(&mut ray.ray) {
+            None => {
+                // get radiance of escaping ray
+//                background(ray.ray.dir)
+                Spectrum::new(0.0)
+            },
+
+            Some(mut intersect) => {
+                let n = intersect.shading_n;
+                let wo = intersect.wo;
+
+                let bsdf = intersect.compute_scattering_functions(
+                    ray,
+                    arena,
+                    false,
+                    TransportMode::Radiance
+                );
+
+                if let Some(bsdf) = bsdf {
+
+                    if depth + 1 < self.max_depth {
+                        radiance += self.specular_reflect(ray, &intersect, &bsdf, scene, sampler, arena, depth);
+                        radiance += self.specular_transmit(ray, &intersect, &bsdf, scene, sampler, arena, depth);
+                    }
+                } else {
+                    unimplemented!()
+                }
+
+                radiance
+            }
+
+        }
     }
 }
