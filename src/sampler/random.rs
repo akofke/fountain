@@ -1,9 +1,10 @@
 use crate::{Point2i, Point2f, Float};
 use rand_xoshiro::Xoshiro256Plus;
 use rand::{SeedableRng, Rng};
-use crate::sampler::{Sampler, SamplerState};
+use crate::sampler::{Sampler, SamplerState, SampleArrayId};
 use cgmath::Point2;
 use crate::spectrum::xyz_to_rgb;
+use std::sync::Arc;
 
 pub struct RandomSampler {
     rng: Xoshiro256Plus,
@@ -44,25 +45,28 @@ impl Sampler for RandomSampler {
         Point2f::new(self.rng.gen(), self.rng.gen())
     }
 
-    fn request_1d_array(&mut self, len: usize) {
+    fn request_1d_array(&mut self, len: usize) -> SampleArrayId {
         self.state.request_1d_array(len)
     }
 
-    fn request_2d_array(&mut self, len: usize) {
-        self.state.request_2d_array(len);
+    fn request_2d_array(&mut self, len: usize) -> SampleArrayId {
+        self.state.request_2d_array(len)
     }
 
-    fn get_1d_array(&mut self, len: usize) -> &[f32] {
-        self.state.get_1d_array(len)
+    fn get_1d_array(&self, id: SampleArrayId) -> &[Float] {
+        self.state.get_1d_array(id)
     }
 
-    fn get_2d_array(&mut self, len: usize) -> &[Point2<f32>] {
-        self.state.get_2d_array(len)
+    fn get_2d_array(&self, id: SampleArrayId) -> &[Point2f] {
+        self.state.get_2d_array(id)
     }
 
-    fn clone_with_seed(&self, seed: u64) -> Box<dyn Sampler> {
+    fn clone_with_seed(&self, seed: u64) -> Self where Self: Sized {
         // TODO: how to base off initial seed or do we need to?
-        Box::new(Self::new_with_seed(self.state.samples_per_pixel, seed))
+        Self {
+            rng: Xoshiro256Plus::seed_from_u64(seed),
+            state: self.state.clone(),
+        }
     }
 
     fn samples_per_pixel(&self) -> usize {

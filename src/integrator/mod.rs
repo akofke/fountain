@@ -11,17 +11,14 @@ use crate::reflection::BxDFType;
 use crate::sampler::Sampler;
 use crate::scene::Scene;
 use crate::spectrum::{RGBSpectrum, Spectrum};
+use std::sync::Arc;
 
 pub mod whitted;
 pub mod direct_lighting;
 
-pub trait Integrator {
-    fn render(&mut self, scene: &Scene, film: &Film<BoxFilter>);
-}
 
 pub struct SamplerIntegrator<R: IntegratorRadiance> {
     pub camera: Box<dyn Camera>,
-    pub sampler: Box<dyn Sampler>,
     pub radiance: R,
 }
 
@@ -179,73 +176,89 @@ pub trait IntegratorRadiance: Sync + Send {
     }
 }
 
-impl<R: IntegratorRadiance> Integrator for SamplerIntegrator<R> {
-    fn render(&mut self, scene: &Scene, film: &Film<BoxFilter>) {
-        // preprocess
-        let sample_bounds = film.sample_bounds();
-//        let total_samples = sample_bounds.area() * self.sampler.samples_per_pixel() as i32;
-//        let progress = indicatif::ProgressBar::new(total_samples as u64);
-        sample_bounds.iter_tiles(16).par_bridge().for_each(|tile| {
-            let mut arena = Bump::new();
-
-            let tile_id = Self::tile_id(tile, sample_bounds);
-            let mut tile_sampler = self.sampler.clone_with_seed(tile_id);
-
-            let mut film_tile = film.get_film_tile(tile);
-
-            for pixel in tile.iter_points() {
-                tile_sampler.start_pixel(pixel.into());
-
-                while tile_sampler.start_next_sample() {
-                    let camera_sample = tile_sampler.get_camera_sample(pixel.into());
-
-                    let (ray_weight, mut ray_differential) =
-                        self.camera.generate_ray_differential(camera_sample);
-
-                    ray_differential.scale_differentials(
-                        1.0 / (tile_sampler.samples_per_pixel() as Float).sqrt(),
-                    );
-
-                    let mut radiance = Spectrum::<RGBSpectrum>::new(0.0);
-
-                    if ray_weight > 0.0 {
-                        radiance = self.radiance.incident_radiance(
-                            &mut ray_differential,
-                            scene,
-                            tile_sampler.as_mut(),
-                            &arena,
-                            0,
-                        );
-
-                        check_radiance(&radiance, pixel);
-                    }
-
-                    film.add_sample_to_tile(
-                        &mut film_tile,
-                        camera_sample.p_film,
-                        radiance,
-                        ray_weight,
-                    );
-
-                    arena.reset();
-//                    progress.inc(1);
-                }
-            }
-
-            film.merge_film_tile(film_tile);
-        });
-//        progress.finish();
-    }
-}
-
 impl<R: IntegratorRadiance> SamplerIntegrator<R> {
     fn tile_id(tile: Bounds2i, sample_bounds: Bounds2i) -> u64 {
         let n_cols = sample_bounds.max.x;
         (tile.min.y * n_cols + tile.min.x) as u64
     }
 
-    pub fn render_with_pool(&mut self, scene: &Scene, film: &Film<BoxFilter>, pool: &rayon::ThreadPool) {
-        pool.install(|| self.render(scene, film))
+    pub fn render_with_pool(&mut self, scene: &Scene, film: &Film<BoxFilter>, sampler: impl Sampler, pool: &rayon::ThreadPool) {
+        pool.install(|| self.render(scene, film, sampler))
+    }
+
+    pub fn iter_tiles(&self, sample_bounds: Bounds2i, sampler: impl Sampler) -> impl Iterator<Item=(Bounds2i, impl Sampler)> {
+        sample_bounds
+            .iter_tiles(16)
+            .map(move |tile| {
+                let tile_id = Self::tile_id(tile, sample_bounds);
+                (tile, sampler.clone_with_seed(tile_id))
+            })
+    }
+
+    pub fn render(&mut self, scene: &Scene, film: &Film<BoxFilter>, mut sampler: impl Sampler) {
+        self.radiance.preprocess(scene, &mut sampler);
+//        let total_samples = sample_bounds.area() * self.sampler.samples_per_pixel() as i32;
+//        let progress = indicatif::ProgressBar::new(total_samples as u64);
+        self.iter_tiles(film.sample_bounds(), sampler)
+            .for_each(|(tile, mut tile_sampler)| {
+                self.render_tile(scene, film, tile_sampler, tile)
+            });
+//        progress.finish();
+    }
+
+    pub fn render_parallel(&mut self, scene: &Scene, film: &Film<BoxFilter>, mut sampler: impl Sampler) {
+        self.radiance.preprocess(scene, &mut sampler);
+        let tiles: Vec<_> = self.iter_tiles(film.sample_bounds(), sampler).collect();
+        tiles.into_par_iter().for_each(move |(tile, mut tile_sampler)| {
+            self.render_tile(scene, film, tile_sampler, tile);
+        });
+    }
+
+    fn render_tile(&self, scene: &Scene, film: &Film<BoxFilter>, mut tile_sampler: impl Sampler, tile: Bounds2i) {
+        let mut arena = Bump::new();
+
+        let mut film_tile = film.get_film_tile(tile);
+
+        for pixel in tile.iter_points() {
+            tile_sampler.start_pixel(pixel.into());
+
+            while tile_sampler.start_next_sample() {
+                let camera_sample = tile_sampler.get_camera_sample(pixel.into());
+
+                let (ray_weight, mut ray_differential) =
+                    self.camera.generate_ray_differential(camera_sample);
+
+                ray_differential.scale_differentials(
+                    1.0 / (tile_sampler.samples_per_pixel() as Float).sqrt(),
+                );
+
+                let mut radiance = Spectrum::<RGBSpectrum>::new(0.0);
+
+                if ray_weight > 0.0 {
+                    radiance = self.radiance.incident_radiance(
+                        &mut ray_differential,
+                        scene,
+                        &mut tile_sampler,
+                        &arena,
+                        0,
+                    );
+
+                    check_radiance(&radiance, pixel);
+                }
+
+                film.add_sample_to_tile(
+                    &mut film_tile,
+                    camera_sample.p_film,
+                    radiance,
+                    ray_weight,
+                );
+
+                arena.reset();
+//                    progress.inc(1);
+            }
+        }
+
+        film.merge_film_tile(film_tile);
     }
 
 }

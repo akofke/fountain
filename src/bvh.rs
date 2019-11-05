@@ -385,6 +385,7 @@ mod tests {
     use crate::shapes::sphere::Sphere;
 
     use super::*;
+    use crate::light::AreaLight;
 
     #[test]
     fn test_permutation() {
@@ -412,6 +413,10 @@ mod tests {
             unimplemented!()
         }
         fn material(&self) -> Option<&dyn Material> { unimplemented!() }
+
+        fn area_light(&self) -> Option<&dyn AreaLight> {
+            unimplemented!()
+        }
     }
 
     #[test]
@@ -480,7 +485,7 @@ mod tests {
         let prims: Vec<GeometricPrimitive<Sphere>> = tfs.iter()
             .map(|(o2w, w2o)| {
                 let sphere = Sphere::whole(o2w, w2o, rng.gen_range(0.5, 3.0));
-                GeometricPrimitive { shape: sphere, material: None }
+                GeometricPrimitive { shape: sphere, material: None, light: None }
             })
             .collect();
 

@@ -9,7 +9,7 @@ pub struct Scene<'p> {
 
 impl<'p> Scene<'p> {
 
-    pub fn new(primitives: BVH<'p>, lights: Vec<&'p mut dyn Light>) -> Self {
+    pub fn new(primitives: BVH<'p>, lights: Vec<&'p dyn Light>) -> Self {
         // TODO: this is kind of weird, maybe find a better way to do preprocess
         let lights = lights.into_iter()
             .map(|light| {

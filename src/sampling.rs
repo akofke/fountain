@@ -49,3 +49,9 @@ pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
     let su0 = u[0].sqrt();
     Point2f::new(1.0 - su0, u[1] * su0)
 }
+
+pub fn power_heuristic(nf: u32, f_pdf: Float, ng: u32, g_pdf: Float) -> Float {
+    let f = nf as Float * f_pdf;
+    let g = ng  as Float * g_pdf;
+    (f * f) / (f * f + g * g)
+}

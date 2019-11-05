@@ -125,6 +125,21 @@ impl<'a> Bsdf<'a> {
         Some(ScatterSample {f, wi: wi_world, pdf, sampled_type})
     }
 
+    pub fn pdf(&self, wo_world: Vec3f, wi_world: Vec3f, flags: BxDFType) -> Float {
+        let wo = self.world_to_local(wo_world);
+        let wi = self.world_to_local(wi_world);
+        if wo.z == 0.0 { return 0.0; }
+
+        let n_matching = self.num_components(flags) as Float;
+        let pdf: Float = self.iter_matching(flags).map(|bxdf| bxdf.pdf(wo, wi)).sum();
+
+        if n_matching > 0.0 {
+            pdf / n_matching
+        } else {
+            0.0
+        }
+    }
+
     pub fn iter_matching(&self, flags: BxDFType) -> impl Iterator<Item=&& dyn BxDF> + '_ {
         self.bxdfs.as_slice().iter().filter(move |bxdf| bxdf.matches_flags(flags))
     }

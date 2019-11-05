@@ -10,10 +10,11 @@ use crate::interaction::SurfaceInteraction;
 use crate::math::quadratic;
 use crate::shapes::Shape;
 use crate::sampling::uniform_sample_sphere;
+use std::borrow::Borrow;
 
-pub struct Sphere<'t> {
-    object_to_world: &'t Transform,
-    world_to_object: &'t Transform,
+pub struct Sphere<T: Borrow<Transform>> {
+    object_to_world: T,
+    world_to_object: T,
     reverse_orientation: bool,
 
     radius: Float,
@@ -24,10 +25,10 @@ pub struct Sphere<'t> {
     phi_max: Float
 }
 
-impl<'t> Sphere<'t> {
+impl<T: Borrow<Transform>> Sphere<T> {
     pub fn new(
-        object_to_world: &'t Transform,
-        world_to_object: &'t Transform,
+        object_to_world: T,
+        world_to_object: T,
         reverse_orientation: bool,
         radius: Float,
         z_min: Float,
@@ -47,25 +48,25 @@ impl<'t> Sphere<'t> {
     }
 
     pub fn whole(
-        object_to_world: &'t Transform,
-        world_to_object: &'t Transform,
+        object_to_world: T,
+        world_to_object: T,
         radius: Float,
     ) -> Self {
         Self::new(object_to_world, world_to_object, false, radius, -radius, radius, 360.0)
     }
 }
 
-impl<'t> Shape for Sphere<'t> {
+impl<T: Borrow<Transform> + Sync + Send> Shape for Sphere<T> {
     fn object_bound(&self) -> Bounds3<f32> {
         bounds3f!((-self.radius, -self.radius, self.z_min), (self.radius, self.radius, self.z_max))
     }
 
     fn object_to_world(&self) -> &Transform {
-        self.object_to_world
+        self.object_to_world.borrow()
     }
 
     fn world_to_object(&self) -> &Transform {
-        self.world_to_object
+        self.world_to_object.borrow()
     }
 
     fn reverse_orientation(&self) -> bool {
@@ -187,21 +188,21 @@ impl<'t> Shape for Sphere<'t> {
             DiffGeom { dpdu, dpdv, dndu, dndv }
         );
 
-        let world_intersect = self.object_to_world().transform(interact);
+        let world_intersect = self.object_to_world().borrow().transform(interact);
 
         Some((t_shape_hit.into(), world_intersect))
     }
 
     fn sample(&self, u: Point2f) -> SurfaceHit {
         let mut p_obj = Point3f::new(0.0, 0.0, 0.0) + self.radius * uniform_sample_sphere(u);
-        let mut n = Normal3(self.object_to_world.transform(Normal3(p_obj.to_vec())).normalize());
+        let mut n = Normal3(self.object_to_world.borrow().transform(Normal3(p_obj.to_vec())).normalize());
         if self.reverse_orientation {
             n *= -1.0;
         }
         // re-project p_obj to sphere surface
         p_obj *= self.radius / distance(p_obj, Point3f::new(0.0, 0.0, 0.0));
         let p_obj_err = gamma(5) * p_obj.to_vec().abs();
-        let (p, p_err) = self.object_to_world.tf_err_to_err(p_obj, p_obj_err);
+        let (p, p_err) = self.object_to_world.borrow().tf_err_to_err(p_obj, p_obj_err);
         SurfaceHit {
             p,
             p_err,

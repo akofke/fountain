@@ -6,17 +6,17 @@ use crate::light::{AreaLight, Light, LiSample, LightFlags, VisibilityTester};
 use crate::interaction::SurfaceHit;
 use cgmath::{Vector3, InnerSpace, Point2};
 
-pub struct DiffuseAreaLight<'s> {
+pub struct DiffuseAreaLight<'s, S: Shape> {
     emit: Spectrum,
-    shape: &'s dyn Shape,
+    shape: &'s S,
     l2w: Transform,
     w2l: Transform,
     area: Float,
     n_samples: usize
 }
 
-impl<'s> DiffuseAreaLight<'s> {
-    pub fn new(emit: Spectrum, shape: &'s dyn Shape, light_to_world: Transform, n_samples: usize) -> Self {
+impl<'s, S: Shape> DiffuseAreaLight<'s, S> {
+    pub fn new(emit: Spectrum, shape: &'s S, light_to_world: Transform, n_samples: usize) -> Self {
         Self {
             emit,
             shape,
@@ -28,7 +28,7 @@ impl<'s> DiffuseAreaLight<'s> {
     }
 }
 
-impl AreaLight for DiffuseAreaLight<'_> {
+impl<S: Shape> AreaLight for DiffuseAreaLight<'_, S> {
     fn emitted_radiance(&self, hit: SurfaceHit, w: Vec3f) -> Spectrum {
         if hit.n.dot(w) > 0.0 {
             self.emit
@@ -36,9 +36,13 @@ impl AreaLight for DiffuseAreaLight<'_> {
             Spectrum::new(0.0)
         }
     }
+
+    fn as_light(&self) -> &dyn Light {
+        self
+    }
 }
 
-impl Light for DiffuseAreaLight<'_> {
+impl<S: Shape> Light for DiffuseAreaLight<'_, S> {
     fn flags(&self) -> LightFlags {
         LightFlags::Area
     }

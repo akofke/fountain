@@ -4,6 +4,7 @@ use crate::{Ray, SurfaceInteraction};
 use crate::geometry::bounds::Bounds3f;
 use crate::material::Material;
 use crate::shapes::Shape;
+use crate::light::AreaLight;
 
 pub trait Primitive: Sync {
     fn world_bound(&self) -> Bounds3f;
@@ -13,15 +14,17 @@ pub trait Primitive: Sync {
     fn intersect_test(&self, ray: &Ray) -> bool;
 
     fn material(&self) -> Option<&dyn Material>;
+
+    fn area_light(&self) -> Option<&dyn AreaLight>;
 }
 
-pub struct GeometricPrimitive<S: Shape> {
+pub struct GeometricPrimitive<'s, S: Shape> {
     pub shape: S,  // TODO: use generic param instead?
     pub material: Option<Arc<dyn Material>>,
-
+    pub light: Option<&'s dyn AreaLight>,
 }
 
-impl<'a, S: Shape> Primitive for GeometricPrimitive<S> {
+impl<'a, S: Shape> Primitive for GeometricPrimitive<'_, S> {
     fn world_bound(&self) -> Bounds3f {
         self.shape.world_bound()
     }
@@ -44,5 +47,9 @@ impl<'a, S: Shape> Primitive for GeometricPrimitive<S> {
 //            Some(mat) => Some(mat.as_ref()),
 //            None => None
 //        }
+    }
+
+    fn area_light(&self) -> Option<&dyn AreaLight> {
+        self.light.as_deref()
     }
 }

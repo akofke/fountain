@@ -5,6 +5,7 @@ use bumpalo::Bump;
 use cgmath::{EuclideanSpace, InnerSpace, Matrix2, Vector2, Zero};
 use crate::reflection::bsdf::Bsdf;
 use crate::primitive::Primitive;
+use crate::spectrum::Spectrum;
 
 pub const SHADOW_EPSILON: Float = 0.0001;
 
@@ -168,6 +169,13 @@ impl<'i> SurfaceInteraction<'i> {
 
             dudy,
             dvdy
+        })
+    }
+
+    pub fn emitted_radiance(&self, w: Vec3f) -> Spectrum {
+        let prim = self.primitive.unwrap();
+        prim.area_light().map_or(Spectrum::new(0.0), |light| {
+            light.emitted_radiance(self.hit, w)
         })
     }
 }

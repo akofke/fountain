@@ -1,4 +1,4 @@
-use crate::{Transform, Point2f, Vec3f, Float};
+use crate::{Transform, Point2f, Vec3f, Float, RayDifferential};
 use crate::interaction::SurfaceHit;
 use crate::spectrum::Spectrum;
 use crate::scene::Scene;
@@ -18,7 +18,7 @@ pub trait Light: Sync {
 
     fn n_samples(&self) -> usize { 1 }
 
-    fn preprocess(&mut self, scene_prims: &BVH) {}
+    fn preprocess(&self, scene_prims: &BVH) {}
 
     fn sample_incident_radiance(&self, reference: &SurfaceHit, u: Point2f) -> LiSample;
 
@@ -26,12 +26,17 @@ pub trait Light: Sync {
     /// `sample_incident_radiance` method to sample the direction `wi` from the reference
     /// point `reference`.
     fn pdf_incident_radiance(&self, reference: &SurfaceHit, wi: Vec3f) -> Float;
+
+    fn environment_emitted_radiance(&self, ray: &RayDifferential) -> Spectrum { Spectrum::new(0.0) }
 }
 
-pub trait AreaLight: Light {
+pub trait AreaLight: Light + Send {
     /// Given a point on the area light's surface represented by `hit`, evaluate the area light's
     /// emitted radiance `L` in the given outgoing direction `w`.
     fn emitted_radiance(&self, hit: SurfaceHit, w: Vec3f) -> Spectrum;
+
+    // TODO: this is a hack for upcasting to compare pointers, which probably isn't even needed.
+    fn as_light(&self) -> &dyn Light;
 }
 
 pub struct LiSample {
