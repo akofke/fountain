@@ -2,6 +2,10 @@ use crate::bvh::BVH;
 use crate::{SurfaceInteraction, Ray, Bounds3f};
 use crate::light::Light;
 
+pub struct SceneBuilder {
+
+}
+
 pub struct Scene<'p> {
     pub primitives_aggregate: BVH<'p>,
     pub lights: Vec<&'p dyn Light>,

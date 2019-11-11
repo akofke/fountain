@@ -12,8 +12,8 @@ use std::cell::Cell;
 pub struct DistantLight {
     radiance: Spectrum,
     dir_to_light: Vec3f,
-    world_center: Cell<Point3f>,
-    world_radius: Cell<Float>,
+    world_center: Point3f,
+    world_radius: Float,
 }
 
 impl DistantLight {
@@ -44,10 +44,11 @@ impl Light for DistantLight {
         &Transform::IDENTITY
     }
 
-    fn preprocess(&self, scene_prims: &BVH) {
+    fn preprocess(&mut self, scene_prims: &BVH) {
+        unimplemented!();
         let (world_center, world_radius) = scene_prims.bounds.bounding_sphere();
-        self.world_center.set(world_center);
-        self.world_radius.set(world_radius);
+//        self.world_center.set(world_center);
+//        self.world_radius.set(world_radius);
     }
 
     fn sample_incident_radiance(&self, reference: &SurfaceHit, _u: Point2f) -> LiSample {

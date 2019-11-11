@@ -5,18 +5,19 @@ use crate::shapes::Shape;
 use crate::light::{AreaLight, Light, LiSample, LightFlags, VisibilityTester};
 use crate::interaction::SurfaceHit;
 use cgmath::{Vector3, InnerSpace, Point2};
+use std::sync::Arc;
 
-pub struct DiffuseAreaLight<'s, S: Shape> {
+pub struct DiffuseAreaLight<S: Shape> {
     emit: Spectrum,
-    shape: &'s S,
+    shape: Arc<S>,
     l2w: Transform,
     w2l: Transform,
     area: Float,
     n_samples: usize
 }
 
-impl<'s, S: Shape> DiffuseAreaLight<'s, S> {
-    pub fn new(emit: Spectrum, shape: &'s S, light_to_world: Transform, n_samples: usize) -> Self {
+impl<S: Shape> DiffuseAreaLight<S> {
+    pub fn new(emit: Spectrum, shape: Arc<S>, light_to_world: Transform, n_samples: usize) -> Self {
         Self {
             emit,
             shape,
@@ -28,7 +29,7 @@ impl<'s, S: Shape> DiffuseAreaLight<'s, S> {
     }
 }
 
-impl<S: Shape> AreaLight for DiffuseAreaLight<'_, S> {
+impl<S: Shape> AreaLight for DiffuseAreaLight<S> {
     fn emitted_radiance(&self, hit: SurfaceHit, w: Vec3f) -> Spectrum {
         if hit.n.dot(w) > 0.0 {
             self.emit
@@ -42,7 +43,7 @@ impl<S: Shape> AreaLight for DiffuseAreaLight<'_, S> {
     }
 }
 
-impl<S: Shape> Light for DiffuseAreaLight<'_, S> {
+impl<S: Shape> Light for DiffuseAreaLight<S> {
     fn flags(&self) -> LightFlags {
         LightFlags::Area
     }

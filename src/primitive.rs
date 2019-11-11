@@ -5,6 +5,8 @@ use crate::geometry::bounds::Bounds3f;
 use crate::material::Material;
 use crate::shapes::Shape;
 use crate::light::AreaLight;
+use crate::spectrum::Spectrum;
+use crate::light::diffuse::DiffuseAreaLight;
 
 pub trait Primitive: Sync {
     fn world_bound(&self) -> Bounds3f;
@@ -18,13 +20,26 @@ pub trait Primitive: Sync {
     fn area_light(&self) -> Option<&dyn AreaLight>;
 }
 
-pub struct GeometricPrimitive<'s, S: Shape> {
-    pub shape: S,  // TODO: use generic param instead?
+pub struct GeometricPrimitive<S: Shape> {
+    pub shape: Arc<S>,  // TODO: use generic param instead?
     pub material: Option<Arc<dyn Material>>,
-    pub light: Option<&'s dyn AreaLight>,
+    pub light: Option<DiffuseAreaLight<S>>,
 }
 
-impl<'a, S: Shape> Primitive for GeometricPrimitive<'_, S> {
+impl<S: Shape> GeometricPrimitive<S> {
+    pub fn set_emitter(&mut self, emit: Spectrum, n_samples: usize) {
+        // FIXME: transform
+        let light = DiffuseAreaLight::new(
+            emit,
+            self.shape.clone(),
+            self.shape.object_to_world().clone(),
+            n_samples,
+        );
+        self.light = Some(light)
+    }
+}
+
+impl<S: Shape> Primitive for GeometricPrimitive<S> {
     fn world_bound(&self) -> Bounds3f {
         self.shape.world_bound()
     }
@@ -43,13 +58,9 @@ impl<'a, S: Shape> Primitive for GeometricPrimitive<'_, S> {
 
     fn material(&self) -> Option<&dyn Material> {
         self.material.as_ref().map(|m| m.as_ref()) // ugly?
-//        match &self.material {
-//            Some(mat) => Some(mat.as_ref()),
-//            None => None
-//        }
     }
 
     fn area_light(&self) -> Option<&dyn AreaLight> {
-        self.light.as_deref()
+        self.light.as_ref().map(|l| l as &dyn AreaLight)
     }
 }

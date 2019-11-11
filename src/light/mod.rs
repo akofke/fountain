@@ -18,7 +18,7 @@ pub trait Light: Sync {
 
     fn n_samples(&self) -> usize { 1 }
 
-    fn preprocess(&self, scene_prims: &BVH) {}
+    fn preprocess(&mut self, scene_prims: &BVH) {}
 
     fn sample_incident_radiance(&self, reference: &SurfaceHit, u: Point2f) -> LiSample;
 
