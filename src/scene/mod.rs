@@ -13,14 +13,20 @@ pub struct Scene<'p> {
 
 impl<'p> Scene<'p> {
 
-    pub fn new(primitives: BVH<'p>, lights: Vec<&'p dyn Light>) -> Self {
+    pub fn new(primitives: BVH<'p>, lights: Vec<&'p mut dyn Light>) -> Self {
         // TODO: this is kind of weird, maybe find a better way to do preprocess
-        let lights = lights.into_iter()
+        let mut lights: Vec<&dyn Light> = lights.into_iter()
             .map(|light| {
                 light.preprocess(&primitives);
                 &*light
             })
             .collect();
+
+        for prim in &primitives.prims {
+            if let Some(light) = prim.area_light() {
+                lights.push(light.as_light())
+            }
+        }
 
         Self {
             primitives_aggregate: primitives,

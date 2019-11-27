@@ -18,10 +18,12 @@ pub trait Primitive: Sync {
     fn material(&self) -> Option<&dyn Material>;
 
     fn area_light(&self) -> Option<&dyn AreaLight>;
+    
+    fn area_light_mut(&mut self) -> Option<&mut dyn AreaLight>;
 }
 
 pub struct GeometricPrimitive<S: Shape> {
-    pub shape: Arc<S>,  // TODO: use generic param instead?
+    pub shape: Arc<S>,
     pub material: Option<Arc<dyn Material>>,
     pub light: Option<DiffuseAreaLight<S>>,
 }
@@ -62,5 +64,9 @@ impl<S: Shape> Primitive for GeometricPrimitive<S> {
 
     fn area_light(&self) -> Option<&dyn AreaLight> {
         self.light.as_ref().map(|l| l as &dyn AreaLight)
+    }
+    
+    fn area_light_mut(&mut self) -> Option<&mut dyn AreaLight> {
+        self.light.as_mut().map(|l| l as &mut dyn AreaLight)
     }
 }

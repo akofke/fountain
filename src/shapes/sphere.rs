@@ -12,6 +12,7 @@ use crate::shapes::Shape;
 use crate::sampling::uniform_sample_sphere;
 use std::borrow::Borrow;
 
+#[derive(Debug, PartialEq)]
 pub struct Sphere<T: Borrow<Transform>> {
     object_to_world: T,
     world_to_object: T,

@@ -18,12 +18,13 @@ pub struct DiffuseAreaLight<S: Shape> {
 
 impl<S: Shape> DiffuseAreaLight<S> {
     pub fn new(emit: Spectrum, shape: Arc<S>, light_to_world: Transform, n_samples: usize) -> Self {
+        let area = shape.area();
         Self {
             emit,
             shape,
             l2w: light_to_world,
             w2l: light_to_world.inverse(),
-            area: shape.area(),
+            area,
             n_samples
         }
     }

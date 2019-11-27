@@ -45,10 +45,9 @@ impl Light for DistantLight {
     }
 
     fn preprocess(&mut self, scene_prims: &BVH) {
-        unimplemented!();
         let (world_center, world_radius) = scene_prims.bounds.bounding_sphere();
-//        self.world_center.set(world_center);
-//        self.world_radius.set(world_radius);
+        self.world_center = world_center;
+        self.world_radius = world_radius;
     }
 
     fn sample_incident_radiance(&self, reference: &SurfaceHit, _u: Point2f) -> LiSample {

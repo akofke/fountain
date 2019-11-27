@@ -36,17 +36,6 @@ use raytracer::light::diffuse::DiffuseAreaLight;
 
 pub fn main() {
 
-    let o2w = Transform::translate((0.0, 0.0, 0.0).into());
-    let w2o = o2w.inverse();
-    let sphere = Sphere::new(
-        &o2w,
-        &w2o,
-        false,
-        1.0,
-        -1.0,
-        1.0,
-        360.0
-    );
 
     let o2w = Transform::translate((2.0, 1.0, 0.0).into());
     let w2o = o2w.inverse();
@@ -78,10 +67,22 @@ pub fn main() {
         &o2w, &w2o, 20.0
     );
 
-    let l_o2w = Transform::translate((0.0, 0.0, 5.0).into());
-    let l_w2o = o2w.inverse();
+    let l_o2w = Transform::translate((2.0, -2.0, 3.0).into());
+    let l_w2o = l_o2w.inverse();
     let light_sphere = Sphere::whole(
-        l_o2w, l_w2o, 1.0
+        &l_o2w, &l_w2o, 1.0
+    );
+
+    let o2w = Transform::translate((0.0, 0.0, 0.0).into());
+    let w2o = o2w.inverse();
+    let sphere = Sphere::new(
+        &o2w,
+        &w2o,
+        false,
+        1.0,
+        -1.0,
+        1.0,
+        360.0
     );
 
 
@@ -125,51 +126,44 @@ pub fn main() {
     let glass = Arc::new(GlassMaterial::constant(Spectrum::new(1.0), Spectrum::new(1.0), 1.1));
 
     let prim = GeometricPrimitive {
-        shape: sphere,
-        material: Some(glass.clone()),
+        shape: Arc::new(sphere),
+        material: Some(blue.clone()),
         light: None
     };
 
     let prim2 = GeometricPrimitive {
-        shape: sphere2,
+        shape: Arc::new(sphere2),
         material: Some(green.clone()),
         light: None
     };
 
     let prim3 = GeometricPrimitive {
-        shape: sphere3,
+        shape: Arc::new(sphere3),
         material: Some(uv.clone()),
         light: None
     };
 
     let ground_prim = GeometricPrimitive {
-        shape: ground_sphere,
+        shape: Arc::new(ground_sphere),
         material: Some(check.clone()),
         light: None
     };
 
 
     let mut light_prim = GeometricPrimitive {
-        shape: light_sphere,
-        material: Some(blue.clone()),
+        shape: Arc::new(light_sphere),
+        material: Some(check.clone()),
         light: None,
     };
 
-    let mut area_light = DiffuseAreaLight::new(
-        Spectrum::new(1.0),
-        &light_prim.shape,
-        l_o2w.clone(),
-        4
-    );
-    light_prim.light = Some(&area_light); // -_-
-
+    light_prim.set_emitter(Spectrum::new(30.0), 4);
 
     let tri_prims: Vec<Box<dyn Primitive>> = meshes.iter().flat_map(|mesh| {
         mesh.iter_triangles()
             .map(|tri| {
                 Box::new(GeometricPrimitive {
-                    shape: tri,
-                    material: Some(check.clone()),
+                    shape: Arc::new(tri),
+                    material: Some(blue.clone()),
                     light: None,
                 }) as Box<dyn Primitive>
             })
@@ -186,10 +180,9 @@ pub fn main() {
     let bvh = BVH::build(prims);
     dbg!(bvh.bounds);
 
-//    let mut light = PointLight::new(Transform::translate((0.0, 0.0, 3.0).into()), Spectrum::new(10.0));
-//    let mut dist_light = DistantLight::new(Spectrum::new(10.5), vec3(3.0, 3.0, 3.0));
-    let lights: Vec<&dyn Light> = vec![
-        &area_light
+    let mut light = PointLight::new(Transform::translate((0.0, 2.0, 3.0).into()), Spectrum::new(10.0));
+    let mut dist_light = DistantLight::new(Spectrum::new(10.5), vec3(3.0, 3.0, 3.0));
+    let lights: Vec<&mut dyn Light> = vec![
 //        &mut dist_light,
 //        &mut light,
     ];
@@ -211,10 +204,10 @@ pub fn main() {
         (0.0, 1.0),
         0.0,
         1.0e6,
-        45.0
+        60.0
     );
     let camera = Box::new(camera);
-    let sampler = RandomSampler::new_with_seed(8, 1);
+    let sampler = RandomSampler::new_with_seed(64, 1);
     let radiance = WhittedIntegrator { max_depth: 4 };
 //    let mut integrator = SamplerIntegrator {
 //        camera,
