@@ -32,6 +32,8 @@ pub mod material;
 pub mod texture;
 pub mod sampling;
 pub mod light;
+pub mod pbrt_loader;
+pub mod loaders;
 
 pub use geometry::*;
 pub use geometry::Transform;
