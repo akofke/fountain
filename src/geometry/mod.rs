@@ -136,6 +136,12 @@ impl Normal3 {
     }
 }
 
+impl From<[Float; 3]> for Normal3 {
+    fn from(v: [f32; 3]) -> Self {
+        Self(v.into())
+    }
+}
+
 impl Deref for Normal3 {
     type Target = Vec3f;
 

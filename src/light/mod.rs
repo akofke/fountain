@@ -3,6 +3,8 @@ use crate::interaction::SurfaceHit;
 use crate::spectrum::Spectrum;
 use crate::scene::Scene;
 use crate::bvh::BVH;
+use std::sync::Arc;
+use crate::shapes::Shape;
 
 pub mod point;
 pub mod distant;
@@ -37,6 +39,12 @@ pub trait AreaLight: Light + Send {
 
     // TODO: this is a hack for upcasting to compare pointers, which probably isn't even needed.
     fn as_light(&self) -> &dyn Light;
+}
+
+pub trait AreaLightBuilder<S: Shape> {
+    type Target: AreaLight;
+
+    fn create(self, shape: Arc<S>) -> Self::Target;
 }
 
 pub struct LiSample {

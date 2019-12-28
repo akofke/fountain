@@ -2,28 +2,39 @@ use crate::{Float, Transform, Vec3f};
 use crate::spectrum::{Spectrum, RGBSpectrum};
 use std::rc::Rc;
 use crate::shapes::Shape;
-use crate::light::{AreaLight, Light, LiSample, LightFlags, VisibilityTester};
+use crate::light::{AreaLight, Light, LiSample, LightFlags, VisibilityTester, AreaLightBuilder};
 use crate::interaction::SurfaceHit;
 use cgmath::{Vector3, InnerSpace, Point2};
 use std::sync::Arc;
 
+#[derive(Clone)]
+pub struct DiffuseAreaLightBuilder {
+    pub emit: Spectrum,
+    pub n_samples: usize
+}
+
+impl<S: Shape> AreaLightBuilder<S> for DiffuseAreaLightBuilder {
+    type Target = DiffuseAreaLight<S>;
+
+    fn create(self, shape: Arc<S>) -> Self::Target {
+        let tf = shape.object_to_world().clone();
+        DiffuseAreaLight::new(self.emit, shape, self.n_samples)
+    }
+}
+
 pub struct DiffuseAreaLight<S: Shape> {
     emit: Spectrum,
     shape: Arc<S>,
-    l2w: Transform,
-    w2l: Transform,
     area: Float,
     n_samples: usize
 }
 
 impl<S: Shape> DiffuseAreaLight<S> {
-    pub fn new(emit: Spectrum, shape: Arc<S>, light_to_world: Transform, n_samples: usize) -> Self {
+    pub fn new(emit: Spectrum, shape: Arc<S>, n_samples: usize) -> Self {
         let area = shape.area();
         Self {
             emit,
             shape,
-            l2w: light_to_world,
-            w2l: light_to_world.inverse(),
             area,
             n_samples
         }
@@ -50,11 +61,11 @@ impl<S: Shape> Light for DiffuseAreaLight<S> {
     }
 
     fn light_to_world(&self) -> &Transform {
-        &self.l2w
+        self.shape.object_to_world()
     }
 
     fn world_to_light(&self) -> &Transform {
-        &self.w2l
+        self.shape.world_to_object()
     }
 
     fn n_samples(&self) -> usize {

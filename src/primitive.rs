@@ -34,7 +34,6 @@ impl<S: Shape> GeometricPrimitive<S> {
         let light = DiffuseAreaLight::new(
             emit,
             self.shape.clone(),
-            self.shape.object_to_world().clone(),
             n_samples,
         );
         self.light = Some(light)
