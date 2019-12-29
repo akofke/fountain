@@ -48,6 +48,18 @@ impl TryFrom<ParamVal> for Transform {
     }
 }
 
+impl From<Arc<dyn Texture<Output=Float>>> for ParamVal {
+    fn from(value: Arc<dyn Texture<Output=Float>>) -> Self {
+        Self::FloatTexture(value)
+    }
+}
+
+impl From<Arc<dyn Texture<Output=Spectrum>>> for ParamVal {
+    fn from(value: Arc<dyn Texture<Output=Spectrum>>) -> Self {
+        Self::SpectrumTexture(value)
+    }
+}
+
 macro_rules! impl_basic_conversions {
     ($param_variant:ident, $into_ty:ty, $ty_name:expr) => {
         impl TryFrom<ParamVal> for $into_ty {
