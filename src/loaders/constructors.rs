@@ -1,6 +1,7 @@
 use crate::loaders::{ParamSet, ParamError};
 use crate::shapes::sphere::Sphere;
 use crate::Transform;
+use crate::material::matte::MatteMaterial;
 
 type ParamResult<T> = Result<T, ParamError>;
 
@@ -21,4 +22,8 @@ pub fn make_sphere(mut params: ParamSet) -> ParamResult<Sphere<Transform>> {
         zmax,
         phimax
     ))
+}
+
+pub fn make_matte(mut params: ParamSet) -> ParamResult<MatteMaterial> {
+
 }

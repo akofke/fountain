@@ -9,6 +9,7 @@ use crate::loaders::{ParamSet, ParamVal, ParamError};
 use crate::spectrum::Spectrum;
 use std::collections::HashMap;
 use crate::texture::Texture;
+use crate::loaders::constructors::make_sphere;
 
 struct PbrtSceneBuilder {
     graphics_state: Vec<GraphicsState>,
@@ -27,7 +28,13 @@ pub enum PbrtEvalError {
     TextureError {
         expected: String
     },
+    UnknownName(String),
+}
 
+impl From<ParamError> for PbrtEvalError {
+    fn from(e: ParamError) -> Self {
+        Self::ParamError(e)
+    }
 }
 
 impl PbrtSceneBuilder {
@@ -63,7 +70,7 @@ impl PbrtSceneBuilder {
     }
 
     fn make_param_set(&self, params: Vec<parser::Param>) -> Result<ParamSet, PbrtEvalError> {
-        let map = params.into_iter().map(|param| {
+        let mut map = params.into_iter().map(|param| {
             let name = param.name.to_string();
             let val = self.convert_param_val(param.value)?;
             Ok((name, val))
@@ -95,7 +102,9 @@ impl PbrtSceneBuilder {
             WorldStmt::ObjectInstance(_) => {},
             WorldStmt::LightSource(_, _) => {},
             WorldStmt::AreaLightSource(_, _) => {},
-            WorldStmt::Material(_, _) => {},
+            WorldStmt::Material(name, params) => {
+
+            },
             WorldStmt::MakeNamedMaterial(_, _) => {},
             WorldStmt::NamedMaterial(_) => {},
             WorldStmt::Texture(_) => {},
@@ -106,15 +115,20 @@ impl PbrtSceneBuilder {
         unimplemented!()
     }
 
-    fn shape(&mut self, name: Arc<str>, params: ParamSet) -> Result<(), ()> {
+    fn shape(&mut self, name: Arc<str>, params: ParamSet) -> Result<(), PbrtEvalError> {
         match name.as_ref() {
             "sphere" => {
+                let shape = make_sphere(params)?;
                 unimplemented!()
             },
             _ => {
-                Err(())
+                Err(PbrtEvalError::UnknownName(name.to_string()))
             }
         }
+    }
+
+    fn material(&mut self, name: Arc<str>, params: ParamSet) -> Result<(), PbrtEvalError> {
+        unimplemented!()
     }
 }
 
