@@ -1,18 +1,17 @@
 use std::collections::HashMap;
-use std::borrow::Cow;
 use std::convert::{TryFrom, TryInto};
 use smallvec::SmallVec;
 use crate::{Point2f, Vec2f, Vec3f, Point3f, Normal3, Float, Transform};
 use crate::spectrum::Spectrum;
 use std::sync::Arc;
-use crate::texture::Texture;
+use crate::texture::{Texture, ConstantTexture};
 use crate::material::Material;
 use std::any::type_name;
 
 pub mod pbrt;
 pub mod constructors;
 
-enum ParamVal {
+pub enum ParamVal {
     Int(SmallVec<[i32; 1]>),
     Float(SmallVec<[Float; 1]>),
     Point2f(SmallVec<[Point2f; 1]>),
@@ -44,6 +43,28 @@ impl TryFrom<ParamVal> for Transform {
         match value {
             ParamVal::Transform(tf) => Ok(tf),
             _ => Err(TryFromParamErr("transform")),
+        }
+    }
+}
+
+impl TryFrom<ParamVal> for Arc<dyn Texture<Output=Float>> {
+    type Error = TryFromParamErr;
+
+    fn try_from(value: ParamVal) -> Result<Self, Self::Error> {
+        match value {
+            ParamVal::FloatTexture(tex) => Ok(tex),
+            _ => Err(TryFromParamErr("float_texture")),
+        }
+    }
+}
+
+impl TryFrom<ParamVal> for Arc<dyn Texture<Output=Spectrum>> {
+    type Error = TryFromParamErr;
+
+    fn try_from(value: ParamVal) -> Result<Self, Self::Error> {
+        match value {
+            ParamVal::SpectrumTexture(tex) => Ok(tex),
+            _ => Err(TryFromParamErr("spectrum_texture")),
         }
     }
 }
@@ -132,6 +153,21 @@ impl ParamSet {
         where Vec<T>: TryFrom<ParamVal, Error=TryFromParamErr>
     {
         self.get_one::<Vec<T>>(name)
+    }
+
+    pub fn get_constant_texture<T: 'static>(&mut self, name: &'static str) -> Result<Arc<dyn Texture<Output=T>>, ParamError>
+        where T: TryFrom<ParamVal, Error=TryFromParamErr> + Copy + Sync + Send
+    {
+        let val = self.get_one::<T>(name)?;
+        Ok(Arc::new(ConstantTexture(val)))
+    }
+
+    pub fn get_texture_or_const<T>(&mut self, name: &'static str) -> Result<Arc<dyn Texture<Output=T>>, ParamError>
+        where
+            T: TryFrom<ParamVal, Error=TryFromParamErr> + Copy + Sync + Send + 'static,
+            Arc<dyn Texture<Output=T>>: TryFrom<ParamVal, Error=TryFromParamErr>
+    {
+        self.get_one::<Arc<dyn Texture<Output=T>>>(name).or_else(|_| self.get_constant_texture(name))
     }
 
     pub fn current_transform(&mut self) -> Result<Transform, ParamError> {

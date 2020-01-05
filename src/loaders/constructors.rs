@@ -25,5 +25,6 @@ pub fn make_sphere(mut params: ParamSet) -> ParamResult<Sphere<Transform>> {
 }
 
 pub fn make_matte(mut params: ParamSet) -> ParamResult<MatteMaterial> {
-
+    let diffuse = params.get_texture_or_const("Kd")?;
+    Ok(MatteMaterial::new(diffuse))
 }

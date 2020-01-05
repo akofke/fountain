@@ -2,6 +2,7 @@ use crate::interaction::SurfaceInteraction;
 use std::ops::{Mul, Deref};
 use crate::spectrum::Spectrum;
 use crate::Float;
+use std::sync::Arc;
 
 pub mod mapping;
 pub mod uv;
@@ -12,6 +13,11 @@ pub trait Texture: Sync + Send {
 
     fn evaluate(&self, si: &SurfaceInteraction) -> Self::Output;
 }
+
+pub trait FloatTexture = Texture<Output = Float>;
+pub trait SpectrumTexture = Texture<Output = Spectrum>;
+
+pub type TextureRef<T> = Arc<dyn Texture<Output=T>>;
 
 impl<O, T> Texture for T
     where T: Deref<Target = dyn Texture<Output=O>>,
