@@ -113,7 +113,7 @@ pub fn main() {
 
     let mut meshes = vec![];
 //    meshes.append(mesh_from_obj("dino.obj"));
-    meshes.push(ground_mesh);
+    meshes.push(Arc::new(ground_mesh));
 
     let blue = Arc::new(MatteMaterial::constant([0.2, 0.2, 0.7].into()));
     let red = Arc::new(MatteMaterial::constant([0.7, 0.2, 0.2].into()));
@@ -158,16 +158,16 @@ pub fn main() {
 
     light_prim.set_emitter(Spectrum::new(30.0), 4);
 
-    let tri_prims: Vec<Box<dyn Primitive>> = meshes.iter().flat_map(|mesh| {
-        mesh.iter_triangles()
-            .map(|tri| {
-                Box::new(GeometricPrimitive {
-                    shape: Arc::new(tri),
-                    material: Some(blue.clone()),
-                    light: None,
-                }) as Box<dyn Primitive>
-            })
-    }).collect();
+//    let tri_prims: Vec<Box<dyn Primitive>> = meshes.iter().flat_map(|mesh| {
+//        mesh.iter_triangles()
+//            .map(|tri| {
+//                Box::new(GeometricPrimitive {
+//                    shape: Arc::new(tri),
+//                    material: Some(blue.clone()),
+//                    light: None,
+//                }) as Box<dyn Primitive>
+//            })
+//    }).collect();
 
     let mut prims: Vec<&dyn Primitive> = vec![
         &prim,
@@ -176,7 +176,7 @@ pub fn main() {
         &prim3,
         &light_prim,
     ];
-    prims.extend(tri_prims.iter().map(|b| b.as_ref()));
+//    prims.extend(tri_prims.iter().map(|b| b.as_ref()));
     let bvh = BVH::build(prims);
     dbg!(bvh.bounds);
 

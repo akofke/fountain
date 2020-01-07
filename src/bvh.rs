@@ -15,14 +15,14 @@ pub enum SplitMethod {
     SAH
 }
 
-pub struct BVH<'p> {
-    pub prims: Vec<&'p dyn Primitive>,
+pub struct BVH<P: AsRef<dyn Primitive> = Box<dyn Primitive>> {
+    pub prims: Vec<P>,
     pub bounds: Bounds3f,
     nodes: Vec<LinearBVHNode>
 }
 
-impl BVH<'_> {
-    pub fn build(mut prims: Vec<&dyn Primitive>) -> BVH {
+impl<P: AsRef<dyn Primitive>> BVH<P> {
+    pub fn build(mut prims: Vec<P>) -> Self {
         // TODO: figure out prims type. Rc or Box?
 
         if prims.is_empty() {
@@ -30,7 +30,7 @@ impl BVH<'_> {
         }
 
         let mut prim_info: Vec<BVHPrimInfo> = prims.iter().enumerate().map(|(i, p)| {
-            BVHPrimInfo::new(i, p.world_bound())
+            BVHPrimInfo::new(i, p.as_ref().world_bound())
         }).collect();
 
         let arena = Bump::new();
@@ -178,7 +178,7 @@ impl BVH<'_> {
                             // sets the variable to be the new (closer, because of the ray t value)
                             // interaction if intersect is Some, or keeps the current interaction
                             // if intersect returns None.
-                            interaction = prim.intersect(ray).or(interaction);
+                            interaction = prim.as_ref().intersect(ray).or(interaction);
                         }
 
                         if let Some(next_node) = nodes_to_visit.pop() {
@@ -230,7 +230,7 @@ impl BVH<'_> {
                     LinearNodeKind::Leaf {first_prim_idx, n_prims} => {
                         for i in 0..n_prims as usize {
                             let prim = &self.prims[first_prim_idx as usize + i];
-                            if prim.intersect_test(ray) { return true; }
+                            if prim.as_ref().intersect_test(ray) { return true; }
                         }
 
                         if let Some(next_node) = nodes_to_visit.pop() {

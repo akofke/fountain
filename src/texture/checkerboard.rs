@@ -1,5 +1,5 @@
 use crate::texture::{Texture, ConstantTexture};
-use crate::texture::mapping::{TextureMapping2D, TexCoords, UVMapping};
+use crate::texture::mapping::{TexCoordsMap2D, TexCoords, UVMapping};
 use crate::SurfaceInteraction;
 use crate::spectrum::Spectrum;
 
@@ -7,10 +7,11 @@ pub enum AAMethod {
     None, ClosedForm
 }
 
-pub struct Checkerboard2DTexture<T1, T2, M: TextureMapping2D>
+pub struct Checkerboard2DTexture<T1, T2, M>
     where
         T1: Texture,
-        T2: Texture<Output=T1::Output>
+        T2: Texture<Output=T1::Output>,
+        M: TexCoordsMap2D
 {
     tex1: T1,
     tex2: T2,
@@ -20,7 +21,7 @@ pub struct Checkerboard2DTexture<T1, T2, M: TextureMapping2D>
 
 impl<T1, T2, M> Checkerboard2DTexture<T1, T2, M>
     where
-        M: TextureMapping2D,
+        M: TexCoordsMap2D,
         T1: Texture,
         T2: Texture<Output=T1::Output>
 {
@@ -39,14 +40,14 @@ impl Default for Checkerboard2DTexture<ConstantTexture<Spectrum>, ConstantTextur
 
 impl<T1, T2, M> Texture for Checkerboard2DTexture<T1, T2, M>
     where
-        M: TextureMapping2D,
+        M: TexCoordsMap2D,
         T1: Texture,
         T2: Texture<Output=T1::Output>
 {
     type Output = T1::Output;
 
     fn evaluate(&self, si: &SurfaceInteraction) -> Self::Output {
-        let TexCoords { st, dst_dx, dst_dy } = self.mapping.map(si);
+        let TexCoords { st, dst_dx, dst_dy } = self.mapping.evaluate(si);
         match self.aa_method {
             AAMethod::None => {
                 if (st[0].floor() as i32 + st[1].floor() as i32) % 2 == 0 {

@@ -73,33 +73,39 @@ impl TriangleMesh {
         }
     }
 
-    pub fn iter_triangles<'m>(&'m self) -> impl Iterator<Item=Triangle> + 'm {
+    pub fn iter_triangles(self: Arc<Self>) -> impl Iterator<Item=Triangle> {
         (0..self.n_triangles).map(move |tri_id| {
-            Triangle::new(&self, tri_id)
+            Triangle::new(Arc::clone(&self), tri_id)
         })
     }
 }
 
-pub struct Triangle<'m> {
-    mesh: &'m TriangleMesh,
+pub struct Triangle {
+    mesh: Arc<TriangleMesh>,
     tri_id: u32,
-    vertex_indices: &'m [u32; 3],
 }
 
-impl<'m> Triangle<'m> {
-    pub fn new(mesh: &'m TriangleMesh, tri_id: u32) -> Self {
+impl Triangle {
+    pub fn new(mesh: Arc<TriangleMesh>, tri_id: u32) -> Self {
         let idx = tri_id as usize;
-        let vertex_indices: &[u32; 3] = mesh.vertex_indices[3*idx .. 3*idx + 3].try_into().unwrap();
 
         Self {
             mesh,
             tri_id,
-            vertex_indices
         }
     }
 
+    fn vertex_indices(&self) -> [u32; 3] {
+        let idx = self.tri_id as usize;
+        [
+            self.mesh.vertex_indices[3 * idx],
+            self.mesh.vertex_indices[3 * idx],
+            self.mesh.vertex_indices[3 * idx],
+        ]
+    }
+
     fn get_vertices(&self) -> [Point3f; 3] {
-        let v = self.vertex_indices;
+        let v = self.vertex_indices();
         let p0 = self.mesh.vertices[v[0] as usize];
         let p1 = self.mesh.vertices[v[1] as usize];
         let p2 = self.mesh.vertices[v[2] as usize];
@@ -107,7 +113,7 @@ impl<'m> Triangle<'m> {
     }
 
     fn get_vertices_as_vectors(&self) -> [Vec3f; 3] {
-        let v = self.vertex_indices;
+        let v = self.vertex_indices();
         let p0 = self.mesh.vertices[v[0] as usize];
         let p1 = self.mesh.vertices[v[1] as usize];
         let p2 = self.mesh.vertices[v[2] as usize];
@@ -116,7 +122,7 @@ impl<'m> Triangle<'m> {
 
     fn get_normals(&self) -> Option<[Normal3; 3]> {
         self.mesh.normals.as_ref().map(|normals| {
-            let v = self.vertex_indices;
+            let v = self.vertex_indices();
             let n0 = normals[v[0] as usize];
             let n1 = normals[v[1] as usize];
             let n2 = normals[v[2] as usize];
@@ -128,7 +134,7 @@ impl<'m> Triangle<'m> {
         self.mesh.tex_coords.as_ref().map_or_else(
             || [(0.0, 0.0).into(), (1.0, 0.0).into(), (1.0, 1.0).into()],
             |uvs| {
-                let v = self.vertex_indices;
+                let v = self.vertex_indices();
                 [
                     uvs[v[0] as usize],
                     uvs[v[1] as usize],
@@ -139,13 +145,13 @@ impl<'m> Triangle<'m> {
     }
 }
 
-impl<'m> Shape for Triangle<'m> {
+impl Shape for Triangle {
     fn object_bound(&self) -> Bounds3f {
         unimplemented!()
     }
 
     fn world_bound(&self) -> Bounds3f {
-        let v = self.vertex_indices;
+        let v = self.vertex_indices();
         let p0 = self.mesh.vertices[v[0] as usize];
         let p1 = self.mesh.vertices[v[1] as usize];
         let p2 = self.mesh.vertices[v[2] as usize];
@@ -169,7 +175,7 @@ impl<'m> Shape for Triangle<'m> {
     }
 
     fn intersect(&self, ray: &Ray) -> Option<(Float, SurfaceInteraction)> {
-        let v = self.vertex_indices;
+        let v = self.vertex_indices();
         let p0 = self.mesh.vertices[v[0] as usize];
         let p1 = self.mesh.vertices[v[1] as usize];
         let p2 = self.mesh.vertices[v[2] as usize];

@@ -1,4 +1,5 @@
 use crate::{Point2f, Vec2f, SurfaceInteraction, Float};
+use crate::texture::Texture;
 
 #[derive(Copy, Clone)]
 pub struct TexCoords {
@@ -7,9 +8,7 @@ pub struct TexCoords {
     pub dst_dy: Vec2f,
 }
 
-pub trait TextureMapping2D: Sync + Send {
-    fn map(&self, si: &SurfaceInteraction) -> TexCoords;
-}
+pub trait TexCoordsMap2D = Texture<Output = TexCoords>;
 
 pub struct UVMapping {
     pub scale_u: Float,
@@ -37,8 +36,10 @@ impl Default for UVMapping {
     }
 }
 
-impl TextureMapping2D for UVMapping {
-    fn map(&self, si: &SurfaceInteraction) -> TexCoords {
+impl Texture for UVMapping {
+    type Output = TexCoords;
+
+    fn evaluate(&self, si: &SurfaceInteraction) -> Self::Output {
         let dst_dx = Vec2f::new(self.scale_u * si.tex_diffs.dudx, self.scale_v * si.tex_diffs.dvdx);
         let dst_dy = Vec2f::new(self.scale_u * si.tex_diffs.dudy, self.scale_v * si.tex_diffs.dvdy);
 

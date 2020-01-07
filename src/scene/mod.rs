@@ -1,26 +1,25 @@
 use crate::bvh::BVH;
 use crate::{SurfaceInteraction, Ray, Bounds3f};
 use crate::light::Light;
+use std::sync::Arc;
+use crate::primitive::Primitive;
 
 pub struct SceneBuilder {
 
 }
 
-pub struct Scene<'p> {
-    pub primitives_aggregate: BVH<'p>,
-    pub lights: Vec<&'p dyn Light>,
+pub struct Scene {
+    pub primitives_aggregate: BVH,
+    pub lights: Vec<Box<dyn Light>>,
 }
 
-impl<'p> Scene<'p> {
+impl Scene {
 
-    pub fn new(primitives: BVH<'p>, lights: Vec<&'p mut dyn Light>) -> Self {
+    pub fn new(primitives: BVH, mut lights: Vec<Box<dyn Light>>) -> Self {
         // TODO: this is kind of weird, maybe find a better way to do preprocess
-        let mut lights: Vec<&dyn Light> = lights.into_iter()
-            .map(|light| {
-                light.preprocess(&primitives);
-                &*light
-            })
-            .collect();
+        for light in &mut lights {
+            light.preprocess(&primitives);
+        }
 
         for prim in &primitives.prims {
             if let Some(light) = prim.area_light() {
