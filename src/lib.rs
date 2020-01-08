@@ -34,6 +34,7 @@ pub mod sampling;
 pub mod light;
 pub mod pbrt_loader;
 pub mod loaders;
+pub mod id_arena;
 
 pub use geometry::*;
 pub use geometry::Transform;
