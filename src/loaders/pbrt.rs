@@ -1,10 +1,10 @@
 use std::sync::Arc;
 use crate::material::Material;
-use crate::{Transform, Point3f, Vec3f};
+use crate::{Transform, Point3f, Vec3f, Point2f, Bounds2f, Point2i};
 use crate::Float;
 use crate::light::diffuse::DiffuseAreaLightBuilder;
 use pbrt_parser as parser;
-use pbrt_parser::{WorldStmt, TransformStmt};
+use pbrt_parser::{WorldStmt, TransformStmt, HeaderStmt};
 use crate::loaders::{ParamSet, ParamVal, ParamError};
 use crate::spectrum::Spectrum;
 use std::collections::HashMap;
@@ -17,6 +17,12 @@ use crate::shapes::triangle::TriangleMesh;
 use crate::texture::{SpectrumTexture, FloatTexture};
 use crate::scene::Scene;
 use crate::bvh::BVH;
+use crate::camera::{Camera, PerspectiveCamera};
+use bitflags::_core::fmt::{Formatter, Error};
+use crate::sampler::Sampler;
+use crate::filter::BoxFilter;
+use crate::sampler::random::RandomSampler;
+use crate::film::Film;
 
 pub struct PbrtSceneBuilder {
     graphics_state: Vec<GraphicsState>,
@@ -27,7 +33,7 @@ pub struct PbrtSceneBuilder {
 
     primitives: Vec<Box<dyn Primitive>>,
     meshes: Vec<Arc<TriangleMesh>>,
-    lights: Vec<Box<dyn Light>>,
+    lights: Vec<Arc<dyn Light>>,
 }
 
 #[derive(Clone)]
@@ -37,6 +43,7 @@ struct GraphicsState {
     rev_orientation: bool,
 }
 
+#[derive(Debug)]
 pub enum PbrtEvalError {
     ConstructError(ConstructError),
     TextureError {
@@ -60,15 +67,42 @@ impl From<ConstructError> for PbrtEvalError {
     }
 }
 
+impl std::fmt::Display for PbrtEvalError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for PbrtEvalError {
+
+}
+
 impl PbrtSceneBuilder {
 
-    pub fn create_scene(&mut self) -> Scene {
-        let bvh = BVH::build(self.primitives);
-        let mut lights = Vec::with_capacity(self.lights.len());
-        for light in &mut self.lights {
-            lights.push(light.as_mut())
+    pub fn new() -> Self {
+        let state = GraphicsState {
+            material: None,
+            area_light: None,
+            rev_orientation: false,
+        };
+        let graphics_state = vec![state];
+        let tf_state = vec![Transform::identity()];
+        Self {
+            graphics_state,
+            tf_state,
+            float_textures: Default::default(),
+            spectrum_textures: Default::default(),
+            named_materials: Default::default(),
+            primitives: vec![],
+            meshes: vec![],
+            lights: vec![]
         }
-        let scene = Scene::new(bvh, lights);
+    }
+
+    pub fn create_scene(self) -> Scene {
+        let bvh = BVH::build(self.primitives);
+        let lights = self.lights;
+        let scene = Scene::new(bvh, lights, self.meshes);
         scene
     }
 
@@ -116,11 +150,18 @@ impl PbrtSceneBuilder {
             let val = self.convert_param_val(param.value)?;
             Ok((name, val))
         }).collect::<Result<HashMap<String, ParamVal>, PbrtEvalError>>()?;
-        Ok(ParamSet { params: map })
+        let mut param_set = ParamSet { params: map };
+        param_set.put_one("object_to_world".to_string(), *self.tf_state.last().unwrap());
+        param_set.put_one("reverse_orientation".to_string(), vec![self.graphics_state().rev_orientation]);
+        Ok(param_set)
     }
 
     fn current_tf_mut(&mut self) -> &mut Transform {
         self.tf_state.last_mut().expect("Transform stack empty")
+    }
+
+    fn graphics_state(&self) -> &GraphicsState {
+        self.graphics_state.last().unwrap()
     }
 
     fn graphics_state_mut(&mut self) -> &mut GraphicsState {
@@ -166,7 +207,7 @@ impl PbrtSceneBuilder {
             WorldStmt::ObjectInstance(_) => {},
             WorldStmt::LightSource(name, params) => {
                 let params = self.make_param_set(params)?;
-
+                self.light_source(name.as_ref(), params)?;
             },
             WorldStmt::AreaLightSource(name, params) => {
                 let params = self.make_param_set(params)?;
@@ -214,6 +255,7 @@ impl PbrtSceneBuilder {
                 let shape = Arc::new(shape);
                 let light = graphics_state.area_light.clone()
                     .map(|builder| builder.create(shape.clone()));
+                let light = light.map(|l| Arc::new(l));
                 let prim = GeometricPrimitive {
                     shape,
                     material: graphics_state.material.clone(),
@@ -231,6 +273,7 @@ impl PbrtSceneBuilder {
                         let shape = Arc::new(shape);
                         let light = graphics_state.area_light.clone()
                             .map(|builder| builder.create(shape.clone()));
+                        let light = light.map(|l| Arc::new(l));
                         let material = graphics_state.material.clone();
                         let prim = GeometricPrimitive {
                             shape,
@@ -297,15 +340,170 @@ impl PbrtSceneBuilder {
         match name {
             "point" => {
                 let light = make_point_light(params)?;
-                self.lights.push(Box::new(light));
+                self.lights.push(Arc::new(light));
             },
             "distant" => {
                 let light = make_distant_light(params)?;
-                self.lights.push(Box::new(light));
+                self.lights.push(Arc::new(light));
             }
             _ => return Err(PbrtEvalError::UnknownName(name.to_string())),
         };
         Ok(())
+    }
+}
+
+pub struct PbrtHeader {
+    pub tf: Transform,
+    pub camera_params: ParamSet,
+    camera_tf: Transform,
+    sampler_params: ParamSet,
+    film_params: ParamSet,
+}
+
+impl PbrtHeader {
+    pub fn new() -> Self {
+        Self {
+            tf: Transform::identity(),
+            camera_params: ParamSet::new(),
+            camera_tf: Transform::identity(),
+            sampler_params: Default::default(),
+            film_params: Default::default()
+        }
+    }
+
+    pub fn make_camera(&mut self) -> Result<Box<dyn Camera>, PbrtEvalError> {
+        let name: String = self.camera_params.get_one("name")?;
+        match name.as_ref() {
+            "perspective" => {
+                // According to pbrt format reference, transform statements
+                // here describe the world to camera transform so we invert it.
+                let cam2world = self.camera_tf.inverse();
+                let fov = self.camera_params.get_one("fov").unwrap_or(90.0);
+                let lens_radius = self.camera_params.get_one("lensradius").unwrap_or(0.0);
+                let focal_dist = self.camera_params.get_one("focaldistance").unwrap_or(1e6);
+                let shutter_open = self.camera_params.get_one("shutteropen").unwrap_or(0.0);
+                let shutter_close = self.camera_params.get_one("shutterclose").unwrap_or(1.0);
+                let xres = self.film_params.get_one_ref("xresolution").map(|i| *i).unwrap_or(640);
+                let yres = *self.film_params.get_one_ref("yresolution").unwrap_or(&480);
+                let full_resolution = Point2i::new(xres, yres);
+                let frame_aspect_ratio = self.camera_params.get_one("frameaspectratio")
+                    .unwrap_or(xres as f32 / yres as f32);
+                let screen_window = if frame_aspect_ratio > 1.0 {
+                    let pmin = Point2f::new(-frame_aspect_ratio, -1.0);
+                    let pmax = Point2f::new(frame_aspect_ratio, 1.0);
+                    Bounds2f::with_bounds(pmin, pmax)
+                } else {
+                    let pmin = Point2f::new(-1.0, -1.0 / frame_aspect_ratio);
+                    let pmax = Point2f::new(1.0, 1.0 / frame_aspect_ratio);
+                    Bounds2f::with_bounds(pmin, pmax)
+                };
+
+                let camera = PerspectiveCamera::new(
+                    cam2world,
+                    full_resolution,
+                    screen_window,
+                    (shutter_open, shutter_close),
+                    lens_radius,
+                    focal_dist,
+                    fov,
+                );
+                Ok(Box::new(camera))
+            },
+            _ => Err(PbrtEvalError::UnknownName(name)),
+        }
+    }
+
+    pub fn make_sampler(&mut self) -> Result<RandomSampler, PbrtEvalError> {
+        let name: String = self.sampler_params.get_one("name")?;
+        let spp = self.sampler_params.get_one("pixelsamples").unwrap_or(16);
+        match name.as_ref() {
+            "random" => {
+                let sampler = RandomSampler::new_with_seed(spp as usize, 0);
+                Ok(sampler)
+            },
+            _ => Err(PbrtEvalError::UnknownName(name))
+        }
+    }
+
+    pub fn make_film(&mut self) -> Result<Film<BoxFilter>, PbrtEvalError> {
+        let xres = *self.film_params.get_one_ref("xresolution").unwrap_or(&640);
+        let yres = *self.film_params.get_one_ref("yresolution").unwrap_or(&480);
+
+        let cropwindow: Vec<Float> = self.film_params.get_many("cropwindow").unwrap_or_else(|_| vec![0.0, 1.0, 0.0, 1.0]);
+        let cropwindow = Bounds2f::with_bounds(
+            Point2f::new(cropwindow[0], cropwindow[2]),
+            Point2f::new(cropwindow[1], cropwindow[3])
+        );
+
+        let filter = BoxFilter::default();
+        let film = Film::new(
+            Point2i::new(xres, yres),
+            cropwindow,
+            filter,
+            35.0
+        );
+        Ok(film)
+    }
+
+    pub fn exec_stmt(&mut self, stmt: parser::HeaderStmt) -> Result<(), PbrtEvalError> {
+        match stmt {
+            HeaderStmt::Transform(tf_stmt) => {
+                self.tf = eval_transform_stmt(tf_stmt, &self.tf)?;
+            },
+            HeaderStmt::Camera(name, params) => {
+                let mut params = Self::make_param_set(params);
+                params.put_one("name".to_string(), vec![name]);
+                self.camera_params = params;
+                self.camera_tf = self.tf;
+            },
+            HeaderStmt::Sampler(name, params) => {
+                let mut params = Self::make_param_set(params);
+                params.put_one("name".to_string(), vec![name]);
+                self.sampler_params = params;
+            },
+            HeaderStmt::Film(name, params) => {
+                let mut params = Self::make_param_set(params);
+                params.put_one("name".to_string(), vec![name]);
+                self.film_params = params;
+            },
+            HeaderStmt::Filter(_, _) => {},
+            HeaderStmt::Integrator(_, _) => {},
+            HeaderStmt::Accelerator(_, _) => {},
+        };
+        Ok(())
+    }
+
+    fn make_param_set(params: Vec<parser::Param>) -> ParamSet {
+        let map = params.into_iter()
+            .map(|param| {
+                let val = Self::convert_param_val(param.value);
+                (param.name.to_string(), val)
+            }).collect();
+        ParamSet { params: map }
+    }
+
+    // TODO: convert in place!
+    fn convert_param_val(val: parser::ParamVal) -> ParamVal {
+        match val {
+            parser::ParamVal::Int(v) => ParamVal::Int(v.into()),
+            parser::ParamVal::Float(v) => ParamVal::Float(v.into()),
+            parser::ParamVal::Point2(v) => ParamVal::Point2f(convert_vec(v).into()),
+            parser::ParamVal::Point3(v) => ParamVal::Point3f(convert_vec(v).into()),
+            parser::ParamVal::Vector2(v) => ParamVal::Vec2f(convert_vec(v).into()),
+            parser::ParamVal::Vector3(v) => ParamVal::Vec3f(convert_vec(v).into()),
+            parser::ParamVal::Normal3(v) => ParamVal::Normal3(convert_vec(v).into()),
+            parser::ParamVal::Bool(v) => ParamVal::Bool(v.into()),
+            parser::ParamVal::String(v) => ParamVal::String(v.into_iter().map(|s| s.to_string()).collect::<Vec<_>>().into()),
+            parser::ParamVal::Texture(s) => {
+                unimplemented!()
+            }
+            parser::ParamVal::SpectrumRgb(v) => {
+                ParamVal::Spectrum(v.into_iter().map(|s| s.into()).collect::<Vec<Spectrum>>().into())
+            },
+            parser::ParamVal::SpectrumXyz(_) => unimplemented!(),
+            parser::ParamVal::SpectrumSampled(_) => unimplemented!(),
+            parser::ParamVal::SpectrumBlackbody(_) => unimplemented!(),
+        }
     }
 }
 

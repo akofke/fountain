@@ -7,6 +7,7 @@ use crate::interaction::{DiffGeom, SurfaceHit};
 use crate::err_float::gamma;
 use crate::sampling::uniform_sample_triangle;
 
+#[derive(Debug)]
 pub struct TriangleMesh {
     pub n_triangles: u32,
 
@@ -99,8 +100,8 @@ impl Triangle {
         let idx = self.tri_id as usize;
         [
             self.mesh.vertex_indices[3 * idx],
-            self.mesh.vertex_indices[3 * idx],
-            self.mesh.vertex_indices[3 * idx],
+            self.mesh.vertex_indices[3 * idx + 1],
+            self.mesh.vertex_indices[3 * idx + 2],
         ]
     }
 

@@ -4,7 +4,7 @@ use crate::{Ray, SurfaceInteraction};
 use crate::geometry::bounds::Bounds3f;
 use crate::material::Material;
 use crate::shapes::Shape;
-use crate::light::AreaLight;
+use crate::light::{AreaLight, Light};
 use crate::spectrum::Spectrum;
 use crate::light::diffuse::DiffuseAreaLight;
 
@@ -19,13 +19,13 @@ pub trait Primitive: Sync {
 
     fn area_light(&self) -> Option<&dyn AreaLight>;
     
-    fn area_light_mut(&mut self) -> Option<&mut dyn AreaLight>;
+    fn light_arc_cloned(&self) -> Option<Arc<dyn Light>>;
 }
 
 pub struct GeometricPrimitive<S: Shape> {
     pub shape: Arc<S>,
     pub material: Option<Arc<dyn Material>>,
-    pub light: Option<DiffuseAreaLight<S>>,
+    pub light: Option<Arc<DiffuseAreaLight<S>>>,
 }
 
 impl<S: Shape> GeometricPrimitive<S> {
@@ -36,11 +36,11 @@ impl<S: Shape> GeometricPrimitive<S> {
             self.shape.clone(),
             n_samples,
         );
-        self.light = Some(light)
+        self.light = Some(Arc::new(light))
     }
 }
 
-impl<S: Shape> Primitive for GeometricPrimitive<S> {
+impl<S: 'static +  Shape> Primitive for GeometricPrimitive<S> {
     fn world_bound(&self) -> Bounds3f {
         self.shape.world_bound()
     }
@@ -62,10 +62,10 @@ impl<S: Shape> Primitive for GeometricPrimitive<S> {
     }
 
     fn area_light(&self) -> Option<&dyn AreaLight> {
-        self.light.as_ref().map(|l| l as &dyn AreaLight)
+        self.light.as_deref().map(|l| l as &dyn AreaLight)
     }
-    
-    fn area_light_mut(&mut self) -> Option<&mut dyn AreaLight> {
-        self.light.as_mut().map(|l| l as &mut dyn AreaLight)
+
+    fn light_arc_cloned(&self) -> Option<Arc<dyn Light>> {
+        self.light.as_ref().map(|l| l.clone() as Arc<dyn Light>)
     }
 }

@@ -124,11 +124,11 @@ fn uniform_sample_one_light(
     if n_lights == 0 { return Spectrum::new(0.0) }
 
     let light_num = (sampler.get_1d() * (n_lights as Float)).min((n_lights - 1) as Float) as usize;
-    let light = &scene.lights[light_num];
+    let light = scene.lights[light_num].as_ref();
 
     let u_light = sampler.get_2d();
     let u_scattering = sampler.get_2d();
-    n_lights as Float * estimate_direct(bsdf, intersect, u_scattering, *light, u_light, scene, arena)
+    n_lights as Float * estimate_direct(bsdf, intersect, u_scattering, light, u_light, scene, arena)
 }
 
 fn uniform_sample_all_lights(

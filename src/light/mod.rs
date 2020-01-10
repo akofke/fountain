@@ -11,7 +11,7 @@ pub mod distant;
 pub mod infinite;
 pub mod diffuse;
 
-pub trait Light: Sync {
+pub trait Light: Sync + Send {
     fn flags(&self) -> LightFlags;
 
     fn light_to_world(&self) -> &Transform;
@@ -32,7 +32,7 @@ pub trait Light: Sync {
     fn environment_emitted_radiance(&self, ray: &RayDifferential) -> Spectrum { Spectrum::new(0.0) }
 }
 
-pub trait AreaLight: Light + Send {
+pub trait AreaLight: Light {
     /// Given a point on the area light's surface represented by `hit`, evaluate the area light's
     /// emitted radiance `L` in the given outgoing direction `w`.
     fn emitted_radiance(&self, hit: SurfaceHit, w: Vec3f) -> Spectrum;

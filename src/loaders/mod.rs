@@ -29,42 +29,49 @@ pub enum ParamVal {
     Material(Arc<dyn Material>),
 }
 
-pub struct TryFromParamErr(&'static str);
+pub struct TryFromParamErr<V>(&'static str, V);
 
+#[derive(Debug)]
 pub struct ParamError {
     pub expected_ty: &'static str,
     pub expected_name: &'static str,
 }
 
 impl TryFrom<ParamVal> for Transform {
-    type Error = TryFromParamErr;
+    type Error = TryFromParamErr<ParamVal>;
 
     fn try_from(value: ParamVal) -> Result<Self, Self::Error> {
         match value {
             ParamVal::Transform(tf) => Ok(tf),
-            _ => Err(TryFromParamErr("transform")),
+            _ => Err(TryFromParamErr("transform", value)),
         }
     }
 }
 
+impl From<Transform> for ParamVal {
+    fn from(v: Transform) -> Self {
+        Self::Transform(v)
+    }
+}
+
 impl TryFrom<ParamVal> for Arc<dyn Texture<Output=Float>> {
-    type Error = TryFromParamErr;
+    type Error = TryFromParamErr<ParamVal>;
 
     fn try_from(value: ParamVal) -> Result<Self, Self::Error> {
         match value {
             ParamVal::FloatTexture(tex) => Ok(tex),
-            _ => Err(TryFromParamErr("float_texture")),
+            _ => Err(TryFromParamErr("float_texture", value)),
         }
     }
 }
 
 impl TryFrom<ParamVal> for Arc<dyn Texture<Output=Spectrum>> {
-    type Error = TryFromParamErr;
+    type Error = TryFromParamErr<ParamVal>;
 
     fn try_from(value: ParamVal) -> Result<Self, Self::Error> {
         match value {
             ParamVal::SpectrumTexture(tex) => Ok(tex),
-            _ => Err(TryFromParamErr("spectrum_texture")),
+            _ => Err(TryFromParamErr("spectrum_texture", value)),
         }
     }
 }
@@ -84,31 +91,40 @@ impl From<Arc<dyn Texture<Output=Spectrum>>> for ParamVal {
 macro_rules! impl_basic_conversions {
     ($param_variant:ident, $into_ty:ty, $ty_name:expr) => {
         impl TryFrom<ParamVal> for $into_ty {
-            type Error = TryFromParamErr;
+            type Error = TryFromParamErr<ParamVal>;
 
             fn try_from(value: ParamVal) -> Result<Self, Self::Error> {
                 match value {
-                    ParamVal::$param_variant(v) => {
-                        if v.len() == 1 {
-                            v.into_iter().nth(0).ok_or(TryFromParamErr($ty_name))
-                        } else {
-                            Err(TryFromParamErr($ty_name))
-                        }
+                    ParamVal::$param_variant(v) if v.len() == 1 => {
+                        Ok(v.into_iter().nth(0).unwrap())
                     },
-                    _ => Err(TryFromParamErr($ty_name))
+                    _ => Err(TryFromParamErr($ty_name, value))
+                }
+            }
+        }
+
+        impl<'a> TryFrom<&'a ParamVal> for &'a $into_ty {
+            type Error = TryFromParamErr<&'a ParamVal>;
+
+            fn try_from(value: &'a ParamVal) -> Result<Self, Self::Error> {
+                match value {
+                    ParamVal::$param_variant(v) if v.len() == 1 => {
+                        Ok(&v[0])
+                    },
+                    _ => Err(TryFromParamErr($ty_name, value))
                 }
             }
         }
 
         impl TryFrom<ParamVal> for Vec<$into_ty> {
-            type Error = TryFromParamErr;
+            type Error = TryFromParamErr<ParamVal>;
 
             fn try_from(value: ParamVal) -> Result<Self, Self::Error> {
                 match value {
                     ParamVal::$param_variant(v) => {
                         Ok(v.into_vec())
                     },
-                    _ => Err(TryFromParamErr($ty_name))
+                    _ => Err(TryFromParamErr($ty_name, value))
                 }
             }
         }
@@ -133,41 +149,71 @@ impl_basic_conversions!(Bool, bool, "bool");
 impl_basic_conversions!(String, String, "string");
 
 
+#[derive(Default)]
 pub struct ParamSet {
     params: HashMap<String, ParamVal>,
-
 }
 
 impl ParamSet {
+    pub fn new() -> Self {
+        Self {
+            params: Default::default(),
+        }
+    }
+
+    pub fn put_one(&mut self, name: String, val: impl Into<ParamVal>) {
+        self.params.insert(name, val.into());
+    }
+
     pub fn get_one<T>(&mut self, name: &'static str) -> Result<T, ParamError>
-        where T: TryFrom<ParamVal, Error=TryFromParamErr>
+        where T: TryFrom<ParamVal, Error=TryFromParamErr<ParamVal>>
     {
         self.params.remove(name)
             .ok_or_else(|| ParamError { expected_name: name, expected_ty: type_name::<T>()})?
             .try_into()
-            .map_err(|e: TryFromParamErr| ParamError { expected_name: name, expected_ty: e.0 })
+            .map_err(|e: TryFromParamErr<_>| ParamError { expected_name: name, expected_ty: e.0 })
+
+    }
+
+    pub fn get_one_ref<'a, T>(&'a self, name: &'static str) -> Result<&'a T, ParamError>
+        where &'a T: TryFrom<&'a ParamVal, Error=TryFromParamErr<&'a ParamVal>>
+    {
+        let val = self.params.get(name)
+            .ok_or_else(|| ParamError { expected_name: name, expected_ty: type_name::<T>()})?;
+        let val = val
+            .try_into()
+            .map_err(|e: TryFromParamErr<_>| ParamError { expected_name: name, expected_ty: e.0 });
+        val
 
     }
 
     pub fn get_many<T>(&mut self, name: &'static str) -> Result<Vec<T>, ParamError>
-        where Vec<T>: TryFrom<ParamVal, Error=TryFromParamErr>
+        where Vec<T>: TryFrom<ParamVal, Error=TryFromParamErr<ParamVal>>
     {
         self.get_one::<Vec<T>>(name)
     }
 
     pub fn get_constant_texture<T: 'static>(&mut self, name: &'static str) -> Result<Arc<dyn Texture<Output=T>>, ParamError>
-        where T: TryFrom<ParamVal, Error=TryFromParamErr> + Copy + Sync + Send
+        where T: TryFrom<ParamVal, Error=TryFromParamErr<ParamVal>> + Copy + Sync + Send
     {
+        dbg!("looking for const texture");
         let val = self.get_one::<T>(name)?;
+        dbg!("found val");
         Ok(Arc::new(ConstantTexture(val)))
     }
 
     pub fn get_texture_or_const<T>(&mut self, name: &'static str) -> Result<Arc<dyn Texture<Output=T>>, ParamError>
         where
-            T: TryFrom<ParamVal, Error=TryFromParamErr> + Copy + Sync + Send + 'static,
-            Arc<dyn Texture<Output=T>>: TryFrom<ParamVal, Error=TryFromParamErr>
+            T: TryFrom<ParamVal, Error=TryFromParamErr<ParamVal>> + Copy + Sync + Send + 'static,
+            Arc<dyn Texture<Output=T>>: TryFrom<ParamVal, Error=TryFromParamErr<ParamVal>>
     {
-        self.get_one::<Arc<dyn Texture<Output=T>>>(name).or_else(|_| self.get_constant_texture(name))
+        let val = self.params.remove(name).ok_or_else(|| ParamError { expected_name: name, expected_ty: type_name::<T>()})?;
+        val.try_into()
+            .or_else(|e: TryFromParamErr<ParamVal>| {
+                let tex_value: T = e.1.try_into().map_err(|e: TryFromParamErr<ParamVal>| ParamError { expected_name: name, expected_ty: e.0 })?;
+                Ok(Arc::new(ConstantTexture(tex_value)) as Arc<dyn Texture<Output=T>>)
+            })
+//        self.get_one::<Arc<dyn Texture<Output=T>>>(name).or_else(|_| self.get_constant_texture(name))
     }
 
     pub fn current_transform(&mut self) -> Result<Transform, ParamError> {

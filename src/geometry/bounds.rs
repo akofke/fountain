@@ -282,7 +282,7 @@ mod test {
         // tile areas should sum to the same area as the overall bounds,
         // even with tile sizes that don't evenly fit
         for &tile_size in &[1, 5, 7, 16] {
-            let total_tile_area = big_bounds.iter_tiles(tile_size)
+            let total_tile_area: i32 = big_bounds.iter_tiles(tile_size)
                 .map(|tile| tile.area())
                 .sum();
 

@@ -14,6 +14,7 @@ use crate::light::point::PointLight;
 
 type ParamResult<T> = Result<T, ConstructError>;
 
+#[derive(Debug)]
 pub enum ConstructError {
     ParamError(ParamError),
     ValueError(String),
@@ -51,7 +52,8 @@ pub fn make_triangle_mesh(mut params: ParamSet) -> ParamResult<TriangleMesh> {
     let vertices = params.get_one("P")?;
     let normals = params.get_one("N").ok();
     let tangents = params.get_one("S").ok();
-    let tex_coords = params.get_one("uv").ok();
+    // TODO: handle float array
+    let tex_coords = params.get_one("uv").or_else(|_| params.get_one("st")).ok();
     let reverse_orientation = params.reverse_orientation()?;
 
     let mesh = TriangleMesh::new(
