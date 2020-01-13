@@ -89,7 +89,7 @@ impl FresnelDielectric {
 
 impl Fresnel for FresnelDielectric {
     fn evaluate(&self, cos_i: Float) -> Spectrum {
-        Spectrum::new(fresnel_dielectric(cos_i, self.eta_i, self.eta_t))
+        Spectrum::uniform(fresnel_dielectric(cos_i, self.eta_i, self.eta_t))
     }
 }
 
@@ -98,7 +98,7 @@ pub struct FresnelNoOp;
 
 impl Fresnel for FresnelNoOp {
     fn evaluate(&self, _cos_i: Float) -> Spectrum {
-        Spectrum::new(1.0)
+        Spectrum::uniform(1.0)
     }
 }
 
@@ -111,7 +111,7 @@ mod tests {
         let fresnel = FresnelDielectric::new(1.0, 1.5);
         // arbitrary values taken from pbrt as ground truth
         let cos_theta_wi = 0.087642014;
-        let expected = Spectrum::new(0.611180067);
+        let expected = Spectrum::uniform(0.611180067);
         assert_eq!(fresnel.evaluate(cos_theta_wi), expected)
     }
 }

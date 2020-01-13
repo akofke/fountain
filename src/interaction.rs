@@ -174,7 +174,7 @@ impl<'i> SurfaceInteraction<'i> {
 
     pub fn emitted_radiance(&self, w: Vec3f) -> Spectrum {
         let prim = self.primitive.unwrap();
-        prim.area_light().map_or(Spectrum::new(0.0), |light| {
+        prim.area_light().map_or(Spectrum::uniform(0.0), |light| {
             light.emitted_radiance(self.hit, w)
         })
     }

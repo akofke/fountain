@@ -10,7 +10,7 @@ use crate::reflection::bsdf::Bsdf;
 use crate::reflection::BxDFType;
 use crate::sampler::Sampler;
 use crate::scene::Scene;
-use crate::spectrum::{RGBSpectrum, Spectrum};
+use crate::spectrum::{Spectrum};
 use std::sync::Arc;
 
 pub mod whitted;
@@ -51,7 +51,7 @@ pub trait IntegratorRadiance: Sync + Send {
         if let Some(scatter) = bsdf.sample_f(wo, sampler.get_2d(), bxdf_type) {
 
             if abs_dot(scatter.wi, intersect.shading_n.0) == 0.0 {
-                return Spectrum::new(0.0);
+                return Spectrum::uniform(0.0);
             }
 
             let diff = ray.diff.map(|diff| {
@@ -90,7 +90,7 @@ pub trait IntegratorRadiance: Sync + Send {
             );
             return scatter.f * li * scatter.wi.dot(intersect.shading_n.0).abs() / scatter.pdf;
         } else {
-            return Spectrum::new(0.0);
+            return Spectrum::uniform(0.0);
         }
     }
 
@@ -111,7 +111,7 @@ pub trait IntegratorRadiance: Sync + Send {
         if let Some(scatter) = bsdf.sample_f(wo, sampler.get_2d(), bxdf_type) {
 
             if abs_dot(scatter.wi, intersect.shading_n.0) == 0.0 {
-                return Spectrum::new(0.0);
+                return Spectrum::uniform(0.0);
             }
 
             let diff = ray.diff.map(|diff| {
@@ -171,7 +171,7 @@ pub trait IntegratorRadiance: Sync + Send {
             );
             return scatter.f * li * scatter.wi.dot(intersect.shading_n.0).abs() / scatter.pdf;
         } else {
-            return Spectrum::new(0.0);
+            return Spectrum::uniform(0.0);
         }
     }
 }
@@ -232,7 +232,7 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
                     1.0 / (tile_sampler.samples_per_pixel() as Float).sqrt(),
                 );
 
-                let mut radiance = Spectrum::<RGBSpectrum>::new(0.0);
+                let mut radiance = Spectrum::uniform(0.0);
 
                 if ray_weight > 0.0 {
                     radiance = self.radiance.incident_radiance(

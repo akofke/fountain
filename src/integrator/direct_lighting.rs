@@ -2,7 +2,7 @@ use crate::integrator::IntegratorRadiance;
 use crate::sampler::Sampler;
 use bumpalo::Bump;
 use crate::{RayDifferential, SurfaceInteraction, Point2f, abs_dot, Float};
-use crate::spectrum::{RGBSpectrum, Spectrum};
+use crate::spectrum::{Spectrum};
 use crate::scene::Scene;
 use crate::material::TransportMode;
 use crate::reflection::bsdf::Bsdf;
@@ -51,13 +51,13 @@ impl IntegratorRadiance for DirectLightingIntegrator {
     }
 
     fn incident_radiance(&self, ray: &mut RayDifferential, scene: &Scene, sampler: &mut dyn Sampler, arena: &Bump, depth: u16) -> Spectrum {
-        let mut radiance: Spectrum = Spectrum::new(0.0);
+        let mut radiance: Spectrum = Spectrum::uniform(0.0);
 
         match scene.intersect(&mut ray.ray) {
             None => {
                 // get radiance of escaping ray
 //                background(ray.ray.dir)
-                Spectrum::new(0.0)
+                Spectrum::uniform(0.0)
             },
 
             Some(mut intersect) => {
@@ -121,7 +121,7 @@ fn uniform_sample_one_light(
     sampler: &mut dyn Sampler,
 ) -> Spectrum {
     let n_lights = scene.lights.len();
-    if n_lights == 0 { return Spectrum::new(0.0) }
+    if n_lights == 0 { return Spectrum::uniform(0.0) }
 
     let light_num = (sampler.get_1d() * (n_lights as Float)).min((n_lights - 1) as Float) as usize;
     let light = scene.lights[light_num].as_ref();
@@ -172,7 +172,7 @@ fn estimate_direct(
 //    sampler: &mut dyn Sampler,
 ) -> Spectrum {
     let bsdf_flags = BxDFType::all() & !BxDFType::SPECULAR;
-    let mut radiance = Spectrum::new(0.0);
+    let mut radiance = Spectrum::uniform(0.0);
 
     let light_sample = light.sample_incident_radiance(&intersect.hit, u_light);
 
@@ -221,7 +221,7 @@ fn estimate_direct(
                     // TODO: make sure this actually works
                     .filter(|l| std::ptr::eq(l.as_light(), light))
                     // TODO: just call emitted on light?
-                    .map_or(Spectrum::new(0.0), |_| si.emitted_radiance(-scatter.wi))
+                    .map_or(Spectrum::uniform(0.0), |_| si.emitted_radiance(-scatter.wi))
             } else {
                 // TODO: how to get differentials
                 light.environment_emitted_radiance(&RayDifferential { ray, diff: None })

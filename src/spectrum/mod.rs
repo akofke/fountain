@@ -1,7 +1,26 @@
-use crate::Float;
-use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, Div, DivAssign, Index, IndexMut, Deref};
+use std::mem::MaybeUninit;
 
-pub mod spectrum2;
+use crate::Float;
+
+pub fn array<F: FnMut(usize) -> Float, const N: usize>(mut init: F) -> [Float; N] {
+    let mut arr = MaybeUninit::<[Float; N]>::uninit();
+    let arr_pointer = arr.as_mut_ptr() as *mut Float;
+
+    for i in 0..N {
+        unsafe {
+            // Safe since i is always inbounds
+            arr_pointer.add(i).write(init(i));
+        }
+    }
+
+    // Safe since we have initialized every place in the array
+    let arr = unsafe { arr.assume_init() };
+    arr
+}
+
+pub fn zip<F: Fn(Float, Float) -> Float, const N: usize>(a: [Float; N], b: [Float; N], f: F) -> [Float; N] {
+    array(|i| f(a[i], b[i]))
+}
 
 #[allow(clippy::excessive_precision)]
 pub fn xyz_to_rgb(xyz: [Float; 3]) -> [Float; 3] {
@@ -21,309 +40,215 @@ pub fn rgb_to_xyz(rgb: [Float; 3]) -> [Float; 3] {
     xyz
 }
 
-pub trait CoefficientSpectrum: Index<usize, Output=Float> + IndexMut<usize, Output=Float> + Copy {
-    const N_SAMPLES: usize;
+#[derive(Clone, Copy)]
+pub struct CoefficientSpectrum<const N: usize>([Float; N]);
 
-    fn new(v: Float) -> Self;
+pub type Spectrum = CoefficientSpectrum<{3}>;
 
-    fn to_xyz(&self) -> [Float; 3];
+impl<const N: usize> CoefficientSpectrum<{N}> {
 
-    fn to_rgb(&self) -> [Float; 3];
-}
-
-#[derive(Clone, Copy, PartialEq, Debug, Default)]
-pub struct Spectrum<S: CoefficientSpectrum = RGBSpectrum>(S);
-
-impl<S: CoefficientSpectrum> Spectrum<S> {
-    pub fn new(v: Float) -> Self {
-        Self(S::new(v))
+    #[inline]
+    pub fn new_with<F: FnMut(usize) -> Float>(init: F) -> Self {
+        let arr = array(init);
+        Self(arr)
     }
-    pub fn sqrt(&self) -> Self {
-        let mut res = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            res[i] = self.0[i].sqrt();
-        }
-        Self(res)
+
+    #[inline]
+    pub fn zip<F: Fn(Float, Float) -> Float>(&self, other: &Self, f: F) -> Self {
+        let arr = zip(self.0, other.0, f);
+        Self(arr)
+    }
+
+    pub fn uniform(val: Float) -> Self {
+        Self::new_with(|_| val)
+    }
+
+    pub fn is_black(&self) -> bool {
+        self.0.iter().all(|&x| x == 0.0)
+    }
+
+    pub fn has_nans(&self) -> bool {
+        self.0.iter().any(|&x| x.is_nan())
     }
 
     pub fn lerp(t: Float, s1: Self, s2: Self) -> Self {
         (1.0 - t) * s1 + t * s2
     }
 
-    pub fn clamp(&self, low: Float, high: Float) -> Self {
-        let mut ret = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            ret[i] = self.0[i].clamp(low, high);
-        }
-        Self(ret)
+    pub fn sqrt(self) -> Self {
+        Self::new_with(|i| self[i].sqrt())
     }
 
-    pub fn clamp_positive(&self) -> Self {
+    pub fn clamp(self, low: Float, high: Float) -> Self {
+        Self::new_with(|i| self[i].clamp(low, high))
+    }
+
+    pub fn clamp_positive(self) -> Self {
         self.clamp(0.0, std::f32::INFINITY)
     }
 
-    pub fn is_black(&self) -> bool {
-        for i in 0..S::N_SAMPLES {
-            if self.0[i] != 0.0 { return false; }
+    // FIXME: These have weird hacks and aren't implemented for <3> as a workaround for
+    //  rustc stack overflow (https://github.com/rust-lang/rust/issues/68104).
+    //  Revert when that is fixed.
+    pub fn to_xyz(self) -> [Float; 3] {
+        assert_eq!(N, 3);
+        let mut arr = [0.0; 3];
+        for i in 0..N {
+            arr[i] = self[i]
         }
-        true
+        rgb_to_xyz(arr)
     }
 
-    pub fn has_nans(&self) -> bool {
-        for i in 0..S::N_SAMPLES {
-            if self.0[i].is_nan() { return true; }
+    pub fn to_rgb(self) -> [Float; 3] {
+        assert_eq!(N, 3);
+        let mut arr = [0.0; 3];
+        for i in 0..N {
+            arr[i] = self[i]
         }
-        false
+        arr
+//        self.0
     }
 }
 
-impl<S: CoefficientSpectrum> std::iter::Sum for Spectrum<S> {
-    fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
-        iter.fold(Self::new(0.0), Add::add)
-    }
-}
+//impl CoefficientSpectrum<{3}> {
+//    pub fn to_xyz(self) -> [Float; 3] {
+//        rgb_to_xyz(self.0)
+//    }
+//
+//    pub fn to_rgb(self) -> [Float; 3] {
+//        self.0
+//    }
+//}
 
-impl From<Spectrum<RGBSpectrum>> for [Float; 3] {
-    fn from(s: Spectrum<RGBSpectrum>) -> Self {
-        s.c
-    }
-}
-
-impl From<[Float; 3]> for Spectrum<RGBSpectrum> {
-    fn from(c: [Float; 3]) -> Self {
-        Self(RGBSpectrum { c })
-    }
-}
-
-impl<S: CoefficientSpectrum> Deref for Spectrum<S> {
-    type Target = S;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-
-#[derive(Clone, Copy, PartialEq, Debug, Default)]
-pub struct RGBSpectrum {
-    c: [Float; 3]
-}
-
-impl RGBSpectrum {}
-
-impl CoefficientSpectrum for RGBSpectrum {
-    const N_SAMPLES: usize = 3;
-
-    fn new(v: Float) -> Self {
-        Self { c: [v; 3] }
-    }
-
-    fn to_xyz(&self) -> [Float; 3] {
-        rgb_to_xyz(self.c)
-    }
-
-    fn to_rgb(&self) -> [Float; 3] {
-        self.c
-    }
-}
-
-impl Index<usize> for RGBSpectrum {
+impl<const N: usize> std::ops::Index<usize> for CoefficientSpectrum<{N}> {
     type Output = Float;
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.c[index]
+        &self.0[index]
     }
 }
 
-impl IndexMut<usize> for RGBSpectrum {
+impl<const N: usize> std::ops::IndexMut<usize> for CoefficientSpectrum<{N}> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.c[index]
+        &mut self.0[index]
     }
 }
 
-//
-// Spectrum (op) Spectrum
-//
+impl<const N: usize> std::cmp::PartialEq for CoefficientSpectrum<{N}> {
+    fn eq(&self, other: &Self) -> bool {
+        for i in 0..N {
+            if self[i] != other[i] {
+                return false
+            }
+        }
+        true
+    }
+}
 
-impl<S> Add for Spectrum<S> where S: CoefficientSpectrum {
+impl<const N: usize> Default for CoefficientSpectrum<{N}> {
+    fn default() -> Self {
+        Self::uniform(Float::default())
+    }
+}
+
+impl<const N: usize> std::fmt::Debug for CoefficientSpectrum<{N}> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_list().entries(self.0.iter()).finish()
+    }
+}
+
+impl<const N: usize> From<[Float; N]> for CoefficientSpectrum<{N}> {
+    fn from(a: [Float; N]) -> Self {
+        Self(a)
+    }
+}
+
+impl<const N: usize> From<CoefficientSpectrum<{N}>> for [Float; N] {
+    fn from(s: CoefficientSpectrum<{N}>) -> Self {
+        s.0
+    }
+}
+
+impl<const N: usize> std::iter::Sum for CoefficientSpectrum<{N}> {
+    fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
+        iter.fold(Self::uniform(0.0), std::ops::Add::add)
+    }
+}
+
+impl<const N: usize> std::ops::Neg for CoefficientSpectrum<{N}> {
     type Output = Self;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        let mut ret = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            ret[i] = self.0[i] + rhs.0[i];
-        }
-        Self(ret)
+    fn neg(self) -> Self::Output {
+        Self::new_with(|i| -self[i])
     }
 }
 
-impl<S> AddAssign for Spectrum<S> where S: CoefficientSpectrum {
-    fn add_assign(&mut self, rhs: Self) {
-        for i in 0..S::N_SAMPLES {
-            self.0[i] += rhs.0[i]
+macro_rules! impl_op {
+    ($op:ident, $name:ident, $sym:tt) => {
+        impl<const N: usize> std::ops::$op for CoefficientSpectrum<{N}> {
+            type Output = Self;
+
+            fn $name(self, rhs: Self) -> Self::Output {
+                Self::zip(&self, &rhs, |x, y| x $sym y)
+            }
         }
-    }
-}
 
-impl<S> Sub for Spectrum<S> where S: CoefficientSpectrum {
-    type Output = Self;
+        impl<const N: usize> std::ops::$op<Float> for CoefficientSpectrum<{N}> {
+            type Output = Self;
 
-    fn sub(self, rhs: Self) -> Self::Output {
-        let mut ret = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            ret[i] = self.0[i] - rhs.0[i];
+            fn $name(self, rhs: Float) -> Self::Output {
+                Self::new_with(|i| self[i] $sym rhs)
+            }
         }
-        Self(ret)
-    }
-}
 
-impl<S> SubAssign for Spectrum<S> where S: CoefficientSpectrum {
-    fn sub_assign(&mut self, rhs: Self) {
-        for i in 0..S::N_SAMPLES {
-            self.0[i] -= rhs.0[i]
+        impl<const N: usize> std::ops::$op<CoefficientSpectrum<{N}>> for Float {
+            type Output = CoefficientSpectrum<{N}>;
+
+            fn $name(self, rhs: CoefficientSpectrum<{N}>) -> Self::Output {
+                CoefficientSpectrum::new_with(|i| self $sym rhs[i])
+            }
         }
     }
 }
 
-impl<S> Mul for Spectrum<S> where S: CoefficientSpectrum {
-    type Output = Self;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        let mut ret = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            ret[i] = self.0[i] * rhs.0[i];
+macro_rules! impl_assign_op {
+    ($op:ident, $name:ident, $sym:tt) => {
+        impl<const N: usize> std::ops::$op for CoefficientSpectrum<{N}> {
+            fn $name(&mut self, rhs: Self) {
+                for i in 0..N {
+                    self[i] $sym rhs[i];
+                }
+            }
         }
-        Self(ret)
-    }
-}
 
-impl<S> MulAssign for Spectrum<S> where S: CoefficientSpectrum {
-    fn mul_assign(&mut self, rhs: Self) {
-        for i in 0..S::N_SAMPLES {
-            self.0[i] *= rhs.0[i]
-        }
-    }
-}
-
-impl<S> Div for Spectrum<S> where S: CoefficientSpectrum {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        let mut ret = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            ret[i] = self.0[i] / rhs.0[i];
-        }
-        Self(ret)
-    }
-}
-
-impl<S> DivAssign for Spectrum<S> where S: CoefficientSpectrum {
-    fn div_assign(&mut self, rhs: Self) {
-        for i in 0..S::N_SAMPLES {
-            self.0[i] /= rhs.0[i]
+        impl<const N: usize> std::ops::$op<Float> for CoefficientSpectrum<{N}> {
+            fn $name(&mut self, rhs: Float) {
+                for i in 0..N {
+                    self[i] $sym rhs;
+                }
+            }
         }
     }
 }
 
-impl<S> std::ops::Neg for Spectrum<S> where S: CoefficientSpectrum {
-    type Output = Self;
+impl_op!(Add, add, +);
+impl_op!(Sub, sub, -);
+impl_op!(Mul, mul, *);
+impl_op!(Div, div, /);
+impl_assign_op!(AddAssign, add_assign, +=);
+impl_assign_op!(SubAssign, sub_assign, -=);
+impl_assign_op!(MulAssign, mul_assign, *=);
+impl_assign_op!(DivAssign, div_assign, /=);
 
-    fn neg(self) -> Self {
-        let mut ret = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            ret[i] = -self.0[i]
-        }
-        Self(ret)
-    }
-}
-
-//
-// Float (op) Spectrum
-//
-
-impl<S> Mul<Spectrum<S>> for Float where S: CoefficientSpectrum {
-    type Output = Spectrum<S>;
-
-    fn mul(self, rhs: Spectrum<S>) -> Self::Output {
-        let mut ret = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            ret[i] = self * rhs.0[i];
-        }
-        Spectrum(ret)
-    }
-}
-
-impl<S> Add<Spectrum<S>> for Float where S: CoefficientSpectrum {
-    type Output = Spectrum<S>;
-
-    fn add(self, rhs: Spectrum<S>) -> Self::Output {
-        let mut ret = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            ret[i] = self + rhs.0[i];
-        }
-        Spectrum(ret)
-    }
-}
-
-//
-// Spectrum (op) Float
-//
-
-impl<S> Mul<Float> for Spectrum<S> where S: CoefficientSpectrum {
-    type Output = Spectrum<S>;
-
-    fn mul(self, rhs: Float) -> Self::Output {
-        let mut ret = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            ret[i] = self[i] * rhs;
-        }
-        Spectrum(ret)
-    }
-}
-
-impl<S> Div<Float> for Spectrum<S> where S: CoefficientSpectrum {
-    type Output = Spectrum<S>;
-
-    fn div(self, rhs: Float) -> Self::Output {
-        let mut ret = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            ret[i] = self[i] / rhs;
-        }
-        Spectrum(ret)
-    }
-}
-
-impl<S> Sub<Float> for Spectrum<S> where S: CoefficientSpectrum {
-    type Output = Spectrum<S>;
-
-    fn sub(self, rhs: Float) -> Self::Output {
-        let mut ret = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            ret[i] = self[i] - rhs;
-        }
-        Spectrum(ret)
-    }
-}
-
-impl<S> Add<Float> for Spectrum<S> where S: CoefficientSpectrum {
-    type Output = Spectrum<S>;
-
-    fn add(self, rhs: Float) -> Self::Output {
-        let mut ret = S::new(0.0);
-        for i in 0..S::N_SAMPLES {
-            ret[i] = self[i] + rhs;
-        }
-        Spectrum(ret)
-    }
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+
     #[test]
     fn test_iter_sum() {
-        let spectra = vec![Spectrum::new(1.0), Spectrum::from([0.0, 1.0, 0.5])];
+        let spectra = vec![Spectrum::uniform(1.0), Spectrum::from([0.0, 1.0, 0.5])];
         let sum: Spectrum = spectra.into_iter().sum();
         assert_eq!(sum, Spectrum::from([1.0, 2.0, 1.5]));
     }

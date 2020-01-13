@@ -18,13 +18,13 @@ impl IntegratorRadiance for WhittedIntegrator {
     }
 
     fn incident_radiance(&self, ray: &mut RayDifferential, scene: &Scene, sampler: &mut dyn Sampler, arena: &Bump, depth: u16) -> Spectrum {
-        let mut radiance: Spectrum = Spectrum::new(0.0);
+        let mut radiance: Spectrum = Spectrum::uniform(0.0);
 
         match scene.intersect(&mut ray.ray) {
             None => {
                 // get radiance of escaping ray
 //                background(ray.ray.dir)
-                Spectrum::new(0.0)
+                Spectrum::uniform(0.0)
             },
 
             Some(mut intersect) => {

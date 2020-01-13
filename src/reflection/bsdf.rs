@@ -67,7 +67,7 @@ impl<'a> Bsdf<'a> {
     pub fn f(&self, wo_world: Vec3f, wi_world: Vec3f, flags: BxDFType) -> Spectrum {
         let wi = self.world_to_local(wi_world);
         let wo = self.world_to_local(wo_world);
-        if wo.z == 0.0 { return Spectrum::new(0.0) }
+        if wo.z == 0.0 { return Spectrum::uniform(0.0) }
 
         let reflect = wi_world.dot(self.ng.into()) * wo_world.dot(self.ng.into()) > 0.0;
 

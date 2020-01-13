@@ -74,7 +74,7 @@ pub fn make_matte(mut params: ParamSet) -> ParamResult<MatteMaterial> {
 }
 
 pub fn make_diffuse_area_light(mut params: ParamSet) -> ParamResult<DiffuseAreaLightBuilder> {
-    let emit = params.get_one("L").unwrap_or(Spectrum::new(1.0));
+    let emit = params.get_one("L").unwrap_or(Spectrum::uniform(1.0));
     let _two_sided = params.get_one("twosided").unwrap_or(false);
     let samples = params.get_one("samples").unwrap_or(1) as usize;
     Ok(DiffuseAreaLightBuilder { emit, n_samples: samples })
@@ -123,8 +123,8 @@ pub fn make_checkerboard_spect(mut params: ParamSet) -> ParamResult<Arc<dyn Text
 }
 
 pub fn make_distant_light(mut params: ParamSet) -> ParamResult<DistantLight> {
-    let radiance = params.get_one("L").unwrap_or(Spectrum::new(1.0));
-    let scale = params.get_one("scale").unwrap_or(Spectrum::new(1.0));
+    let radiance = params.get_one("L").unwrap_or(Spectrum::uniform(1.0));
+    let scale = params.get_one("scale").unwrap_or(Spectrum::uniform(1.0));
     let radiance = radiance * scale;
     let from = params.get_one("from").unwrap_or(Point3f::new(0.0, 0.0, 0.0));
     let to = params.get_one("to").unwrap_or(Point3f::new(0.0, 0.0, 1.0));
@@ -132,8 +132,8 @@ pub fn make_distant_light(mut params: ParamSet) -> ParamResult<DistantLight> {
 }
 
 pub fn make_point_light(mut params: ParamSet) -> ParamResult<PointLight> {
-    let intensity = params.get_one("I").unwrap_or(Spectrum::new(1.0));
-    let scale = params.get_one("scale").unwrap_or(Spectrum::new(1.0));
+    let intensity = params.get_one("I").unwrap_or(Spectrum::uniform(1.0));
+    let scale = params.get_one("scale").unwrap_or(Spectrum::uniform(1.0));
     let intensity = intensity * scale;
     let from = params.get_one("from").unwrap_or(Point3f::new(0.0, 0.0, 0.0));
     let light_to_world = Transform::translate(from - Point3f::new(0.0, 0.0, 0.0));

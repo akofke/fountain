@@ -29,7 +29,7 @@ pub trait Light: Sync + Send {
     /// point `reference`.
     fn pdf_incident_radiance(&self, reference: &SurfaceHit, wi: Vec3f) -> Float;
 
-    fn environment_emitted_radiance(&self, ray: &RayDifferential) -> Spectrum { Spectrum::new(0.0) }
+    fn environment_emitted_radiance(&self, ray: &RayDifferential) -> Spectrum { Spectrum::uniform(0.0) }
 }
 
 pub trait AreaLight: Light {

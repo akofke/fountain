@@ -1,6 +1,5 @@
 use crate::{Float, Transform, Vec3f};
-use crate::spectrum::{Spectrum, RGBSpectrum};
-use std::rc::Rc;
+use crate::spectrum::{Spectrum};
 use crate::shapes::Shape;
 use crate::light::{AreaLight, Light, LiSample, LightFlags, VisibilityTester, AreaLightBuilder};
 use crate::interaction::SurfaceHit;
@@ -46,7 +45,7 @@ impl<S: Shape> AreaLight for DiffuseAreaLight<S> {
         if hit.n.dot(w) > 0.0 {
             self.emit
         } else {
-            Spectrum::new(0.0)
+            Spectrum::uniform(0.0)
         }
     }
 

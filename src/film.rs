@@ -1,6 +1,6 @@
 use crate::{Float, Point2i, Bounds2i, Bounds2f, Point2f, Vec2f, Vec2i, ComponentWiseExt};
 use crate::filter::Filter;
-use crate::spectrum::{Spectrum, RGBSpectrum, CoefficientSpectrum, xyz_to_rgb};
+use crate::spectrum::{Spectrum, xyz_to_rgb, CoefficientSpectrum};
 use cgmath::vec2;
 use smallvec::SmallVec;
 use parking_lot::Mutex;
@@ -27,7 +27,7 @@ pub struct Film<F: Filter> {
 
 #[derive(Debug, Clone, Copy, Default)]
 struct FilmTilePixel {
-    contrib_sum: Spectrum<RGBSpectrum>,
+    contrib_sum: CoefficientSpectrum<{3}>,
     filter_weight_sum: Float,
 }
 
@@ -225,7 +225,7 @@ mod tests {
 
         let tile_sample_bounds = ((0, 0), (2, 2)).into();
         let mut tile = film.get_film_tile(tile_sample_bounds);
-        let sample = Spectrum::new(1.0);
+        let sample = Spectrum::uniform(1.0);
         film.add_sample_to_tile(&mut tile, Point2f::new(1.0, 1.0), sample, 1.0);
         
         film.merge_film_tile(tile);

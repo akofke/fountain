@@ -147,7 +147,7 @@ impl<F: Fresnel> BxDF for SpecularReflection<F> {
     }
 
     fn f(&self, _wo: Vec3f, _wi: Vec3f) -> Spectrum {
-        Spectrum::new(0.0)
+        Spectrum::uniform(0.0)
     }
 
     fn sample_f(&self, wo: Vec3f, _sample: Point2f) -> Option<ScatterSample> {
@@ -187,7 +187,7 @@ impl BxDF for SpecularTransmission {
     }
 
     fn f(&self, wo: Vec3f, wi: Vec3f) -> Spectrum {
-        Spectrum::new(0.0)
+        Spectrum::uniform(0.0)
     }
 
     fn sample_f(&self, wo: Vec3f, _sample: Point2f) -> Option<ScatterSample> {
@@ -202,7 +202,7 @@ impl BxDF for SpecularTransmission {
         )?;
 
         let pdf = 1.0f32;
-        let ft = self.t * (Spectrum::new(1.0) - self.fresnel.evaluate(cos_theta(wi)));
+        let ft = self.t * (Spectrum::uniform(1.0) - self.fresnel.evaluate(cos_theta(wi)));
         Some(ScatterSample {
             f: ft / abs_cos_theta(wi),
             wi,

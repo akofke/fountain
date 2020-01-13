@@ -34,7 +34,7 @@ impl<T1, T2, M> Checkerboard2DTexture<T1, T2, M>
 
 impl Default for Checkerboard2DTexture<ConstantTexture<Spectrum>, ConstantTexture<Spectrum>, UVMapping> {
     fn default() -> Self {
-        Self::new(ConstantTexture(Spectrum::new(0.0)), ConstantTexture(Spectrum::new(1.0)), UVMapping::new(10.0, 10.0, 0.0, 0.0))
+        Self::new(ConstantTexture(Spectrum::uniform(0.0)), ConstantTexture(Spectrum::uniform(1.0)), UVMapping::new(10.0, 10.0, 0.0, 0.0))
     }
 }
 
