@@ -24,13 +24,13 @@ impl Sampler for RandomSampler {
     fn start_pixel(&mut self, pixel: Point2i) {
         self.state.start_pixel(pixel);
         let rng = &mut self.rng;
-        self.state.sample_array_1d.iter_mut().flatten().for_each(|x| {
-            *x = rng.gen();
-        });
-
-        self.state.sample_array_2d.iter_mut().flatten().for_each(|p| {
-            *p = Point2f::new(rng.gen(), rng.gen());
-        });
+//        self.state.sample_array_1d.iter_mut().flatten().for_each(|x| {
+//            *x = rng.gen();
+//        });
+//
+//        self.state.sample_array_2d.iter_mut().flatten().for_each(|p| {
+//            *p = Point2f::new(rng.gen(), rng.gen());
+//        });
     }
 
     fn start_next_sample(&mut self) -> bool {

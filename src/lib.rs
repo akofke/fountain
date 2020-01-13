@@ -4,6 +4,7 @@
 #![feature(slice_partition_at_index)]
 #![feature(inner_deref)]
 #![feature(trait_alias)]
+#![feature(maybe_uninit_ref)]
 
 #![deny(bare_trait_objects)]
 
@@ -35,6 +36,8 @@ pub mod light;
 pub mod pbrt_loader;
 pub mod loaders;
 pub mod id_arena;
+pub mod mipmap;
+pub mod blocked_array;
 
 pub use geometry::*;
 pub use geometry::Transform;

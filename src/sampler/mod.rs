@@ -4,7 +4,6 @@ use crate::{Float, Point2f, Point2i};
 use crate::camera::CameraSample;
 use std::cell::Cell;
 use std::sync::Arc;
-use ndarray::prelude::*;
 
 pub mod random;
 
@@ -60,8 +59,8 @@ pub struct SamplerState {
     current_pixel: Point2i,
     current_pixel_sample_num: usize,
 
-    sample_array_1d: Vec<Array2<Float>>,
-    sample_array_2d: Vec<Array2<Point2f>>,
+//    sample_array_1d: Vec<Array2<Float>>,
+//    sample_array_2d: Vec<Array2<Point2f>>,
 
     // Store a vector of grouped samples. For each group, store an array of samples of the
     // requested size for
@@ -80,8 +79,8 @@ impl SamplerState {
             samples_per_pixel,
             current_pixel: Point2i::new(0, 0),
             current_pixel_sample_num: 0,
-            sample_array_1d: vec![],
-            sample_array_2d: vec![],
+//            sample_array_1d: vec![],
+//            sample_array_2d: vec![],
         }
     }
 
@@ -100,22 +99,24 @@ impl SamplerState {
     }
 
     pub fn request_1d_array(&mut self, len: usize) -> SampleArrayId {
-        let id = SampleArrayId {
-            idx: self.sample_array_1d.len(),
-            len
-        };
-        self.sample_array_1d.push(Array2::zeros((self.samples_per_pixel, len)));
-        id
+//        let id = SampleArrayId {
+//            idx: self.sample_array_1d.len(),
+//            len
+//        };
+//        self.sample_array_1d.push(Array2::zeros((self.samples_per_pixel, len)));
+//        id
 //        self.sample_array_1d.push(vec!(0.0; len * self.samples_per_pixel as usize))
+        unimplemented!()
     }
 
     pub fn request_2d_array(&mut self, len: usize) -> SampleArrayId {
-        let id = SampleArrayId {
-            idx: self.sample_array_2d.len(),
-            len
-        };
-        self.sample_array_2d.push(Array2::from_elem((self.samples_per_pixel, len), Point2f::origin()));
-        id
+//        let id = SampleArrayId {
+//            idx: self.sample_array_2d.len(),
+//            len
+//        };
+//        self.sample_array_2d.push(Array2::from_elem((self.samples_per_pixel, len), Point2f::origin()));
+//        id
+        unimplemented!()
     }
 
     pub fn get_1d_array(&self, id: SampleArrayId) -> &[Float] {

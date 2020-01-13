@@ -136,3 +136,10 @@ impl<const N: usize> std::ops::AddAssign<Float> for CoefficientSpectrum<{N}> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+}
