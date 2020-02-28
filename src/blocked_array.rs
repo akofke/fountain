@@ -54,6 +54,7 @@ impl<T: Copy, const LOG_BLOCK_SIZE: usize> BlockedArray<T, {LOG_BLOCK_SIZE}> {
         }
     }
 
+
     /// Get the index
     fn get_index(u: usize, v: usize, u_blocks: usize) -> usize {
         let block_u = Self::block(u);
@@ -68,8 +69,40 @@ impl<T: Copy, const LOG_BLOCK_SIZE: usize> BlockedArray<T, {LOG_BLOCK_SIZE}> {
         (self.u_size, self.v_size)
     }
 
+    pub fn u_size(&self) -> usize {
+        self.u_size
+    }
+
+    pub fn v_size(&self) -> usize {
+        self.v_size
+    }
+
     pub fn total_elements(&self) -> usize {
         self.total_elems
+    }
+}
+
+impl<T: Default + Copy, const LOG_BLOCK_SIZE: usize> BlockedArray<T, {LOG_BLOCK_SIZE}> {
+    pub fn default(u_size: usize, v_size: usize) -> Self {
+        let n_alloc = Self::round_up(u_size) * Self::round_up(v_size);
+        let mut contents = vec![MaybeUninit::<T>::uninit(); n_alloc];
+        let u_blocks = Self::round_up(u_size) >> LOG_BLOCK_SIZE;
+        let total_elems = u_size * v_size;
+
+        for v in 0..v_size {
+            for u in 0..u_size {
+                let index = Self::get_index(u, v, u_blocks);
+                contents[index] = MaybeUninit::new(T::default());
+            }
+        }
+
+        Self {
+            contents,
+            u_size,
+            v_size,
+            u_blocks,
+            total_elems,
+        }
     }
 }
 
@@ -147,6 +180,19 @@ mod tests {
             for v in 0..vlen {
                 let expected_elem = elems[v * ulen + u];
                 assert_eq!(blocked_array[(u, v)], expected_elem, "{:?}", (ulen, vlen));
+            }
+        }
+    }
+
+    #[test]
+    fn test_default() {
+        let ulen = 8;
+        let vlen = 13;
+        let blocked_array = BlockedArray::<f32, 2>::default(ulen, vlen);
+
+        for u in 0..ulen {
+            for v in 0..vlen {
+                assert_eq!(blocked_array[(u, v)], 0.0, "{:?}", (ulen, vlen));
             }
         }
     }

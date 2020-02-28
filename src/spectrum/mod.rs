@@ -163,6 +163,12 @@ impl<const N: usize> From<[Float; N]> for CoefficientSpectrum<{N}> {
     }
 }
 
+impl<const N: usize> From<Float> for CoefficientSpectrum<{N}> {
+    fn from(x: Float) -> Self {
+        Self::uniform(x)
+    }
+}
+
 impl<const N: usize> From<CoefficientSpectrum<{N}>> for [Float; N] {
     fn from(s: CoefficientSpectrum<{N}>) -> Self {
         s.0

@@ -1,4 +1,6 @@
 #![feature(const_generics)]
+#![allow(incomplete_features)]
+
 #![feature(clamp)]
 #![feature(const_fn)]
 #![feature(slice_partition_at_index)]

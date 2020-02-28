@@ -3,12 +3,29 @@ use crate::Float;
 use crate::err_float::MACHINE_EPSILON;
 //use crate::ComponentWiseExt;
 use cgmath::{Matrix2, SquareMatrix, InnerSpace};
+use crate::spectrum::Spectrum;
 
 pub const INFINITY: Float = std::f32::INFINITY;
 pub const NEG_INFINITY: Float = std::f32::NEG_INFINITY;
 
 pub fn lerp(t: Float, v1: Float, v2: Float) -> Float {
     (1.0 - t) * v1 + t * v2
+}
+
+pub trait Lerp {
+    fn lerp(t: Float, v1: Self, v2: Self) -> Self;
+}
+
+impl Lerp for Float {
+    fn lerp(t: Float, v1: Self, v2: Self) -> Self {
+        (1.0 - t) * v1 + t * v2
+    }
+}
+
+impl Lerp for Spectrum {
+    fn lerp(t: Float, v1: Self, v2: Self) -> Self {
+        (1.0 - t) * v1 + t * v2
+    }
 }
 
 pub fn abs_dot(v1: Vec3f, v2: Vec3f) -> Float {

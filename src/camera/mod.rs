@@ -1,6 +1,6 @@
 use cgmath::InnerSpace;
 
-use crate::{Bounds2f, Differential, Float, INFINITY, lerp, Point2f, Point2i, Point3f, Ray, RayDifferential, Transformable, Vec2f};
+use crate::{Bounds2f, Differential, Float, Lerp, INFINITY, Point2f, Point2i, Point3f, Ray, RayDifferential, Transformable, Vec2f};
 use crate::geometry::Transform;
 
 #[derive(Clone, Copy, Debug)]
@@ -117,7 +117,7 @@ impl Camera for PerspectiveCamera {
 
         // TODO: depth of field
 
-        let time = lerp(sample.time, self.shutter_interval.0, self.shutter_interval.1);
+        let time = Float::lerp(sample.time, self.shutter_interval.0, self.shutter_interval.1);
         let ray = Ray { origin, dir, time, t_max: INFINITY };
         let ray = ray.transform(self.camera_to_world);
         (1.0, ray)
