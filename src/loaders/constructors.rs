@@ -11,6 +11,9 @@ use std::sync::Arc;
 use crate::texture::Texture;
 use crate::light::distant::DistantLight;
 use crate::light::point::PointLight;
+use crate::mipmap::ImageWrap;
+use crate::imageio::{ImageTexInfo, get_mipmap};
+use crate::texture::image::ImageTexture;
 
 type ParamResult<T> = Result<T, ConstructError>;
 
@@ -119,6 +122,30 @@ pub fn make_checkerboard_spect(mut params: ParamSet) -> ParamResult<Arc<dyn Text
         tex2,
         mapping
     ));
+    Ok(tex)
+}
+
+pub fn make_imagemap_spect(mut params: ParamSet) -> ParamResult<Arc<dyn Texture<Output=Spectrum>>> {
+    let filename = params.get_one("filename")?;
+    let wrap_mode = params.get_one("wrap").or_else(|_| Ok("repeat".to_string())).and_then(|s| {
+        match s.as_ref() {
+            "repeat" => Ok(ImageWrap::Repeat),
+            "black" => Ok(ImageWrap::Black),
+            "clamp" => Ok(ImageWrap::Clamp),
+            _ => Err(ConstructError::ValueError(format!("Unknown repeat type {}", s)))
+        }
+    })?;
+    let mapping = make_tex_coords_map_2d(&mut params)?;
+    let scale = params.get_one("scale").unwrap_or(1.0);
+    let gamma = true; // FIXME: depends on format
+    let info = ImageTexInfo::new(
+        filename,
+        wrap_mode,
+        scale,
+        gamma
+    );
+    let mipmap = get_mipmap(info).unwrap(); // FIXME: propagate error
+    let tex = Arc::new(ImageTexture::new(mapping, mipmap));
     Ok(tex)
 }
 

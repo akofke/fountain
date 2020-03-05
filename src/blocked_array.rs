@@ -80,6 +80,16 @@ impl<T: Copy, const LOG_BLOCK_SIZE: usize> BlockedArray<T, {LOG_BLOCK_SIZE}> {
     pub fn total_elements(&self) -> usize {
         self.total_elems
     }
+
+    pub fn to_vec(&self) -> Vec<T> {
+        let mut elems = Vec::with_capacity(self.u_size * self.v_size);
+        for u in 0..self.u_size() {
+            for v in 0..self.v_size() {
+                elems.push(self[(u, v)])
+            }
+        }
+        elems
+    }
 }
 
 impl<T: Default + Copy, const LOG_BLOCK_SIZE: usize> BlockedArray<T, {LOG_BLOCK_SIZE}> {

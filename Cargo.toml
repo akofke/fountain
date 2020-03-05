@@ -16,11 +16,13 @@ smallvec = "0.6.10"
 parking_lot = "0.8.0"
 bitflags = "1.1.0"
 arrayvec = "0.4.10"
-image = "0.21.2"
+image = "0.23.0"
 approx = "0.3.2"
 tobj = "0.1.10"
 indicatif = "0.11.0"
-#ndarray = "0.13.0"
+once_cell = "1.3.1"
+anyhow = "1.0.26"
+ndarray = "0.13.0"
 pbrt-parser = { path = "../pbrt-parser" }
 
 [dev-dependencies]

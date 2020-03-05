@@ -7,6 +7,7 @@ use std::sync::Arc;
 pub mod mapping;
 pub mod uv;
 pub mod checkerboard;
+pub mod image;
 
 pub trait Texture: Sync + Send {
     type Output;

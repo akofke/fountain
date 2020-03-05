@@ -63,6 +63,10 @@ impl<const N: usize> CoefficientSpectrum<{N}> {
         Self::new_with(|_| val)
     }
 
+    pub fn map<F: Fn(Float) -> Float>(&self, f: F) -> Self {
+        Self::new_with(|i| f(self[i]))
+    }
+
     pub fn is_black(&self) -> bool {
         self.0.iter().all(|&x| x == 0.0)
     }
@@ -110,15 +114,24 @@ impl<const N: usize> CoefficientSpectrum<{N}> {
     }
 }
 
-//impl CoefficientSpectrum<{3}> {
-//    pub fn to_xyz(self) -> [Float; 3] {
-//        rgb_to_xyz(self.0)
-//    }
-//
-//    pub fn to_rgb(self) -> [Float; 3] {
-//        self.0
-//    }
-//}
+impl CoefficientSpectrum<{3}> {
+   // pub fn to_xyz(self) -> [Float; 3] {
+   //     rgb_to_xyz(self.0)
+   // }
+   //
+   // pub fn to_rgb(self) -> [Float; 3] {
+   //     self.0
+   // }
+
+    pub fn from_rgb8(rgb8: [u8; 3]) -> Self {
+        let c = [
+            rgb8[0] as Float / 255.0,
+            rgb8[1] as Float / 255.0,
+            rgb8[2] as Float / 255.0,
+        ];
+        Self(c)
+    }
+}
 
 impl<const N: usize> std::ops::Index<usize> for CoefficientSpectrum<{N}> {
     type Output = Float;

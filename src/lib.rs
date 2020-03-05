@@ -40,6 +40,7 @@ pub mod loaders;
 pub mod id_arena;
 pub mod mipmap;
 pub mod blocked_array;
+pub mod imageio;
 
 pub use geometry::*;
 pub use geometry::Transform;
