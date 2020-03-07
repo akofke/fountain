@@ -152,7 +152,7 @@ impl<T: Texel> MIPMap<T> {
         } else {
             let level_floor = level.floor() as usize;
             let delta = level.fract();
-            T::lerp(delta, self.triangle(level_floor, st), self.triangle(level_floor, st))
+            T::lerp(delta, self.triangle(level_floor, st), self.triangle(level_floor + 1, st))
         }
     }
 
@@ -235,6 +235,7 @@ impl<T: Texel> MIPMap<T> {
 mod tests {
     use super::*;
     use ndarray::prelude::*;
+    use approx::assert_ulps_eq;
 
     #[test]
     fn test_mipmap_creation() {
@@ -252,17 +253,20 @@ mod tests {
 
     #[test]
     fn test_mipmap_lookup() {
-        let val = Spectrum::from(0.5);
+        let val = 0.5;
         let dims = (16, 15);
         let img = vec![val; dims.0 * dims.1];
         let mipmap = MIPMap::new(dims, img, ImageWrap::Repeat);
 
+        let widths = Array::logspace(10.0, -4.0, 0.0, 10);
         let coords = Array1::linspace(0.0, 1.0, 25);
         for s in &coords {
             for t in &coords {
-                let st = Point2f::new(*s, *t);
-                let filt = mipmap.lookup_trilinear_width(st, 1.0);
-                assert_eq!(filt, val)
+                for width in &widths {
+                    let st = Point2f::new(*s, *t);
+                    let filt = mipmap.lookup_trilinear_width(st, *width);
+                    assert_ulps_eq!(filt, val, max_ulps=2)
+                }
             }
         }
     }
