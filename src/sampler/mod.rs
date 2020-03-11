@@ -95,7 +95,7 @@ impl SamplerState {
 //        self.array_1d_offset = 0.into();
 //        self.array_2d_offset = 0.into();
         self.current_pixel_sample_num += 1;
-        self.current_pixel_sample_num < self.samples_per_pixel
+        self.current_pixel_sample_num <= self.samples_per_pixel
     }
 
     pub fn request_1d_array(&mut self, len: usize) -> SampleArrayId {
