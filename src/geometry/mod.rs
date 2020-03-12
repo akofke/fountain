@@ -92,7 +92,7 @@ impl Ray {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Differential {
     pub rx_origin: Point3f,
     pub ry_origin: Point3f,
@@ -102,6 +102,7 @@ pub struct Differential {
 
 /// Ray differentials contain information about two auxiliary rays that represent camera rays
 /// offset by one sample in the x and y direction from the main ray on the film plane.
+#[derive(Debug)]
 pub struct RayDifferential {
     pub ray: Ray,
     pub diff: Option<Differential>,

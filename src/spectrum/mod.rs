@@ -114,8 +114,26 @@ impl<const N: usize> CoefficientSpectrum<{N}> {
     }
 }
 
+pub fn spectrum_from_rgb8(rgb8: [u8; 3]) -> Spectrum {
+    let c = [
+        rgb8[0] as Float / 255.0,
+        rgb8[1] as Float / 255.0,
+        rgb8[2] as Float / 255.0,
+    ];
+    CoefficientSpectrum(c)
+}
+
+pub fn spectrum_into_rgb8(s: Spectrum) -> [u8; 3] {
+    let rgb = [
+        Float::round(s[0] * 255.0) as u8,
+        Float::round(s[1] * 255.0) as u8,
+        Float::round(s[2] * 255.0) as u8,
+    ];
+    rgb
+}
+
 impl CoefficientSpectrum<{3}> {
-   // pub fn to_xyz(self) -> [Float; 3] {
+    // pub fn to_xyz(self) -> [Float; 3] {
    //     rgb_to_xyz(self.0)
    // }
    //
@@ -123,14 +141,23 @@ impl CoefficientSpectrum<{3}> {
    //     self.0
    // }
 
-    pub fn from_rgb8(rgb8: [u8; 3]) -> Self {
-        let c = [
-            rgb8[0] as Float / 255.0,
-            rgb8[1] as Float / 255.0,
-            rgb8[2] as Float / 255.0,
-        ];
-        Self(c)
-    }
+    // pub fn from_rgb8(rgb8: [u8; 3]) -> Self {
+    //     let c = [
+    //         rgb8[0] as Float / 255.0,
+    //         rgb8[1] as Float / 255.0,
+    //         rgb8[2] as Float / 255.0,
+    //     ];
+    //     Self(c)
+    // }
+    //
+    // pub fn into_rgb8(self) -> [u8; 3] {
+    //     let rgb = [
+    //         Float::round(self[0] * 255.0) as u8,
+    //         Float::round(self[1] * 255.0) as u8,
+    //         Float::round(self[2] * 255.0) as u8,
+    //     ];
+    //     rgb
+    // }
 }
 
 impl<const N: usize> std::ops::Index<usize> for CoefficientSpectrum<{N}> {

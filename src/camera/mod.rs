@@ -122,6 +122,10 @@ impl Camera for PerspectiveCamera {
         let ray = ray.transform(self.camera_to_world);
         (1.0, ray)
     }
+
+    fn generate_ray_differential(&self, sample: CameraSample) -> (Float, RayDifferential) {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]

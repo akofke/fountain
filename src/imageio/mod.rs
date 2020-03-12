@@ -1,14 +1,16 @@
 use crate::mipmap::{ImageWrap, MIPMap};
 use crate::Float;
 use std::sync::Arc;
-use crate::spectrum::{Spectrum, CoefficientSpectrum};
+use crate::spectrum::{Spectrum, CoefficientSpectrum, spectrum_into_rgb8, spectrum_from_rgb8};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::path::Path;
 use image::io::Reader;
-use image::{DynamicImage, Pixel, GenericImageView};
+use image::{DynamicImage, Pixel, GenericImageView, Rgb};
 use std::collections::hash_map::Entry;
+use core::iter;
+use arrayvec::ArrayVec;
 
 #[derive(PartialEq, Eq, Hash)]
 pub struct ImageTexInfo {
@@ -55,22 +57,7 @@ pub fn get_mipmap(info: ImageTexInfo) -> anyhow::Result<Arc<MIPMap<Spectrum>>> {
 }
 
 pub fn load_mipmap(info: &ImageTexInfo) -> anyhow::Result<MIPMap<Spectrum>> {
-    let image = Reader::open(&info.filename)?
-        .decode()?;
-    let dims = image.dimensions();
-    let mut image: Vec<Spectrum> = match image {
-        DynamicImage::ImageRgb8(img) => {
-            img.pixels().map(|p| {
-                Spectrum::from_rgb8(p.to_rgb().0)
-            }).collect()
-        },
-        DynamicImage::ImageRgba8(img) => {
-            img.pixels().map(|p| {
-                Spectrum::from_rgb8(p.to_rgb().0)
-            }).collect()
-        },
-        _ => unimplemented!()
-    };
+    let (mut image, dims) = load_image(&info.filename)?;
 
     image.iter_mut().for_each(|s| {
         *s = s.map(|x| inverse_gamma_correct(x)) * info.scale()
@@ -82,6 +69,35 @@ pub fn load_mipmap(info: &ImageTexInfo) -> anyhow::Result<MIPMap<Spectrum>> {
         info.wrap_mode
     );
     Ok(mipmap)
+}
+
+pub fn load_image(path: impl AsRef<Path>) -> anyhow::Result<(Vec<Spectrum>, (usize, usize))> {
+    let image = Reader::open(path)?.decode()?;
+    let dims = image.dimensions();
+    let image: Vec<Spectrum> = match image {
+        DynamicImage::ImageRgb8(img) => {
+            img.pixels().map(|p| {
+                spectrum_from_rgb8(p.to_rgb().0)
+            }).collect()
+        },
+        DynamicImage::ImageRgba8(img) => {
+            img.pixels().map(|p| {
+                spectrum_from_rgb8(p.to_rgb().0)
+            }).collect()
+        },
+        _ => unimplemented!()
+    };
+    Ok((image, (dims.0 as usize, dims.1 as usize)))
+}
+
+pub fn spectrum_to_image(img: &[Spectrum], (w, h): (usize, usize)) -> image::RgbImage {
+    let rgb_buf: Vec<u8> = img.iter()
+        .flat_map(|s| {
+            let rgb = spectrum_into_rgb8(s.map(|v| gamma_correct(v)));
+            ArrayVec::from(rgb).into_iter() // TODO
+        })
+        .collect();
+    image::RgbImage::from_raw(w as u32, h as u32, rgb_buf).unwrap()
 }
 
 pub fn gamma_correct(v: Float) -> Float {
@@ -98,4 +114,11 @@ pub fn inverse_gamma_correct(v: Float) -> Float {
     } else {
         ((v + 0.055) * 1.0 / 1.055).powf(2.4)
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
 }

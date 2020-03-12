@@ -16,8 +16,8 @@ pub enum ImageWrap {
 
 pub struct MIPMap<T: Texel> {
     wrap_mode: ImageWrap,
-    resolution: (usize, usize),
-    pub pyramid: Vec<BlockedArray<T, 2>>,
+    resolution: (usize, usize), 
+    pyramid: Vec<BlockedArray<T, 2>>,
 }
 
 struct ResampleWeight {
@@ -180,6 +180,10 @@ impl<T: Texel> MIPMap<T> {
 
     pub fn levels(&self) -> usize {
         self.pyramid.len()
+    }
+
+    pub fn pyramid(&self) -> &[BlockedArray<T, 2>] {
+        &self.pyramid
     }
 
     fn texel(&self, level: usize, s: i32, t: i32) -> T {

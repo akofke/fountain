@@ -34,8 +34,8 @@ incremental=false  # needed to avoid const generics ICE
 
 [profile.release]
 debug=true
-lto=true
-codegen-units=1
+#lto=true
+#codegen-units=1
 
 [profile.bench]
 lto=true
