@@ -1,6 +1,6 @@
-use cgmath::InnerSpace;
+use cgmath::{InnerSpace, EuclideanSpace};
 
-use crate::{Bounds2f, Differential, Float, Lerp, INFINITY, Point2f, Point2i, Point3f, Ray, RayDifferential, Transformable, Vec2f};
+use crate::{Bounds2f, Differential, Float, Lerp, INFINITY, Point2f, Point2i, Point3f, Ray, RayDifferential, Transformable, Vec2f, Vec3f};
 use crate::geometry::Transform;
 
 #[derive(Clone, Copy, Debug)]
@@ -74,7 +74,9 @@ pub struct PerspectiveCamera {
     shutter_interval: (Float, Float),
     lens_radius: Float,
     focal_dist: Float,
-    aspect: Float
+    aspect: Float,
+    dx_camera: Vec3f,
+    dy_camera: Vec3f,
 }
 
 impl PerspectiveCamera {
@@ -95,6 +97,8 @@ impl PerspectiveCamera {
         p_min /= p_min.z;
         p_max /= p_max.z;
         let aspect = ((p_max.x - p_min.x) * (p_max.y - p_min.y)).abs();
+        let dx_camera = point3f!(1, 0, 0).transform(proj.raster_to_camera) - point3f!(0, 0, 0).transform(proj.raster_to_camera);
+        let dy_camera = point3f!(0, 1, 0).transform(proj.raster_to_camera) - point3f!(0, 0, 0).transform(proj.raster_to_camera);
 
         Self {
             camera_to_world,
@@ -102,7 +106,9 @@ impl PerspectiveCamera {
             shutter_interval,
             lens_radius,
             focal_dist,
-            aspect
+            aspect,
+            dx_camera,
+            dy_camera,
         }
     }
 }
@@ -124,7 +130,35 @@ impl Camera for PerspectiveCamera {
     }
 
     fn generate_ray_differential(&self, sample: CameraSample) -> (Float, RayDifferential) {
-        unimplemented!()
+        let p_film = point3f!(sample.p_film.x, sample.p_film.y, 0);
+        let p_camera: Point3f = p_film.transform(self.proj.raster_to_camera);
+        let time = Float::lerp(sample.time, self.shutter_interval.0, self.shutter_interval.1);
+
+        let origin = Point3f::new(0.0, 0.0, 0.0);
+        let dir = (p_camera - origin).normalize();
+        let ray = Ray { origin, dir, time, t_max: INFINITY};
+
+        if self.lens_radius > 0.0 {
+            unimplemented!()
+        } else {
+            let rx_origin = origin;
+            let ry_origin = origin;
+            let rx_dir = (p_camera.to_vec() + self.dx_camera).normalize();
+            let ry_dir = (p_camera.to_vec() + self.dy_camera).normalize();
+
+            let ray_diff = RayDifferential {
+                ray,
+                diff: Some(Differential {
+                    rx_origin,
+                    ry_origin,
+                    rx_dir,
+                    ry_dir
+                })
+            };
+            let ray_diff = ray_diff.transform(self.camera_to_world);
+            (1.0, ray_diff)
+        }
+
     }
 }
 

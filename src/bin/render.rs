@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     integrator.render(&scene, &film, sampler);
 
     let img = film.into_image_buffer();
-    let file = File::create("testrender3.hdr")?;
+    let file = File::create("testrender4.hdr")?;
     let encoder = image::hdr::HDREncoder::new(file);
     let pixels: Vec<_> = img.pixels().map(|p| *p).collect();
     encoder.encode(pixels.as_slice(), img.width() as usize, img.height() as usize)?;

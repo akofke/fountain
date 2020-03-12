@@ -5,9 +5,9 @@ LookAt 3 4 1.5
 
 Camera "perspective" "float fov" 45
 
-Sampler "random" "integer pixelsamples" 4
+Sampler "random" "integer pixelsamples" 8
 
-Film "image" "integer xresolution" [128] "integer yresolution" [128]
+Film "image" "integer xresolution" [512] "integer yresolution" [512]
 
 Integrator "directlighting"
 

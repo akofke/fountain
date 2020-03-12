@@ -1,4 +1,4 @@
-use crate::{Float, Point3f, Vec3f, Normal3, Bounds3f, Ray, SurfaceInteraction, ComponentWiseExt};
+use crate::{Float, Point3f, Vec3f, Normal3, Bounds3f, Ray, SurfaceInteraction, ComponentWiseExt, RayDifferential, Differential};
 use cgmath::{Matrix4, SquareMatrix, InnerSpace, Transform as cgTransform, Zero, Rad};
 use crate::err_float::gamma;
 use crate::interaction::{SurfaceHit, DiffGeom, TextureDifferentials};
@@ -302,6 +302,22 @@ impl Transformable for Ray {
         }
 
         Ray { origin: ot, dir, t_max, time: self.time }
+    }
+}
+
+impl Transformable for RayDifferential {
+    fn transform(&self, t: Transform) -> Self {
+        RayDifferential {
+            ray: self.ray.transform(t),
+            diff: self.diff.map(|diff| {
+                Differential {
+                    rx_origin: diff.rx_origin.transform(t),
+                    ry_origin: diff.ry_origin.transform(t),
+                    rx_dir: diff.rx_dir.transform(t),
+                    ry_dir: diff.ry_dir.transform(t),
+                }
+            })
+        }
     }
 }
 
