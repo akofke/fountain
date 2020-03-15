@@ -55,3 +55,52 @@ pub fn power_heuristic(nf: u32, f_pdf: Float, ng: u32, g_pdf: Float) -> Float {
     let g = ng  as Float * g_pdf;
     (f * f) / (f * f + g * g)
 }
+
+pub struct Distribution1D {
+    func: Vec<Float>,
+    cdf: Vec<Float>,
+    func_integral: Float,
+}
+
+pub fn find_interval<F: Fn(usize) -> bool>(size: usize, key: F) -> usize {
+
+}
+
+impl Distribution1D {
+    pub fn new(func: Vec<Float>) -> Self {
+        let n = func.len();
+        let mut cdf = vec![0.0; n + 1];
+
+        // Compute the integral of the step function at x_i
+        // FIXME: could try with iterators and scan
+        for i in 1..(n + 1) {
+            cdf[i] = cdf[i - 1] + (func[i - 1] / n as Float);
+        }
+
+        // Transform step function integral into cdf
+        let func_integral = cdf[n];
+        if func_integral == 0.0 {
+            cdf.iter_mut().enumerate().for_each(|(i, x)| *x = i as Float / n as Float);
+        } else {
+            cdf.iter_mut().for_each(|x| *x /= func_integral);
+        }
+
+        Self {
+            func,
+            cdf,
+            func_integral,
+        }
+    }
+
+    pub fn func(&self) -> &[Float] {
+        &self.func
+    }
+
+    /// Uses the given random variable `u` to sample from the distribution.
+    /// Returns a tuple of `(x, p(x), idx)` containing the sampled `x in [0, 1)`,
+    /// the value of the PDF `p(x)`, and the index into the array of function values where
+    /// `cdf[n] <= u < cdf[n+1]`.
+    pub fn sample_continuous(&self, u: Float) -> (Float, Float, usize) {
+        unimplemented!()
+    }
+}
