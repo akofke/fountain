@@ -63,7 +63,19 @@ pub struct Distribution1D {
 }
 
 pub fn find_interval<F: Fn(usize) -> bool>(size: usize, key: F) -> usize {
-
+    let mut first = 0;
+    let mut len = size;
+    while len > 0 {
+        let half = len >> 1;
+        let middle = first + half;
+        if key(middle) {
+            first = middle + 1;
+            len -= half + 1;
+        } else {
+            len = half;
+        }
+    }
+    (first - 1).clamp(0, size - 2)
 }
 
 impl Distribution1D {
@@ -80,9 +92,9 @@ impl Distribution1D {
         // Transform step function integral into cdf
         let func_integral = cdf[n];
         if func_integral == 0.0 {
-            cdf.iter_mut().enumerate().for_each(|(i, x)| *x = i as Float / n as Float);
+            cdf[1..].iter_mut().enumerate().for_each(|(i, x)| *x = i as Float / n as Float);
         } else {
-            cdf.iter_mut().for_each(|x| *x /= func_integral);
+            cdf[1..].iter_mut().for_each(|x| *x /= func_integral);
         }
 
         Self {
@@ -101,6 +113,7 @@ impl Distribution1D {
     /// the value of the PDF `p(x)`, and the index into the array of function values where
     /// `cdf[n] <= u < cdf[n+1]`.
     pub fn sample_continuous(&self, u: Float) -> (Float, Float, usize) {
+        // find the index of the largest value <= u
         unimplemented!()
     }
 }
