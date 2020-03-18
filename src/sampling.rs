@@ -62,7 +62,7 @@ pub struct Distribution1D {
     func_integral: Float,
 }
 
-pub fn find_interval<F: Fn(usize) -> bool>(size: usize, key: F) -> usize {
+pub fn search_sorted<F: Fn(usize) -> bool>(size: usize, key: F) -> usize {
     let mut first = 0;
     let mut len = size;
     while len > 0 {
@@ -75,6 +75,7 @@ pub fn find_interval<F: Fn(usize) -> bool>(size: usize, key: F) -> usize {
             len = half;
         }
     }
+    // TODO: why 2??
     (first - 1).clamp(0, size - 2)
 }
 
@@ -114,6 +115,16 @@ impl Distribution1D {
     /// `cdf[n] <= u < cdf[n+1]`.
     pub fn sample_continuous(&self, u: Float) -> (Float, Float, usize) {
         // find the index of the largest value <= u
-        unimplemented!()
+        let idx = search_sorted(self.cdf.len(), |i| self.cdf[i] <= u);
+        let mut du = u - self.cdf[idx];
+        if self.cdf[idx + 1] - self.cdf[idx] > 0.0 {
+            du /= self.cdf[idx + 1] - self.cdf[idx];
+        }
+
+        let pdf = self.func[idx] / self.func_integral;
+
+        // find the `x` value in [0, 1) corresponding to the sample
+        let x = (idx as Float + du) / self.func.len() as Float;
+        (x, pdf, idx)
     }
 }
