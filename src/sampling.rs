@@ -109,6 +109,10 @@ impl Distribution1D {
         &self.func
     }
 
+    pub fn func_integral(&self) -> Float {
+        self.func_integral
+    }
+
     /// Uses the given random variable `u` to sample from the distribution.
     /// Returns a tuple of `(x, p(x), idx)` containing the sampled `x in [0, 1)`,
     /// the value of the PDF `p(x)`, and the index into the array of function values where
@@ -128,3 +132,42 @@ impl Distribution1D {
         (x, pdf, idx)
     }
 }
+
+pub struct Distribution2D {
+    p_conditional_v: Vec<Distribution1D>,
+    p_marginal: Distribution1D,
+}
+
+impl Distribution2D {
+    pub fn new(func: &[Float], nu: usize, nv: usize) -> Self {
+        let p_conditional_v: Vec<Distribution1D> = func.chunks_exact(nu)
+            .map(|f| {
+                Distribution1D::new(f.to_vec())
+            })
+            .collect();
+
+        let marginal_func: Vec<Float> = p_conditional_v
+            .iter()
+            .map(|distr| distr.func_integral())
+            .collect();
+
+        let p_marginal = Distribution1D::new(marginal_func);
+        Self {
+            p_conditional_v,
+            p_marginal,
+        }
+    }
+
+    pub fn sample_continuous(&self, u: Point2f) -> (Point2f, Float) {
+
+        let (d1, pdf1, v_idx) = self.p_marginal.sample_continuous(u[1]);
+        let (d0, pdf0, _) = self.p_conditional_v[v_idx].sample_continuous(u[0]);
+        let pdf = pdf0 * pdf1;
+        (Point2f::new(d0, d1), pdf)
+    }
+
+    pub fn pdf(&self, p: Point2f) -> Float {
+        unimplemented!()
+    }
+}
+
