@@ -47,6 +47,7 @@ pub trait AreaLightBuilder<S: Shape> {
     fn create(self, shape: Arc<S>) -> Self::Target;
 }
 
+#[derive(Debug)]
 pub struct LiSample {
     pub radiance: Spectrum,
 
@@ -71,6 +72,7 @@ impl LightFlags {
     }
 }
 
+#[derive(Debug)]
 pub struct VisibilityTester {
     pub p0: SurfaceHit,
     pub p1: SurfaceHit,

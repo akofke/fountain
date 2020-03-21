@@ -20,6 +20,19 @@ pub fn distance_sq(p1: Point3f, p2: Point3f) -> Float {
     (p1 - p2).magnitude2()
 }
 
+pub fn spherical_theta(v: Vec3f) -> Float {
+    v.z.clamp(-1.0, 1.0).acos()
+}
+
+pub fn spherical_phi(v: Vec3f) -> Float {
+    let p = Float::atan2(v.y, v.x);
+    if p < 0.0 {
+        p + (2.0 * std::f32::consts::PI)
+    } else {
+        p
+    }
+}
+
 // TODO: make generic?
 pub fn permute_point(p: Point3f, ix: usize, iy: usize, iz: usize) -> Point3f {
     Point3f::new(p[ix], p[iy], p[iz])
@@ -134,6 +147,10 @@ impl Normal3 {
         } else {
             self
         }
+    }
+    
+    pub fn zero() -> Self {
+        Self(Vec3f::new(0.0, 0.0, 0.0))
     }
 }
 

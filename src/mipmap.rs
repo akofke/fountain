@@ -185,6 +185,10 @@ impl<T: Texel> MIPMap<T> {
     pub fn pyramid(&self) -> &[BlockedArray<T, 2>] {
         &self.pyramid
     }
+    
+    pub fn resolution(&self) -> (usize, usize) {
+        self.resolution
+    }
 
     fn texel(&self, level: usize, s: i32, t: i32) -> T {
         Self::get_texel_from_level(&self.pyramid[level], s, t, self.wrap_mode)

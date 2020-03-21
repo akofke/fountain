@@ -5,7 +5,7 @@ LookAt 3 4 1.5
 
 Camera "perspective" "float fov" 45
 
-Sampler "random" "integer pixelsamples" 8
+Sampler "random" "integer pixelsamples" 32
 
 Film "image" "integer xresolution" [512] "integer yresolution" [512]
 
@@ -13,11 +13,12 @@ Integrator "directlighting"
 
 WorldBegin
 
-LightSource "distant" "point from" [ -30 40 100] "rgb L" [5 5 5]
+# LightSource "distant" "point from" [ -30 40 100] "rgb L" [4 4 4]
+LightSource "infinite" "string mapname" "hdri.png"
 
 AttributeBegin
-    #Material "matte" "color Kd" [0.3 0.6 0.8]
-    #Shape "sphere" "float radius" 1
+    Material "matte" "color Kd" [0.3 0.6 0.8]
+    Shape "sphere" "float radius" 1
 AttributeEnd
 
 AttributeBegin

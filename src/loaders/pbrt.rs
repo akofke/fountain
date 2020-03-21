@@ -9,7 +9,7 @@ use crate::loaders::{ParamSet, ParamVal, ParamError};
 use crate::spectrum::Spectrum;
 use std::collections::HashMap;
 use crate::texture::Texture;
-use crate::loaders::constructors::{make_sphere, make_matte, make_triangle_mesh, make_diffuse_area_light, ConstructError, make_checkerboard_spect, make_checkerboard_float, make_point_light, make_distant_light, make_imagemap_spect};
+use crate::loaders::constructors::{make_sphere, make_matte, make_triangle_mesh, make_diffuse_area_light, ConstructError, make_checkerboard_spect, make_checkerboard_float, make_point_light, make_distant_light, make_imagemap_spect, make_infinite_area_light};
 use crate::light::{AreaLightBuilder, Light};
 use crate::primitive::{GeometricPrimitive, Primitive};
 use crate::shapes::triangle::TriangleMesh;
@@ -348,6 +348,10 @@ impl PbrtSceneBuilder {
             },
             "distant" => {
                 let light = make_distant_light(params)?;
+                self.lights.push(Arc::new(light));
+            },
+            "infinite" => {
+                let light = make_infinite_area_light(params)?;
                 self.lights.push(Arc::new(light));
             }
             _ => return Err(PbrtEvalError::UnknownName(name.to_string())),

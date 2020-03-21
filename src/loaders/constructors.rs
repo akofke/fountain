@@ -14,6 +14,7 @@ use crate::light::point::PointLight;
 use crate::mipmap::ImageWrap;
 use crate::imageio::{ImageTexInfo, get_mipmap};
 use crate::texture::image::ImageTexture;
+use crate::light::infinite::InfiniteAreaLight;
 
 type ParamResult<T> = Result<T, ConstructError>;
 
@@ -165,4 +166,24 @@ pub fn make_point_light(mut params: ParamSet) -> ParamResult<PointLight> {
     let from = params.get_one("from").unwrap_or(Point3f::new(0.0, 0.0, 0.0));
     let light_to_world = Transform::translate(from - Point3f::new(0.0, 0.0, 0.0));
     Ok(PointLight::new(light_to_world, intensity))
+}
+
+pub fn make_infinite_area_light(mut params: ParamSet) -> ParamResult<InfiniteAreaLight> {
+    let radiance = params.get_one("L").unwrap_or(Spectrum::uniform(1.0));
+    let filename = params.get_one::<String>("mapname");
+    let l2w = params.current_transform()?;
+    let light = filename.map_or_else(
+        |_| InfiniteAreaLight::new_uniform(radiance, l2w),
+        |filename| {
+            let info = ImageTexInfo::new(
+                filename,
+                ImageWrap::Repeat,
+                1.0,
+                true,
+            );
+            let mipmap = get_mipmap(info).unwrap();
+            InfiniteAreaLight::new_envmap(mipmap, l2w)
+        }
+    );
+    Ok(light)
 }

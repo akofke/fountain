@@ -48,6 +48,8 @@ pub use interaction::SurfaceInteraction;
 pub use math::*;
 pub use err_float::EFloat;
 
+pub use std::f32::consts as consts;
+
 
 use cgmath::{Vector2, Point2, Vector3, Point3};
 use std::f32;

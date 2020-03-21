@@ -56,6 +56,7 @@ pub fn power_heuristic(nf: u32, f_pdf: Float, ng: u32, g_pdf: Float) -> Float {
     (f * f) / (f * f + g * g)
 }
 
+#[derive(Debug)]
 pub struct Distribution1D {
     func: Vec<Float>,
     cdf: Vec<Float>,
@@ -87,13 +88,13 @@ impl Distribution1D {
         // Compute the integral of the step function at x_i
         // FIXME: could try with iterators and scan
         for i in 1..(n + 1) {
-            cdf[i] = cdf[i - 1] + (func[i - 1] / n as Float);
+            cdf[i] = cdf[i - 1] + (func[i - 1] / (n as Float));
         }
 
         // Transform step function integral into cdf
         let func_integral = cdf[n];
         if func_integral == 0.0 {
-            cdf[1..].iter_mut().enumerate().for_each(|(i, x)| *x = i as Float / n as Float);
+            cdf[1..].iter_mut().enumerate().for_each(|(i, x)| *x = (i + 1) as Float / n as Float);
         } else {
             cdf[1..].iter_mut().for_each(|x| *x /= func_integral);
         }
@@ -133,6 +134,7 @@ impl Distribution1D {
     }
 }
 
+#[derive(Debug)]
 pub struct Distribution2D {
     p_conditional_v: Vec<Distribution1D>,
     p_marginal: Distribution1D,
@@ -167,7 +169,31 @@ impl Distribution2D {
     }
 
     pub fn pdf(&self, p: Point2f) -> Float {
-        unimplemented!()
+        let u_len = self.p_conditional_v[0].func().len();
+        let iu = ((p.x * u_len as Float) as usize)
+            .clamp(0, u_len - 1);
+        let v_len = self.p_marginal.func().len();
+        let iv = ((p.y * v_len as Float) as usize)
+            .clamp(0, v_len - 1);
+        self.p_conditional_v[iv].func()[iu] / self.p_marginal.func_integral()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_distribution_1d() {
+        let func = vec![0.0, 0.0, 1.0, 0.0];
+        let distr = Distribution1D::new(func);
+        let us = [0.0, 0.1, 0.5, 0.9];
+        for u in &us {
+            let (x, pdf, idx) = distr.sample_continuous(*u);
+            assert_eq!(idx, 2);
+            assert_eq!(pdf, 4.0);
+            assert!(x < 0.75 && x >= 0.5, "{}", x);
+        }
     }
 }
 

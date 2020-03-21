@@ -264,5 +264,5 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
 }
 
 fn check_radiance(l: &Spectrum, pixel: (i32, i32)) {
-    assert!(!l.has_nans(), "NaN radiance value for pixel {:?}", pixel);
+    assert!(!l.has_nans(), "NaN radiance value for pixel {:?}: {:?}", pixel, l);
 }

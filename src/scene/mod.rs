@@ -1,10 +1,11 @@
 use crate::bvh::BVH;
-use crate::{SurfaceInteraction, Ray, Bounds3f};
+use crate::{SurfaceInteraction, Ray, Bounds3f, RayDifferential};
 use crate::light::Light;
 use std::sync::Arc;
 use crate::primitive::Primitive;
 use crate::shapes::triangle::TriangleMesh;
 use std::fmt::{Debug, Formatter};
+use crate::spectrum::Spectrum;
 
 pub struct SceneBuilder {
 
@@ -53,6 +54,13 @@ impl Scene {
 
     pub fn intersect_test(&self, ray: &Ray) -> bool {
         self.primitives_aggregate.intersect_test(ray)
+    }
+
+    pub fn environment_emitted_radiance(&self, ray: &RayDifferential) -> Spectrum {
+        // TODO: this is inefficient
+        self.lights.iter()
+            .map(|l| l.environment_emitted_radiance(ray))
+            .sum()
     }
 
     pub fn world_bound(&self) -> Bounds3f {

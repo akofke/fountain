@@ -112,6 +112,11 @@ impl<const N: usize> CoefficientSpectrum<{N}> {
         arr
 //        self.0
     }
+
+    pub fn luminance(&self) -> Float {
+        let y_weight = [0.212671, 0.715160, 0.072169];
+        self[0] * y_weight[0] + self[1] * y_weight[1] + self[2] * y_weight[2]
+    }
 }
 
 pub fn spectrum_from_rgb8(rgb8: [u8; 3]) -> Spectrum {

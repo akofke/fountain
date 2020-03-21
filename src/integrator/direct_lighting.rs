@@ -55,9 +55,7 @@ impl IntegratorRadiance for DirectLightingIntegrator {
 
         match scene.intersect(&mut ray.ray) {
             None => {
-                // get radiance of escaping ray
-//                background(ray.ray.dir)
-                Spectrum::uniform(0.0)
+                scene.environment_emitted_radiance(ray)
             },
 
             Some(mut intersect) => {
