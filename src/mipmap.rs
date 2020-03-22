@@ -185,7 +185,7 @@ impl<T: Texel> MIPMap<T> {
     pub fn pyramid(&self) -> &[BlockedArray<T, 2>] {
         &self.pyramid
     }
-    
+
     pub fn resolution(&self) -> (usize, usize) {
         self.resolution
     }
@@ -270,10 +270,10 @@ mod tests {
         let coords = Array1::linspace(0.0, 1.0, 25);
         for s in &coords {
             for t in &coords {
-                for width in &widths {
+                for width in widths.iter().chain(std::iter::once(&0.0)) {
                     let st = Point2f::new(*s, *t);
                     let filt = mipmap.lookup_trilinear_width(st, *width);
-                    assert_ulps_eq!(filt, val, max_ulps=2)
+                    assert_ulps_eq!(filt, val, max_ulps=6)
                 }
             }
         }

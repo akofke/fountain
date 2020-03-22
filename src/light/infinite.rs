@@ -156,7 +156,7 @@ impl Light for InfiniteAreaLight {
     fn environment_emitted_radiance(&self, ray: &RayDifferential) -> Spectrum {
         let w = self.world_to_light.transform(ray.ray.dir).normalize();
         let st = Point2f::new(
-            spherical_phi(w) * (1.0 / 2.0 * std::f32::consts::PI),
+            spherical_phi(w) * (1.0 / (2.0 * std::f32::consts::PI)),
             spherical_theta(w) * std::f32::consts::FRAC_1_PI
         );
         // TODO: Illuminant SpectrumType for full spectral mode
