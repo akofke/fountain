@@ -60,7 +60,11 @@ pub fn load_mipmap(info: &ImageTexInfo) -> anyhow::Result<MIPMap<Spectrum>> {
     let (mut image, dims) = load_image(&info.filename)?;
 
     image.iter_mut().for_each(|s| {
-        *s = s.map(|x| inverse_gamma_correct(x)) * info.scale()
+        *s = if info.gamma {
+            s.map(|x| inverse_gamma_correct(x))
+        } else {
+            *s
+        } * info.scale()
     });
 
     let mipmap = MIPMap::new(

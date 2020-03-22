@@ -179,7 +179,7 @@ pub fn make_infinite_area_light(mut params: ParamSet) -> ParamResult<InfiniteAre
                 filename,
                 ImageWrap::Repeat,
                 1.0,
-                true,
+                false, // TODO: pbrt never gamma corrects here
             );
             let mipmap = get_mipmap(info).unwrap();
             InfiniteAreaLight::new_envmap(mipmap, l2w)

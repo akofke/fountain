@@ -1,6 +1,8 @@
 use crate::{Point2i, Float, Point2f, Lerp, Vec2f};
 use crate::blocked_array::BlockedArray;
 use crate::spectrum::Spectrum;
+use resize::PixelFormat;
+use arrayvec::ArrayVec;
 
 pub trait Texel: Copy + Clone + Sized + Default + std::ops::Mul<Float, Output=Self> + From<Float> + std::ops::AddAssign + std::ops::Add<Output=Self> + Lerp
 {}
@@ -14,7 +16,7 @@ pub enum ImageWrap {
     Repeat, Black, Clamp,
 }
 
-pub struct MIPMap<T: Texel> {
+pub struct MIPMap<T> {
     wrap_mode: ImageWrap,
     resolution: (usize, usize), 
     pyramid: Vec<BlockedArray<T, 2>>,
@@ -47,9 +49,107 @@ fn lanczos_sinc(x: Float, tau: Float) -> Float {
     }
 }
 
+impl resize::PixelFormat for Spectrum {
+    type Accumulator = [Float; 3];
+    type Subpixel = Float;
+
+    fn new_accum() -> Self::Accumulator {
+        [0.0; 3]
+    }
+
+    fn into_subpixel(v: f32) -> Self::Subpixel {
+        v
+    }
+
+    fn from_subpixel(v: &Self::Subpixel) -> f32 {
+        *v
+    }
+}
+
+fn collect_spectrum(img: &[Float]) -> Vec<Spectrum> {
+    assert_eq!(img.len() % 3, 0);
+    img.chunks_exact(3)
+        .map(|s| Spectrum::new_with(|i| s[i])) // could be better
+        .collect()
+}
+
+
+impl MIPMap<Spectrum> {
+    pub fn new(
+        resolution: (usize, usize),
+        image: Vec<Spectrum>,
+        wrap_mode: ImageWrap
+    ) -> Self {
+        let image: Vec<Float> = image.into_iter()
+            .flat_map(|s| ArrayVec::from(s.into_array()))
+            .collect();
+
+        // let (image, w, h) = if !is_power_of_two(resolution.0) || !is_power_of_two(resolution.1) {
+        //     let dest_w = resolution.0.next_power_of_two();
+        //     let dest_h = resolution.1.next_power_of_two();
+        //     let mut upscaled_img = vec![0.0; 3 * dest_w * dest_h];
+        //     resize::resize(
+        //         resolution.0,
+        //         resolution.1,
+        //         dest_w,
+        //         dest_h,
+        //         Spectrum::uniform(0.0), // ???
+        //         resize::Type::Triangle,
+        //         &image,
+        //         &mut upscaled_img
+        //     );
+        //     (upscaled_img, dest_w, dest_h)
+        // } else {
+        //     (image, resolution.0, resolution.1)
+        // };
+
+        let (image, w, h) = (image, resolution.0, resolution.1);
+        let n_levels = 1 + log2_usize(usize::max(resolution.0 as usize, resolution.1 as usize));
+
+        let bottom_level = BlockedArray::with_default_block_size(&collect_spectrum(&image), w, h);
+        let mut prev_level_buffer = image;
+        let mut current_level_buffer = vec![];
+        let mut pyramid = vec![bottom_level];
+        let mut cur_w = w;
+        let mut cur_h = h;
+        let mut dest_w;
+        let mut dest_h;
+
+        for _ in 1..n_levels {
+            dest_w = usize::max(1, cur_w / 2);
+            dest_h = usize::max(1, cur_h / 2);
+            current_level_buffer.resize(3 * dest_w * dest_h, 0.0);
+
+            resize::resize(
+                cur_w,
+                cur_h,
+                dest_w,
+                dest_h,
+                Spectrum::uniform(0.0),
+                resize::Type::Triangle,
+                &prev_level_buffer,
+                &mut current_level_buffer
+            );
+            let level = BlockedArray::with_default_block_size(&collect_spectrum(&current_level_buffer), dest_w, dest_h);
+            pyramid.push(level);
+            cur_w = dest_w;
+            cur_h = dest_h;
+            std::mem::swap(&mut current_level_buffer, &mut prev_level_buffer);
+        }
+
+        Self {
+            wrap_mode,
+            resolution: (w, h),
+            pyramid,
+        }
+    }
+
+}
+
 impl<T: Texel> MIPMap<T> {
 
-    pub fn new(
+
+    pub fn new_custom(
         resolution: (usize, usize),
         image: Vec<T>,
         wrap_mode: ImageWrap
@@ -264,7 +364,7 @@ mod tests {
         let val = 0.5;
         let dims = (16, 15);
         let img = vec![val; dims.0 * dims.1];
-        let mipmap = MIPMap::new(dims, img, ImageWrap::Repeat);
+        let mipmap = MIPMap::new_custom(dims, img, ImageWrap::Repeat);
 
         let widths = Array::logspace(10.0, -4.0, 0.0, 10);
         let coords = Array1::linspace(0.0, 1.0, 25);

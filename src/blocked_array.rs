@@ -83,8 +83,8 @@ impl<T: Copy, const LOG_BLOCK_SIZE: usize> BlockedArray<T, {LOG_BLOCK_SIZE}> {
 
     pub fn to_vec(&self) -> Vec<T> {
         let mut elems = Vec::with_capacity(self.u_size * self.v_size);
-        for u in 0..self.u_size() {
-            for v in 0..self.v_size() {
+        for v in 0..self.v_size() {
+            for u in 0..self.u_size() {
                 elems.push(self[(u, v)])
             }
         }
@@ -205,5 +205,14 @@ mod tests {
                 assert_eq!(blocked_array[(u, v)], 0.0, "{:?}", (ulen, vlen));
             }
         }
+    }
+
+    #[test]
+    fn test_round_trip() {
+        let ulen = 5;
+        let vlen = 5;
+        let data = [1, 2, 3, 4, 5].repeat(5);
+        let blocked_array = BlockedArray::with_default_block_size(&data, ulen, vlen);
+        assert_eq!(blocked_array.to_vec(), data);
     }
 }
