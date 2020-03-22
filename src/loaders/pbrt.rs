@@ -23,6 +23,7 @@ use crate::sampler::Sampler;
 use crate::filter::BoxFilter;
 use crate::sampler::random::RandomSampler;
 use crate::film::Film;
+use cgmath::Deg;
 
 pub struct PbrtSceneBuilder {
     graphics_state: Vec<GraphicsState>,
@@ -527,7 +528,9 @@ fn eval_transform_stmt(stmt: parser::TransformStmt, current_tf: &Transform) -> R
             *current_tf * Transform::scale(v[0], v[1], v[2])
         },
         parser::TransformStmt::Rotate(v) => {
-            unimplemented!()
+            let [angle_deg, x, y, z] = *v;
+            let rot = Transform::rotate(Deg(angle_deg), Vec3f::new(x, y, z));
+            *current_tf * rot
         },
         parser::TransformStmt::LookAt(m) => {
             let eye = Point3f::new(m[0], m[1], m[2]);

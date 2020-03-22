@@ -1,5 +1,5 @@
 use crate::{Float, Point3f, Vec3f, Normal3, Bounds3f, Ray, SurfaceInteraction, ComponentWiseExt, RayDifferential, Differential};
-use cgmath::{Matrix4, SquareMatrix, InnerSpace, Transform as cgTransform, Zero, Rad};
+use cgmath::{Matrix4, SquareMatrix, InnerSpace, Transform as cgTransform, Zero, Rad, Angle};
 use crate::err_float::gamma;
 use crate::interaction::{SurfaceHit, DiffGeom, TextureDifferentials};
 
@@ -60,6 +60,12 @@ impl Transform {
         let m = Matrix4::from_nonuniform_scale(sx, sy, sz);
         let m_inv = Matrix4::from_nonuniform_scale(1.0 / sx, 1.0 / sy, 1.0 / sz);
         Self::new(m, m_inv)
+    }
+
+    pub fn rotate(theta: impl Into<Rad<Float>>, axis: Vec3f) -> Self {
+        let a = axis.normalize();
+        let m = Matrix4::from_axis_angle(a, theta);
+        Self::from_mat(m)
     }
 
     pub fn rotate_x(theta: impl Into<Rad<Float>>) -> Self {
