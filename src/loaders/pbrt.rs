@@ -18,12 +18,12 @@ use crate::texture::{SpectrumTexture, FloatTexture};
 use crate::scene::Scene;
 use crate::bvh::BVH;
 use crate::camera::{Camera, PerspectiveCamera};
-use bitflags::_core::fmt::{Formatter, Error};
 use crate::sampler::Sampler;
 use crate::filter::BoxFilter;
 use crate::sampler::random::RandomSampler;
 use crate::film::Film;
 use cgmath::Deg;
+use std::fmt::{Formatter, Error};
 
 pub struct PbrtSceneBuilder {
     graphics_state: Vec<GraphicsState>,
