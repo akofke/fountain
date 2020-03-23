@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     dbg!(&scene);
-    integrator.render(&scene, &film, sampler);
+    integrator.render_parallel(&scene, &film, sampler);
 
     let img = film.into_image_buffer();
     let file = File::create("testrender4.hdr")?;

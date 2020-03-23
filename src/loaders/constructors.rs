@@ -72,6 +72,52 @@ pub fn make_triangle_mesh(mut params: ParamSet) -> ParamResult<TriangleMesh> {
     Ok(mesh)
 }
 
+pub fn make_triangle_mesh_from_ply(mut params: ParamSet) -> ParamResult<TriangleMesh> {
+    use ply_rs as ply;
+    use ply::ply::Property;
+
+    let tf = params.current_transform()?;
+    let rev = params.reverse_orientation()?;
+    let filename: String = params.get_one("filename")?;
+    let mut f = std::fs::File::open(filename).unwrap();
+    let parser = ply::parser::Parser::<ply::ply::DefaultElement>::new();
+    let plyfile = parser.read_ply(&mut f).unwrap();
+
+    let vertices: Vec<Point3f> = plyfile.payload["vertex"].iter()
+        .map(|el| {
+            match (&el["x"], &el["y"], &el["z"]) {
+                (Property::Float(x), Property::Float(y), Property::Float(z)) => {
+                    Point3f::new(*x, *y, *z)
+                },
+                _ => panic!(),
+            }
+        })
+        .collect();
+
+    let indices: Vec<u32> = plyfile.payload["face"].iter()
+        .flat_map(|el| {
+            match &el["vertex_indices"] {
+                Property::ListInt(v) if v.len() == 3 => {
+                    v
+                },
+                _ => panic!(),
+            }
+        })
+        .map(|i| *i as u32)
+        .collect();
+
+    let mesh = TriangleMesh::new(
+        tf,
+        indices,
+        vertices,
+        None,
+        None,
+        None,
+        rev
+    );
+    Ok(mesh)
+}
+
 pub fn make_matte(mut params: ParamSet) -> ParamResult<MatteMaterial> {
     let diffuse = params.get_texture_or_const("Kd")?;
     Ok(MatteMaterial::new(diffuse))

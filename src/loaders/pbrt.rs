@@ -9,7 +9,7 @@ use crate::loaders::{ParamSet, ParamVal, ParamError};
 use crate::spectrum::Spectrum;
 use std::collections::HashMap;
 use crate::texture::Texture;
-use crate::loaders::constructors::{make_sphere, make_matte, make_triangle_mesh, make_diffuse_area_light, ConstructError, make_checkerboard_spect, make_checkerboard_float, make_point_light, make_distant_light, make_imagemap_spect, make_infinite_area_light};
+use crate::loaders::constructors::{make_sphere, make_matte, make_triangle_mesh, make_diffuse_area_light, ConstructError, make_checkerboard_spect, make_checkerboard_float, make_point_light, make_distant_light, make_imagemap_spect, make_infinite_area_light, make_triangle_mesh_from_ply};
 use crate::light::{AreaLightBuilder, Light};
 use crate::primitive::{GeometricPrimitive, Primitive};
 use crate::shapes::triangle::TriangleMesh;
@@ -285,6 +285,27 @@ impl PbrtSceneBuilder {
                     })
                 );
             },
+
+            "plymesh" => {
+                let mesh = make_triangle_mesh_from_ply(params)?;
+                let mesh = Arc::new(mesh);
+                self.meshes.push(mesh.clone());
+                self.primitives.extend(mesh.iter_triangles()
+                    .map(|shape| {
+                        let shape = Arc::new(shape);
+                        let light = graphics_state.area_light.clone()
+                            .map(|builder| builder.create(shape.clone()));
+                        let light = light.map(|l| Arc::new(l));
+                        let material = graphics_state.material.clone();
+                        let prim = GeometricPrimitive {
+                            shape,
+                            material,
+                            light
+                        };
+                        Box::new(prim) as Box<dyn Primitive>
+                    })
+                );
+            }
 
             _ => {
                 return Err(PbrtEvalError::UnknownName(name.to_string()));

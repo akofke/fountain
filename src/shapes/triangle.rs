@@ -221,10 +221,7 @@ impl Shape for Triangle {
 
         // if one of the edge function signs differs, then the point (0, 0) is not on the same side
         // of all three edges so therefore is outside the triangle.
-        let sign_differs =
-            (e0.is_sign_positive(), e1.is_sign_positive()) == (e1.is_sign_positive(), e2.is_sign_positive());
-
-        if sign_differs { return None; }
+        if sign_differs(e0, e1, e2) { return None; }
 
         let det = e0 + e1 + e2;
         if det == 0.0 { return None; }
@@ -414,4 +411,30 @@ impl Shape for Triangle {
 //    fn intersect_test(&self, ray: &Ray) -> bool {
 //        false
 //    }
+}
+
+#[inline]
+fn sign_differs(v1: Float, v2: Float, v3: Float) -> bool {
+    // This is the original implementation from the book; however below generates better assembly.
+    // They differ in results for pos/neg 0.0, but in the triangle intersection this is already handled
+    // (v1 < 0.0 || v2 < 0.0 || v3 < 0.0) && (v1 > 0.0 || v2 > 0.0 || v3 > 0.0)
+
+    v1.is_sign_positive() != v2.is_sign_positive() || v2.is_sign_positive() != v3.is_sign_positive()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sign_differs() {
+        assert_eq!(sign_differs(1.0, 2.0, -1.0), true);
+        assert_eq!(sign_differs(1.0, 2.0, 1.0), false);
+        assert_eq!(sign_differs(-1.0, -2.0, 1.0), true);
+        assert_eq!(sign_differs(-1.0, -2.0, -1.0), false);
+        assert_eq!(sign_differs(-1.0, 2.0, -1.0), true);
+        assert_eq!(sign_differs(-1.0, 2.0, 1.0), true);
+        assert_eq!(sign_differs(0.0, 0.0, 0.0), false);
+        assert_eq!(sign_differs(0.0, 0.0, -0.0), true);
+    }
 }

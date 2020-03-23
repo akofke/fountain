@@ -27,6 +27,7 @@ pbrt-parser = { path = "../pbrt-parser" }
 resize = "0.4.0"
 #exr = "0.7.3" // TODO evaluate both
 openexr = "0.7.0"
+ply-rs = "0.1.2"
 
 [dev-dependencies]
 criterion = "0.2.11"
