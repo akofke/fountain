@@ -11,6 +11,9 @@ use image::{DynamicImage, Pixel, GenericImageView, Rgb};
 use std::collections::hash_map::Entry;
 use core::iter;
 use arrayvec::ArrayVec;
+use crate::imageio::exr::read_exr;
+
+pub mod exr;
 
 #[derive(PartialEq, Eq, Hash)]
 pub struct ImageTexInfo {
@@ -76,6 +79,11 @@ pub fn load_mipmap(info: &ImageTexInfo) -> anyhow::Result<MIPMap<Spectrum>> {
 }
 
 pub fn load_image(path: impl AsRef<Path>) -> anyhow::Result<(Vec<Spectrum>, (usize, usize))> {
+    if let Some(ext) = path.as_ref().extension() {
+        if ext == "exr" {
+            return read_exr(path);
+        }
+    }
     let image = Reader::open(path)?.decode()?;
     let dims = image.dimensions();
     let image: Vec<Spectrum> = match image {

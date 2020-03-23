@@ -322,7 +322,7 @@ impl PbrtSceneBuilder {
 
     fn texture(&mut self, name: &str, ty: &str, class: &str, params: ParamSet) -> Result<(), PbrtEvalError> {
         match (ty, class) {
-            ("spectrum", "checkerboard") => {
+            ("spectrum", "checkerboard") | ("color", "checkerboard") => {
                 let tex = make_checkerboard_spect(params)?;
                 self.add_spect_tex(name.to_string(), tex);
             },

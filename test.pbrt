@@ -14,7 +14,7 @@ Integrator "directlighting"
 WorldBegin
 
 # LightSource "distant" "point from" [ -30 40 100] "rgb L" [4 4 4]
-LightSource "infinite" "string mapname" "hdri.png"
+LightSource "infinite" "string mapname" "hdri.exr"
 
 AttributeBegin
     Material "matte" "color Kd" [0.3 0.6 0.8]
