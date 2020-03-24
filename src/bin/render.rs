@@ -4,6 +4,7 @@ use raytracer::loaders::pbrt::{PbrtHeader, PbrtSceneBuilder};
 use raytracer::integrator::SamplerIntegrator;
 use raytracer::integrator::direct_lighting::{DirectLightingIntegrator, LightStrategy};
 use std::fs::File;
+use raytracer::imageio::exr::write_exr;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let path = args().nth(1).unwrap();
@@ -38,10 +39,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     dbg!(&scene);
     integrator.render_parallel(&scene, &film, sampler);
 
-    let img = film.into_image_buffer();
-    let file = File::create("testrender4.hdr")?;
-    let encoder = image::hdr::HDREncoder::new(file);
-    let pixels: Vec<_> = img.pixels().map(|p| *p).collect();
-    encoder.encode(pixels.as_slice(), img.width() as usize, img.height() as usize)?;
+    let (img, (w, h)) = film.into_spectrum_buffer();
+    let mut file = File::create("testrender5.exr")?;
+    write_exr(&mut file, img, (w, h))?;
     Ok(())
 }

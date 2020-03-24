@@ -192,6 +192,23 @@ impl<F: Filter> Film<F> {
             rgb_flat_buffer
         ).expect("Invalid dimensions when creating image buffer")
     }
+    
+    pub fn into_spectrum_buffer(self) -> (Vec<Spectrum>, (u32, u32)) {
+        let pixels = self.pixels.into_inner();
+        let spectrum_buf = pixels.into_iter()
+            .map(|p| {
+                let rgb = Spectrum::from(xyz_to_rgb(p.xyz));
+                if p.filter_weight_sum != 0.0 {
+                    let inv_wt = 1.0 / p.filter_weight_sum;
+                    rgb.map(|x| Float::max(0.0, x * inv_wt))
+                } else {
+                    rgb
+                }
+            })
+            .collect();
+        let (w, h) = self.cropped_pixel_bounds.dimensions();
+        (spectrum_buf, (w as u32, h as u32))
+    }
 }
 
 impl FilmTile {
