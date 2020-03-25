@@ -182,6 +182,12 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
         (tile.min.y * n_cols + tile.min.x) as u64
     }
 
+    fn make_progress_bar(total_size: u64) -> indicatif::ProgressBar {
+        let bar = indicatif::ProgressBar::new(total_size);
+        bar.set_draw_delta(127);
+        bar
+    }
+
     pub fn render_with_pool(&mut self, scene: &Scene, film: &Film<BoxFilter>, sampler: impl Sampler, pool: &rayon::ThreadPool) {
         pool.install(|| self.render(scene, film, sampler))
     }
@@ -199,22 +205,32 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
         self.radiance.preprocess(scene, &mut sampler);
 //        let total_samples = sample_bounds.area() * self.sampler.samples_per_pixel() as i32;
 //        let progress = indicatif::ProgressBar::new(total_samples as u64);
+        let progress = Self::make_progress_bar(film.sample_bounds().area() as u64);
         self.iter_tiles(film.sample_bounds(), sampler)
             .for_each(|(tile, mut tile_sampler)| {
-                self.render_tile(scene, film, tile_sampler, tile)
+                self.render_tile(scene, film, tile_sampler, tile, &progress)
             });
-//        progress.finish();
+       progress.finish();
     }
 
     pub fn render_parallel(&mut self, scene: &Scene, film: &Film<BoxFilter>, mut sampler: impl Sampler) {
         self.radiance.preprocess(scene, &mut sampler);
         let tiles: Vec<_> = self.iter_tiles(film.sample_bounds(), sampler).collect();
+        let progress = Self::make_progress_bar(film.sample_bounds().area() as u64);
+        let prog_ref = &progress; // because of move
         tiles.into_par_iter().for_each(move |(tile, mut tile_sampler)| {
-            self.render_tile(scene, film, tile_sampler, tile);
+            self.render_tile(scene, film, tile_sampler, tile, &prog_ref);
         });
+        progress.finish()
     }
 
-    fn render_tile(&self, scene: &Scene, film: &Film<BoxFilter>, mut tile_sampler: impl Sampler, tile: Bounds2i) {
+    fn render_tile(&self,
+                   scene: &Scene,
+                   film: &Film<BoxFilter>,
+                   mut tile_sampler: impl Sampler,
+                   tile: Bounds2i,
+                   progress: &indicatif::ProgressBar
+    ) {
         let mut arena = Bump::new();
 
         let mut film_tile = film.get_film_tile(tile);
@@ -254,8 +270,9 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
                 );
 
                 arena.reset();
-//                    progress.inc(1);
             }
+
+            progress.inc(1);
         }
 
         film.merge_film_tile(film_tile);
