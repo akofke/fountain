@@ -5,11 +5,11 @@ LookAt 3 4 1.5
 
 Camera "perspective" "float fov" 45
 
-Sampler "random" "integer pixelsamples" 32
+Sampler "random" "integer pixelsamples" 512
 
 Film "image" "integer xresolution" [512] "integer yresolution" [512]
 
-Integrator "directlighting"
+Integrator "directlighting" "string strategy" "one"
 
 WorldBegin
 
@@ -17,8 +17,12 @@ WorldBegin
 LightSource "infinite" "string mapname" "hdri.exr"
 
 AttributeBegin
-    Material "matte" "color Kd" [0.3 0.6 0.8]
-    Shape "sphere" "float radius" 1
+    Material "matte" "color Kd" [0.9 0.4 0.5]
+    #Shape "sphere" "float radius" 1
+    Translate 0 0 0
+    Scale 0.01 0.01 0.01
+    Rotate 90 1 0 0
+    Shape "plymesh" "string filename" "sphere.ply"
 AttributeEnd
 
 AttributeBegin
@@ -33,7 +37,7 @@ Texture "lines" "spectrum" "imagemap"
 Texture "checks" "spectrum" "checkerboard"
           "float uscale" [8] "float vscale" [8]
           "rgb tex1" [.9 .1 .1] "rgb tex2" [.8 .8 .8]
-  Material "matte" "texture Kd" "lines"
+  Material "matte" "texture Kd" "checks"
   Translate 0 0 -1
   Shape "trianglemesh"
       "integer indices" [0 1 2 0 2 3]

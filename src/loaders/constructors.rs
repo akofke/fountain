@@ -1,6 +1,6 @@
 use crate::loaders::{ParamSet, ParamError};
 use crate::shapes::sphere::Sphere;
-use crate::{Transform, Float, Point3f};
+use crate::{Transform, Float, Point3f, Normal3, Vec3f, Point2f};
 use crate::material::matte::MatteMaterial;
 use crate::shapes::triangle::TriangleMesh;
 use crate::light::diffuse::DiffuseAreaLightBuilder;
@@ -15,6 +15,7 @@ use crate::mipmap::ImageWrap;
 use crate::imageio::{ImageTexInfo, get_mipmap};
 use crate::texture::image::ImageTexture;
 use crate::light::infinite::InfiniteAreaLight;
+use crate::material::glass::GlassMaterial;
 
 type ParamResult<T> = Result<T, ConstructError>;
 
@@ -94,13 +95,36 @@ pub fn make_triangle_mesh_from_ply(mut params: ParamSet) -> ParamResult<Triangle
         })
         .collect();
 
+    let normals: Option<Vec<Normal3>> = plyfile.payload["vertex"].iter()
+        .map(|el| {
+            match (&el.get("nx"), &el.get("ny"), &el.get("nz")) {
+                (Some(Property::Float(x)), Some(Property::Float(y)), Some(Property::Float(z))) => {
+                    Some(Normal3(Vec3f::new(*x, *y, *z)))
+                },
+                _ => None,
+            }
+        })
+        .collect();
+
+    let tex_coords: Option<Vec<Point2f>> = plyfile.payload["vertex"].iter()
+        .map(|el| {
+            match (&el.get("v"), &el.get("v")) {
+                (Some(Property::Float(u)), Some(Property::Float(v))) => {
+                    Some(Point2f::new(*u, *v))
+                },
+                _ => None,
+            }
+        })
+        .collect();
+
     let indices: Vec<u32> = plyfile.payload["face"].iter()
         .flat_map(|el| {
             match &el["vertex_indices"] {
                 Property::ListInt(v) if v.len() == 3 => {
                     v
                 },
-                _ => panic!(),
+                Property::ListInt(v) => panic!("Face with unsupported vertex count {} found", v.len()),
+                p @ _ => panic!("{:?}", p)
             }
         })
         .map(|i| *i as u32)
@@ -110,9 +134,9 @@ pub fn make_triangle_mesh_from_ply(mut params: ParamSet) -> ParamResult<Triangle
         tf,
         indices,
         vertices,
+        normals,
         None,
-        None,
-        None,
+        tex_coords,
         rev
     );
     Ok(mesh)
@@ -121,6 +145,13 @@ pub fn make_triangle_mesh_from_ply(mut params: ParamSet) -> ParamResult<Triangle
 pub fn make_matte(mut params: ParamSet) -> ParamResult<MatteMaterial> {
     let diffuse = params.get_texture_or_const("Kd")?;
     Ok(MatteMaterial::new(diffuse))
+}
+
+pub fn make_glass(mut params: ParamSet) -> ParamResult<GlassMaterial> {
+    let kr = params.get_texture_or_default("Kr", Spectrum::uniform(1.0))?;
+    let kt = params.get_texture_or_default("Kt", Spectrum::uniform(1.0))?;
+    let eta = params.get_texture_or_default("eta", 1.5)?;
+    Ok(GlassMaterial::new(kr, kt, eta))
 }
 
 pub fn make_diffuse_area_light(mut params: ParamSet) -> ParamResult<DiffuseAreaLightBuilder> {

@@ -1,5 +1,5 @@
 use crate::{Float, Point3f, Vec3f, Normal3, Bounds3f, Ray, SurfaceInteraction, ComponentWiseExt, RayDifferential, Differential};
-use cgmath::{Matrix4, SquareMatrix, InnerSpace, Transform as cgTransform, Zero, Rad, Angle};
+use cgmath::{Matrix4, SquareMatrix, InnerSpace, Transform as cgTransform, Zero, Rad, Angle, Matrix};
 use crate::err_float::gamma;
 use crate::interaction::{SurfaceHit, DiffGeom, TextureDifferentials};
 
@@ -29,6 +29,16 @@ impl Transform {
         let t = mat;
         let invt = mat_inv;
         Self { t, invt }
+    }
+
+    pub fn from_flat(mat: [Float; 16]) -> Self {
+        let m = Matrix4::new(
+            mat[0], mat[1], mat[2], mat[3],
+            mat[4], mat[5], mat[6], mat[7],
+            mat[8], mat[9], mat[10], mat[11],
+            mat[12], mat[13], mat[14], mat[15],
+        );
+        Self::from_mat(m)
     }
 
     pub fn look_at(pos: Point3f, look_at: Point3f, up: Vec3f) -> Self {

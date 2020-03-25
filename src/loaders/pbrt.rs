@@ -9,7 +9,7 @@ use crate::loaders::{ParamSet, ParamVal, ParamError};
 use crate::spectrum::Spectrum;
 use std::collections::HashMap;
 use crate::texture::Texture;
-use crate::loaders::constructors::{make_sphere, make_matte, make_triangle_mesh, make_diffuse_area_light, ConstructError, make_checkerboard_spect, make_checkerboard_float, make_point_light, make_distant_light, make_imagemap_spect, make_infinite_area_light, make_triangle_mesh_from_ply};
+use crate::loaders::constructors::{make_sphere, make_matte, make_triangle_mesh, make_diffuse_area_light, ConstructError, make_checkerboard_spect, make_checkerboard_float, make_point_light, make_distant_light, make_imagemap_spect, make_infinite_area_light, make_triangle_mesh_from_ply, make_glass};
 use crate::light::{AreaLightBuilder, Light};
 use crate::primitive::{GeometricPrimitive, Primitive};
 use crate::shapes::triangle::TriangleMesh;
@@ -319,6 +319,9 @@ impl PbrtSceneBuilder {
             "matte" => {
                 Arc::new(make_matte(params)?)
             },
+            "glass" => {
+                Arc::new(make_glass(params)?)
+            }
             _ => {
                 return Err(PbrtEvalError::UnknownName(name.to_string()))
             }
@@ -566,10 +569,10 @@ fn eval_transform_stmt(stmt: parser::TransformStmt, current_tf: &Transform) -> R
             unimplemented!()
         },
         parser::TransformStmt::Transform(m) => {
-            unimplemented!()
+            Transform::from_flat(*m)
         },
         parser::TransformStmt::ConcatTransform(m) => {
-            unimplemented!()
+            *current_tf * Transform::from_flat(*m)
         },
     };
     Ok(tf)

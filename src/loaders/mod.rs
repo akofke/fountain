@@ -216,6 +216,17 @@ impl ParamSet {
 //        self.get_one::<Arc<dyn Texture<Output=T>>>(name).or_else(|_| self.get_constant_texture(name))
     }
 
+    pub fn get_texture_or_default<T>(&mut self, name: &'static str, default: T) -> Result<Arc<dyn Texture<Output=T>>, ParamError>
+        where
+            T: TryFrom<ParamVal, Error=TryFromParamErr<ParamVal>> + Copy + Sync + Send + 'static,
+            Arc<dyn Texture<Output=T>>: TryFrom<ParamVal, Error=TryFromParamErr<ParamVal>>
+    {
+        self.get_texture_or_const(name)
+            .or_else(|err| {
+                Ok(Arc::new(ConstantTexture(default)))
+            })
+    }
+
     pub fn current_transform(&mut self) -> Result<Transform, ParamError> {
         self.get_one("object_to_world")
     }

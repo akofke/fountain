@@ -1,4 +1,4 @@
-use crate::texture::{Texture, ConstantTexture};
+use crate::texture::{Texture, ConstantTexture, TextureRef};
 use crate::spectrum::Spectrum;
 use std::sync::Arc;
 use crate::{Float, SurfaceInteraction};
@@ -15,6 +15,17 @@ pub struct GlassMaterial {
 }
 
 impl GlassMaterial {
+    pub fn new(
+        kr: TextureRef<Spectrum>,
+        kt: TextureRef<Spectrum>,
+        eta: TextureRef<Float>,
+    ) -> Self {
+        Self {
+            reflectance: kr,
+            transmittance: kt,
+            eta
+        }
+    }
     pub fn constant(kr: Spectrum, kt: Spectrum, eta: Float) -> Self {
         Self {
             reflectance: Arc::new(ConstantTexture(kr)),

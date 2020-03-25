@@ -13,8 +13,8 @@ pub struct WhittedIntegrator {
 }
 
 impl IntegratorRadiance for WhittedIntegrator {
-    fn preprocess(&mut self, scene: &Scene, sampler: &mut dyn Sampler) {
-        unimplemented!()
+    fn preprocess(&mut self, _scene: &Scene, _sampler: &mut dyn Sampler) {
+        // unimplemented!()
     }
 
     fn incident_radiance(&self, ray: &mut RayDifferential, scene: &Scene, sampler: &mut dyn Sampler, arena: &Bump, depth: u16) -> Spectrum {
@@ -22,9 +22,7 @@ impl IntegratorRadiance for WhittedIntegrator {
 
         match scene.intersect(&mut ray.ray) {
             None => {
-                // get radiance of escaping ray
-//                background(ray.ray.dir)
-                Spectrum::uniform(0.0)
+                scene.environment_emitted_radiance(ray)
             },
 
             Some(mut intersect) => {
