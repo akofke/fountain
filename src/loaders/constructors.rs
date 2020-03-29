@@ -17,6 +17,8 @@ use crate::texture::image::ImageTexture;
 use crate::light::infinite::InfiniteAreaLight;
 use crate::material::glass::GlassMaterial;
 use crate::material::metal::{MetalMaterial, RoughnessTex};
+use crate::material::plastic::PlasticMaterial;
+use crate::material::mirror::MirrorMaterial;
 
 type ParamResult<T> = Result<T, ConstructError>;
 
@@ -152,8 +154,16 @@ pub fn make_matte(mut params: ParamSet) -> ParamResult<MatteMaterial> {
 pub fn make_glass(mut params: ParamSet) -> ParamResult<GlassMaterial> {
     let kr = params.get_texture_or_default("Kr", Spectrum::uniform(1.0))?;
     let kt = params.get_texture_or_default("Kt", Spectrum::uniform(1.0))?;
+    let urough = params.get_texture_or_default("uroughness", 0.0)?;
+    let vrough = params.get_texture_or_default("vroughness", 0.0)?;
     let eta = params.get_texture_or_default("eta", 1.5)?;
-    Ok(GlassMaterial::new(kr, kt, eta))
+    let remap = params.get_one("remaproughness").unwrap_or(true);
+    Ok(GlassMaterial::new(kr, kt, urough, vrough,  eta, remap))
+}
+
+pub fn make_mirror_material(mut params: ParamSet) -> ParamResult<MirrorMaterial> {
+    let kr = params.get_texture_or_default("Kr", Spectrum::uniform(0.9))?;
+    Ok(MirrorMaterial::new(kr))
 }
 
 pub fn make_metal_material(mut params: ParamSet) -> ParamResult<MetalMaterial> {
@@ -173,6 +183,14 @@ pub fn make_metal_material(mut params: ParamSet) -> ParamResult<MetalMaterial> {
     let remap = params.get_one("remaproughness").unwrap_or(true);
 
     Ok(MetalMaterial::new(eta, k, rough_tex, remap))
+}
+
+pub fn make_plastic_material(mut params: ParamSet) -> ParamResult<PlasticMaterial> {
+    let kd = params.get_texture_or_default("Kd", Spectrum::uniform(0.25))?;
+    let ks = params.get_texture_or_default("ks", Spectrum::uniform(0.25))?;
+    let roughness = params.get_texture_or_default("roughness", 0.1)?;
+    let remap = params.get_one("remaproughness").unwrap_or(true);
+    Ok(PlasticMaterial::new(kd, ks, roughness, remap))
 }
 
 pub fn make_diffuse_area_light(mut params: ParamSet) -> ParamResult<DiffuseAreaLightBuilder> {

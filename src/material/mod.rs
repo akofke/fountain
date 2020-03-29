@@ -6,6 +6,7 @@ pub mod matte;
 pub mod mirror;
 pub mod glass;
 pub mod metal;
+pub mod plastic;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum TransportMode {

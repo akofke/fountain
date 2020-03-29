@@ -304,6 +304,12 @@ pub struct MicrofacetReflection<D: MicrofacetDistribution, F: Fresnel> {
     pub fresnel: F,
 }
 
+impl<D: MicrofacetDistribution, F: Fresnel> MicrofacetReflection<D, F> {
+    pub fn new(r: Spectrum, distribution: D, fresnel: F) -> Self {
+        MicrofacetReflection { r, distribution, fresnel }
+    }
+}
+
 impl<D: MicrofacetDistribution, F: Fresnel> BxDF for MicrofacetReflection<D, F> {
     fn get_type(&self) -> BxDFType {
         BxDFType::REFLECTION | BxDFType::GLOSSY
