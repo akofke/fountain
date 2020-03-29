@@ -172,7 +172,8 @@ impl Shape for Triangle {
     }
 
     fn area(&self) -> Float {
-        unimplemented!()
+        let [p0, p1, p2] = self.get_vertices();
+        0.5 * (p1 - p0).cross(p2 - p0).magnitude()
     }
 
     fn intersect(&self, ray: &Ray) -> Option<(Float, SurfaceInteraction)> {
@@ -436,5 +437,10 @@ mod tests {
         assert_eq!(sign_differs(-1.0, 2.0, 1.0), true);
         assert_eq!(sign_differs(0.0, 0.0, 0.0), false);
         assert_eq!(sign_differs(0.0, 0.0, -0.0), true);
+    }
+
+    #[test]
+    fn test_tri_isect() {
+
     }
 }

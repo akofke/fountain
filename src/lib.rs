@@ -8,6 +8,8 @@
 #![feature(trait_alias)]
 #![feature(maybe_uninit_ref)]
 
+#![feature(core_intrinsics)] // only for breakpoint
+
 #![deny(bare_trait_objects)]
 
 #[macro_use] pub mod macros; // must stay at the top
@@ -59,7 +61,7 @@ use std::fmt::Debug;
 use std::any::Any;
 use crate::spectrum::Spectrum;
 
-pub type Float = f32;
+pub use math::Float; // for whatever reason defining this in a different module and pub using it here makes auto-import work
 
 pub type Point2f = Point2<Float>;
 pub type Point2i = Point2<i32>;

@@ -16,6 +16,7 @@ use crate::imageio::{ImageTexInfo, get_mipmap};
 use crate::texture::image::ImageTexture;
 use crate::light::infinite::InfiniteAreaLight;
 use crate::material::glass::GlassMaterial;
+use crate::material::metal::{MetalMaterial, RoughnessTex};
 
 type ParamResult<T> = Result<T, ConstructError>;
 
@@ -144,7 +145,8 @@ pub fn make_triangle_mesh_from_ply(mut params: ParamSet) -> ParamResult<Triangle
 
 pub fn make_matte(mut params: ParamSet) -> ParamResult<MatteMaterial> {
     let diffuse = params.get_texture_or_const("Kd")?;
-    Ok(MatteMaterial::new(diffuse))
+    let sigma = params.get_texture_or_default("sigma", 0.0)?;
+    Ok(MatteMaterial::new(diffuse, sigma))
 }
 
 pub fn make_glass(mut params: ParamSet) -> ParamResult<GlassMaterial> {
@@ -152,6 +154,25 @@ pub fn make_glass(mut params: ParamSet) -> ParamResult<GlassMaterial> {
     let kt = params.get_texture_or_default("Kt", Spectrum::uniform(1.0))?;
     let eta = params.get_texture_or_default("eta", 1.5)?;
     Ok(GlassMaterial::new(kr, kt, eta))
+}
+
+pub fn make_metal_material(mut params: ParamSet) -> ParamResult<MetalMaterial> {
+    // TODO: defaults?
+    let eta = params.get_texture_or_const("eta")?;
+    let k = params.get_texture_or_const("k")?;
+    let roughness = params.get_texture_or_default("roughness", 0.01)?;
+    let u_rough = params.get_texture_or_const("uroughness");
+    let v_rough = params.get_texture_or_const("vroughness");
+    let rough_tex = match (u_rough, v_rough) {
+        (Ok(u_rough), Ok(v_rough)) => {
+            RoughnessTex::Anisotropic { u_rough, v_rough }
+        },
+        _ => RoughnessTex::Isotropic(roughness)
+    };
+
+    let remap = params.get_one("remaproughness").unwrap_or(true);
+
+    Ok(MetalMaterial::new(eta, k, rough_tex, remap))
 }
 
 pub fn make_diffuse_area_light(mut params: ParamSet) -> ParamResult<DiffuseAreaLightBuilder> {

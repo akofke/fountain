@@ -172,8 +172,8 @@ fn estimate_direct(
     let bsdf_flags = BxDFType::all() & !BxDFType::SPECULAR;
     let mut radiance = Spectrum::uniform(0.0);
 
+    // Sample light source with multiple importance sampling
     let light_sample = light.sample_incident_radiance(&intersect.hit, u_light);
-
     if light_sample.pdf > 0.0 && !light_sample.radiance.is_black() {
         // Evaluate BSDF for light sampling strategy
         let f =
@@ -194,11 +194,18 @@ fn estimate_direct(
         }
     }
 
+    // Sample BSDF with multiple importance sampling.
+    // If the light source involves a delta distribution then the BSDF cannot be sampled since there
+    // is a zero probability that it will sample a direction that receives light from the source
     if !light.flags().is_delta_light() {
         let scatter = bsdf.sample_f(intersect.wo, u_scattering, bsdf_flags);
         if let Some(scatter) = scatter {
             let f = scatter.f * abs_dot(scatter.wi, intersect.shading_n.0);
             let sampled_specular = scatter.sampled_type.contains(BxDFType::SPECULAR);
+
+            if f.is_black() {
+                return radiance;
+            }
 
             let weight = if sampled_specular {
                 1.0

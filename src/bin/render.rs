@@ -5,6 +5,7 @@ use raytracer::integrator::SamplerIntegrator;
 use raytracer::integrator::direct_lighting::{DirectLightingIntegrator, LightStrategy};
 use std::fs::File;
 use raytracer::imageio::exr::write_exr;
+use raytracer::integrator::whitted::WhittedIntegrator;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let path = args().nth(1).unwrap();
@@ -29,6 +30,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut integrator = SamplerIntegrator {
         camera,
+        // radiance: WhittedIntegrator {
+        //     max_depth: 4
+        // }
         radiance: DirectLightingIntegrator {
             strategy: LightStrategy::UniformSampleOne,
             max_depth: 4,
@@ -37,7 +41,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     dbg!(&scene);
-    integrator.render_parallel(&scene, &film, sampler);
+    let parallel = false;
+    if parallel {
+        integrator.render_parallel(&scene, &film, sampler);
+    } else {
+        integrator.render(&scene, &film, sampler);
+    }
 
     let (img, (w, h)) = film.into_spectrum_buffer();
     let mut file = File::create("testrender5.exr")?;

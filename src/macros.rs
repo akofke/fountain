@@ -25,3 +25,8 @@ macro_rules! bounds3f {
        $crate::Bounds3f::with_bounds($crate::point3f![$p1], $crate::point3f![$p2])
     };
 }
+
+#[macro_export]
+macro_rules! sq {
+    ($e:expr) => {($e * $e)};
+}

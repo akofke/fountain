@@ -1,13 +1,15 @@
 use bitflags::bitflags;
-use crate::{Vec3f, Point2f, Float, Normal3};
+use crate::{Vec3f, Point2f, Float, Normal3, faceforward, abs_dot};
 use crate::spectrum::Spectrum;
 use crate::fresnel::{Fresnel, FresnelDielectric};
 use crate::material::TransportMode;
-use cgmath::InnerSpace;
+use cgmath::{InnerSpace, Rad};
 use crate::sampling::cosine_sample_hemisphere;
-use bitflags::_core::fmt::Debug;
+use std::fmt::Debug;
+use crate::reflection::microfacet::MicrofacetDistribution;
 
 pub mod bsdf;
+pub mod microfacet;
 
 bitflags! {
     pub struct BxDFType: u8 {
@@ -39,6 +41,32 @@ fn tan2_theta(w: Vec3f) -> Float {
     sin2_theta(w) / cos2_theta(w)
 }
 
+fn cos_phi(w: Vec3f) -> Float {
+    let sin_theta = sin_theta(w);
+    if sin_theta == 0.0 {
+        1.0
+    } else {
+        (w.x / sin_theta).clamp(-1.0, 1.0)
+    }
+}
+
+fn sin_phi(w: Vec3f) -> Float {
+    let sin_theta = sin_theta(w);
+    if sin_theta == 0.0 {
+        0.0
+    } else {
+        (w.y / sin_theta).clamp(-1.0, 1.0)
+    }
+}
+
+fn cos2_phi(w: Vec3f) -> Float {
+    cos_phi(w) * cos_phi(w)
+}
+
+fn sin2_phi(w: Vec3f) -> Float {
+    sin_phi(w) * sin_phi(w)
+}
+
 pub fn refract(wi: Vec3f, n: Normal3, eta: Float) -> Option<Vec3f> {
     let cos_theta_i = n.dot(wi);
     let sin2_theta_i = Float::max(0.0, 1.0 - cos_theta_i * cos_theta_i);
@@ -47,6 +75,10 @@ pub fn refract(wi: Vec3f, n: Normal3, eta: Float) -> Option<Vec3f> {
     let cos_theta_t = Float::sqrt(1.0 - sin2_theta_t);
     let wt = eta * -wi + (eta * cos_theta_i - cos_theta_t) * n.0;
     Some(wt)
+}
+
+pub fn reflect(wo: Vec3f, n: Vec3f) -> Vec3f {
+    -wo + 2.0 * wo.dot(n) * n
 }
 
 pub fn same_hemisphere(v1: Vec3f, v2: Vec3f) -> bool {
@@ -61,7 +93,7 @@ pub struct ScatterSample {
     pub sampled_type: BxDFType
 }
 
-pub trait BxDF: Debug {
+pub trait BxDF {
 
     fn matches_flags(&self, t: BxDFType) -> bool {
         t.contains(self.get_type())
@@ -80,7 +112,7 @@ pub trait BxDF: Debug {
 
 }
 
-// TODO: better name
+// TODO: better name - CosineSampledBxDF?
 pub trait DefaultSampleF: Debug {
     fn get_type(&self) -> BxDFType;
 
@@ -216,6 +248,190 @@ impl BxDF for SpecularTransmission {
     }
 
 }
+
+#[derive(Debug)]
+pub struct OrenNayar {
+    pub r: Spectrum,
+    pub a: Float,
+    pub b: Float,
+}
+
+impl OrenNayar {
+    pub fn new(r: Spectrum, sigma: impl Into<Rad<Float>>) -> Self {
+        let sigma = sigma.into().0;
+        let sigma2 = sigma * sigma;
+        let a = 1.0 - (sigma2 / (2.0 * (sigma2 + 0.33)));
+        let b = 0.45 * sigma2 / (sigma2 + 0.09);
+        OrenNayar { r, a, b }
+    }
+}
+
+impl DefaultSampleF for OrenNayar {
+    fn get_type(&self) -> BxDFType {
+        BxDFType::REFLECTION | BxDFType::DIFFUSE
+    }
+
+    fn f(&self, wo: Vec3f, wi: Vec3f) -> Spectrum {
+        let sin_theta_i = sin_theta(wi);
+        let sin_theta_o = sin_theta(wo);
+        // compute cosine term of Oren-Nayar model
+        let max_cos = if sin_theta_i > 1.0e-4 && sin_theta_o > 1.0e-4 {
+            let sin_phi_i = sin_phi(wi);
+            let cos_phi_i = cos_phi(wi);
+            let sin_phi_o = sin_phi(wo);
+            let cos_phi_o = cos_phi(wo);
+            let d_cos = cos_phi_i * cos_phi_o + sin_phi_i * sin_phi_o;
+            Float::max(0.0, d_cos)
+        } else {
+            0.0
+        };
+
+        let (sin_alpha, tan_beta) = if abs_cos_theta(wi) > abs_cos_theta(wo) {
+            (sin_theta_o, sin_theta_i / abs_cos_theta(wi))
+        } else {
+            (sin_theta_i, sin_theta_o / abs_cos_theta(wo))
+        };
+
+        self.r * crate::consts::FRAC_1_PI * (self.a + (self.b * max_cos * sin_alpha * tan_beta))
+    }
+}
+
+/// A general microfacet-based BRDF using the Torrance-Sparrow model.
+#[derive(Debug)]
+pub struct MicrofacetReflection<D: MicrofacetDistribution, F: Fresnel> {
+    pub r: Spectrum,
+    pub distribution: D,
+    pub fresnel: F,
+}
+
+impl<D: MicrofacetDistribution, F: Fresnel> BxDF for MicrofacetReflection<D, F> {
+    fn get_type(&self) -> BxDFType {
+        BxDFType::REFLECTION | BxDFType::GLOSSY
+    }
+
+    fn f(&self, wo: Vec3f, wi: Vec3f) -> Spectrum {
+        let cos_theta_o = abs_cos_theta(wo);
+        let cos_theta_i= abs_cos_theta(wi);
+        let wh = wi + wo;
+
+        // handle degenerate cases
+        if cos_theta_i == 0.0 || cos_theta_o == 0.0 || (wh == Vec3f::new(0.0, 0.0, 0.0)) {
+            return Spectrum::uniform(0.0)
+        }
+        let wh = wh.normalize();
+
+        // For the Fresnel call, make sure that wh is in the same hemisphere as the surface
+        // normal so total internal reflection is handled correctly.
+        let f = self.fresnel.evaluate(
+            wi.dot(faceforward(wh, Vec3f::new(0.0, 0.0, 1.0))));
+
+        self.r * self.distribution.d(wh) * self.distribution.g(wo, wi) * f
+            / (4.0 * cos_theta_i * cos_theta_o)
+    }
+
+    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> Option<ScatterSample> {
+        let wh = self.distribution.sample_wh(wo, sample);
+        let wi = reflect(wo, wh);
+        if !same_hemisphere(wo, wi) {
+            return None;
+        }
+
+        let pdf = self.distribution.pdf(wo, wh) / (4.0 * wo.dot(wh));
+        ScatterSample {
+            f: self.f(wo, wi),
+            wi,
+            pdf,
+            sampled_type: self.get_type()
+        }.into()
+    }
+
+    fn pdf(&self, wo: Vec3f, wi: Vec3f) -> Float {
+        if !same_hemisphere(wo, wi) {
+            return 0.0
+        }
+        let wh = (wo + wi).normalize();
+        self.distribution.pdf(wo, wh) / (4.0 * wo.dot(wh))
+    }
+}
+
+pub struct MicrofacetTransmission<D: MicrofacetDistribution> {
+    pub t: Spectrum,
+    pub distribution: D,
+    pub eta_a: Float,
+    pub eta_b: Float,
+    pub fresnel: FresnelDielectric,
+    pub mode: TransportMode,
+}
+
+impl<D: MicrofacetDistribution> MicrofacetTransmission<D> {
+    pub fn new(t: Spectrum, distribution: D, eta_a: Float, eta_b: Float, mode: TransportMode) -> Self {
+        MicrofacetTransmission { t, distribution, eta_a, eta_b, fresnel: FresnelDielectric::new(eta_a, eta_b), mode }
+    }
+}
+
+impl<D: MicrofacetDistribution> BxDF for MicrofacetTransmission<D> {
+    fn get_type(&self) -> BxDFType {
+        BxDFType::TRANSMISSION | BxDFType::GLOSSY
+    }
+
+    fn f(&self, wo: Vec3f, wi: Vec3f) -> Spectrum {
+        if same_hemisphere(wo, wi) {
+            return Spectrum::uniform(0.0);
+        }
+        let cos_theta_o = cos_theta(wo);
+        let cos_theta_i  = cos_theta(wi);
+        if cos_theta_o == 0.0 || cos_theta_i == 0.0 {
+            return Spectrum::uniform(0.0);
+        }
+
+        let eta = if cos_theta(wo) > 0.0 { self.eta_a / self.eta_b } else { self.eta_b / self.eta_a };
+        let wh = (wo + wi * eta).normalize();
+        let wh = if wh.z < 0.0 { -wh } else { wh };
+        let f = self.fresnel.evaluate(wo.dot(wh));
+        let sqrt_denom = wo.dot(wh) + eta * wi.dot(wh);
+        let factor = if self.mode == TransportMode::Radiance { 1.0 / eta } else { 1.0 };
+        (Spectrum::uniform(1.0) - f) * self.t *
+            Float::abs(self.distribution.d(wh) * self.distribution.g(wo, wi) * sq!(eta) * abs_dot(wi, wh) * abs_dot(wo, wh) * sq!(factor)
+            / (cos_theta_i * cos_theta_o * sq!(sqrt_denom)))
+    }
+
+    fn sample_f(&self, wo: Vec3f, sample: Point2f) -> Option<ScatterSample> {
+        if wo.z == 0.0 {
+            return None;
+        }
+        let wh = self.distribution.sample_wh(wo, sample);
+        if wo.dot(wh) < 0.0 {
+            return None;
+        }
+        let eta = if cos_theta(wo) > 0.0 {
+            self.eta_a / self.eta_b
+        } else {
+            self.eta_b / self.eta_a
+        };
+        if let Some(wi) = refract(wo, Normal3(wh), eta) {
+            ScatterSample {
+                f: self.f(wo, wi),
+                wi,
+                pdf: self.pdf(wo, wi),
+                sampled_type: self.get_type()
+            }.into()
+        } else {
+            None
+        }
+    }
+
+    fn pdf(&self, wo: Vec3f, wi: Vec3f) -> Float {
+        if same_hemisphere(wo, wi) {
+            return 0.0
+        }
+        let eta = if cos_theta(wo) > 0.0 { self.eta_a / self.eta_b } else { self.eta_b / self.eta_a };
+        let wh = (wo + wi * eta).normalize();
+        let sqrt_denom = wo.dot(wh) + eta * wi.dot(wh);
+        let dwh_dwi = Float::abs((sq!(eta) * wi.dot(wh)) / sq!(sqrt_denom));
+        self.distribution.pdf(wo, wh) * dwh_dwi
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

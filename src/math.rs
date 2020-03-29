@@ -1,5 +1,4 @@
 use crate::{EFloat, Vec2f, Vec3f};
-use crate::Float;
 use crate::err_float::MACHINE_EPSILON;
 //use crate::ComponentWiseExt;
 use cgmath::{Matrix2, SquareMatrix, InnerSpace};
@@ -7,6 +6,8 @@ use crate::spectrum::Spectrum;
 
 pub const INFINITY: Float = std::f32::INFINITY;
 pub const NEG_INFINITY: Float = std::f32::NEG_INFINITY;
+
+pub type Float = f32;
 
 pub fn lerp(t: Float, v1: Float, v2: Float) -> Float {
     (1.0 - t) * v1 + t * v2
@@ -68,6 +69,14 @@ pub fn solve_linear_system_2x2(A: Matrix2<Float>, b: Vec2f) -> Option<Vec2f> {
     }
 
     Some(Vec2f::new(x0, x1))
+}
+
+pub fn spherical_direction(sin_theta: Float, cos_theta: Float, phi: Float) -> Vec3f {
+    Vec3f::new(
+        sin_theta * phi.cos(),
+        sin_theta * phi.sin(),
+        cos_theta
+    )
 }
 
 #[cfg(test)]

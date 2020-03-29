@@ -35,7 +35,7 @@ fn fresnel_conductor(cos_theta_i: Float, eta_i: Spectrum, eta_t: Spectrum, k: Sp
     let t0 = eta2 - eta_k2 - sin_theta_i2;
     let a2plusb2 = (t0 * t0 + 4.0 * eta2 * eta_k2).sqrt();
     let t1 = a2plusb2 + cos_theta_i2;
-    let a = (0.5 * (cos_theta_i + t0)).sqrt();
+    let a = (0.5 * (a2plusb2 + t0)).sqrt();
     let t2 = 2.0 * cos_theta_i * a;
     let Rs = (t1 - t2) / (t1 + t2);
 
@@ -57,13 +57,13 @@ pub trait Fresnel: std::fmt::Debug {
 #[derive(Debug)]
 pub struct FresnelConductor {
     /// incident index of refraction
-    eta_i: Spectrum,
+    pub eta_i: Spectrum,
 
     /// transmitted index of refraction
-    eta_t: Spectrum,
+    pub eta_t: Spectrum,
 
     /// absorption coefficient
-    k: Spectrum,
+    pub k: Spectrum,
 }
 
 impl Fresnel for FresnelConductor {

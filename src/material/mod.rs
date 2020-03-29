@@ -5,8 +5,9 @@ use crate::reflection::bsdf::Bsdf;
 pub mod matte;
 pub mod mirror;
 pub mod glass;
+pub mod metal;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum TransportMode {
     Radiance,
     Importance,

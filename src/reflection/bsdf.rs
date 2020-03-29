@@ -91,6 +91,7 @@ impl<'a> Bsdf<'a> {
         let bxdf: &dyn BxDF = *self.iter_matching(flags)
             .nth(comp).unwrap();
 
+        // TODO ensure it isn't exactly 1.0
         let u_remapped = Point2f::new(u[0] * matching_comps - (comp as Float), u[1]);
 
         let wo = self.world_to_local(wo_world);
@@ -107,7 +108,13 @@ impl<'a> Bsdf<'a> {
                 .filter(|&&b| !std::ptr::eq(b, bxdf))
                 .map(|bxdf| bxdf.pdf(wo, wi))
                 .sum::<Float>();
+        }
 
+        if matching_comps > 1.0 {
+            pdf /= matching_comps;
+        }
+
+        if !bxdf.get_type().contains(BxDFType::SPECULAR) {
             let reflect = wi_world.dot(self.ng.into()) * wo_world.dot(self.ng.into()) > 0.0;
             f = self.iter_matching(flags)
                 .filter(|bxdf| {
@@ -116,10 +123,6 @@ impl<'a> Bsdf<'a> {
                 })
                 .map(|bxdf| bxdf.f(wo, wi))
                 .sum();
-        }
-
-        if matching_comps > 1.0 {
-            pdf /= matching_comps;
         }
 
         Some(ScatterSample {f, wi: wi_world, pdf, sampled_type})
