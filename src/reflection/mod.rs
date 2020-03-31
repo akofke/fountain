@@ -373,6 +373,10 @@ impl<D: MicrofacetDistribution> MicrofacetTransmission<D> {
     pub fn new(t: Spectrum, distribution: D, eta_a: Float, eta_b: Float, mode: TransportMode) -> Self {
         MicrofacetTransmission { t, distribution, eta_a, eta_b, fresnel: FresnelDielectric::new(eta_a, eta_b), mode }
     }
+
+    fn get_eta(&self, wo: Vec3f) -> Float {
+        if cos_theta(wo) > 0.0 { self.eta_b / self.eta_a } else { self.eta_a / self.eta_b }
+    }
 }
 
 impl<D: MicrofacetDistribution> BxDF for MicrofacetTransmission<D> {
@@ -390,7 +394,7 @@ impl<D: MicrofacetDistribution> BxDF for MicrofacetTransmission<D> {
             return Spectrum::uniform(0.0);
         }
 
-        let eta = if cos_theta(wo) > 0.0 { self.eta_a / self.eta_b } else { self.eta_b / self.eta_a };
+        let eta = self.get_eta(wo);
         let wh = (wo + wi * eta).normalize();
         let wh = if wh.z < 0.0 { -wh } else { wh };
         let f = self.fresnel.evaluate(wo.dot(wh));
@@ -409,11 +413,7 @@ impl<D: MicrofacetDistribution> BxDF for MicrofacetTransmission<D> {
         if wo.dot(wh) < 0.0 {
             return None;
         }
-        let eta = if cos_theta(wo) > 0.0 {
-            self.eta_a / self.eta_b
-        } else {
-            self.eta_b / self.eta_a
-        };
+        let eta = self.get_eta(-wo); // NOTE: this inverts the eta fraction
         if let Some(wi) = refract(wo, Normal3(wh), eta) {
             ScatterSample {
                 f: self.f(wo, wi),
@@ -430,7 +430,7 @@ impl<D: MicrofacetDistribution> BxDF for MicrofacetTransmission<D> {
         if same_hemisphere(wo, wi) {
             return 0.0
         }
-        let eta = if cos_theta(wo) > 0.0 { self.eta_a / self.eta_b } else { self.eta_b / self.eta_a };
+        let eta = self.get_eta(wo);
         let wh = (wo + wi * eta).normalize();
         let sqrt_denom = wo.dot(wh) + eta * wi.dot(wh);
         let dwh_dwi = Float::abs((sq!(eta) * wi.dot(wh)) / sq!(sqrt_denom));

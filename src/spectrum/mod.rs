@@ -91,6 +91,12 @@ impl<const N: usize> CoefficientSpectrum<{N}> {
         self.clamp(0.0, std::f32::INFINITY)
     }
 
+    pub fn max_component_value(&self) -> Float {
+        // FIXME
+        // this is so stupid
+        *self.0.iter().max_by(|x, y| x.partial_cmp(y).unwrap()).unwrap()
+    }
+
     // FIXME: These have weird hacks and aren't implemented for <3> as a workaround for
     //  rustc stack overflow (https://github.com/rust-lang/rust/issues/68104).
     //  Revert when that is fixed.

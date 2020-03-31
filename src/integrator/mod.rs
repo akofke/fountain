@@ -2,7 +2,7 @@ use bumpalo::Bump;
 use cgmath::InnerSpace;
 use rayon::prelude::*;
 
-use crate::{abs_dot, Bounds2i, Differential, Float, RayDifferential, SurfaceInteraction};
+use crate::{abs_dot, Bounds2i, Differential, Float, RayDifferential, SurfaceInteraction, Point2f};
 use crate::camera::Camera;
 use crate::film::Film;
 use crate::filter::BoxFilter;
@@ -12,9 +12,12 @@ use crate::sampler::Sampler;
 use crate::scene::Scene;
 use crate::spectrum::{Spectrum};
 use std::sync::Arc;
+use crate::light::Light;
+use crate::sampling::power_heuristic;
 
 pub mod whitted;
 pub mod direct_lighting;
+pub mod path;
 
 
 pub struct SamplerIntegrator<R: IntegratorRadiance> {
@@ -282,4 +285,105 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
 
 fn check_radiance(l: &Spectrum, pixel: (i32, i32)) {
     assert!(!l.has_nans(), "NaN radiance value for pixel {:?}: {:?}", pixel, l);
+}
+
+pub fn uniform_sample_one_light(
+    intersect: &SurfaceInteraction,
+    bsdf: &Bsdf,
+    scene: &Scene,
+    arena: &Bump,
+    sampler: &mut dyn Sampler,
+) -> Spectrum {
+    let n_lights = scene.lights.len();
+    if n_lights == 0 { return Spectrum::uniform(0.0) }
+
+    let light_num = (sampler.get_1d() * (n_lights as Float)).min((n_lights - 1) as Float) as usize;
+    let light = scene.lights[light_num].as_ref();
+
+    let u_light = sampler.get_2d();
+    let u_scattering = sampler.get_2d();
+    n_lights as Float * estimate_direct(bsdf, intersect, u_scattering, light, u_light, scene, arena)
+}
+
+pub fn estimate_direct(
+    bsdf: &Bsdf,
+    intersect: &SurfaceInteraction,
+    u_scattering: Point2f,
+    light: &dyn Light,
+    u_light: Point2f,
+    scene: &Scene,
+    arena: &Bump,
+//    sampler: &mut dyn Sampler,
+) -> Spectrum {
+    let bsdf_flags = BxDFType::all() & !BxDFType::SPECULAR;
+    let mut radiance = Spectrum::uniform(0.0);
+
+    // Sample light source with multiple importance sampling
+    let light_sample = light.sample_incident_radiance(&intersect.hit, u_light);
+    if light_sample.pdf > 0.0 && !light_sample.radiance.is_black() {
+        // Evaluate BSDF for light sampling strategy
+        let f =
+            bsdf.f(intersect.wo, light_sample.wi, bsdf_flags) *
+                abs_dot(light_sample.wi, intersect.shading_n.0);
+
+        let scattering_pdf = bsdf.pdf(intersect.wo, light_sample.wi, bsdf_flags);
+
+        // If the BSDF would reflect the radiance from this light, only then trace a
+        // shadow ray to see if the light is unoccluded
+        if !f.is_black() && light_sample.vis.unoccluded(scene) {
+            radiance += if light.flags().is_delta_light() {
+                f * light_sample.radiance / light_sample.pdf
+            } else {
+                let weight = power_heuristic(1, light_sample.pdf, 1, scattering_pdf);
+                f * light_sample.radiance * weight / light_sample.pdf
+            }
+        }
+    }
+
+    // Sample BSDF with multiple importance sampling.
+    // If the light source involves a delta distribution then the BSDF cannot be sampled since there
+    // is a zero probability that it will sample a direction that receives light from the source
+    if !light.flags().is_delta_light() {
+        let scatter = bsdf.sample_f(intersect.wo, u_scattering, bsdf_flags);
+        if let Some(scatter) = scatter {
+            let f = scatter.f * abs_dot(scatter.wi, intersect.shading_n.0);
+            let sampled_specular = scatter.sampled_type.contains(BxDFType::SPECULAR);
+
+            if f.is_black() {
+                return radiance;
+            }
+
+            let weight = if sampled_specular {
+                1.0
+            } else {
+                let light_pdf = light.pdf_incident_radiance(&intersect.hit, scatter.wi);
+                if light_pdf == 0.0 {
+                    return radiance;
+                }
+                power_heuristic(1, scatter.pdf, 1, light_pdf)
+            };
+            let mut ray = intersect.hit.spawn_ray(scatter.wi);
+
+            // TODO: Specialized bvh query for testing ray between two known objects?
+            let si = scene.intersect(&mut ray);
+
+            let incident_radiance = if let Some(si) = si {
+                si.primitive.unwrap().area_light()
+                    // TODO: make sure this actually works
+                    .filter(|l| std::ptr::eq(l.as_light(), light))
+                    // TODO: just call emitted on light?
+                    .map_or(Spectrum::uniform(0.0), |_| si.emitted_radiance(-scatter.wi))
+            } else {
+                // TODO: how to get differentials
+                light.environment_emitted_radiance(&RayDifferential { ray, diff: None })
+            };
+
+            if !incident_radiance.is_black() {
+                radiance += f * incident_radiance * weight / scatter.pdf
+            }
+
+        }
+    }
+
+    radiance
 }
