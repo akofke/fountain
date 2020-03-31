@@ -6,6 +6,7 @@ use raytracer::integrator::direct_lighting::{DirectLightingIntegrator, LightStra
 use std::fs::File;
 use raytracer::imageio::exr::write_exr;
 use raytracer::integrator::whitted::WhittedIntegrator;
+use raytracer::integrator::path::PathIntegrator;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let path = args().nth(1).unwrap();
@@ -16,6 +17,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     for stmt in parsed.header {
         header.exec_stmt(stmt)?;
     }
+    let filename = header.film_params.get_one("filename").unwrap_or("render.exr".to_string());
+    assert!(filename.contains(".exr"));
 
     let mut scene_builder = PbrtSceneBuilder::new();
     for stmt in parsed.world {
@@ -33,15 +36,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         // radiance: WhittedIntegrator {
         //     max_depth: 4
         // }
-        radiance: DirectLightingIntegrator {
-            strategy: LightStrategy::UniformSampleOne,
-            max_depth: 4,
-            n_light_samples: vec![],
-        }
+        // radiance: DirectLightingIntegrator {
+        //     strategy: LightStrategy::UniformSampleOne,
+        //     max_depth: 4,
+        //     n_light_samples: vec![],
+        // }
+        radiance: PathIntegrator::new(5, 1.0)
     };
 
     dbg!(&scene);
-    let parallel = false;
+    let parallel = true;
     if parallel {
         integrator.render_parallel(&scene, &film, sampler);
     } else {
@@ -49,7 +53,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let (img, (w, h)) = film.into_spectrum_buffer();
-    let mut file = File::create("testrender5.exr")?;
+    let mut file = File::create(filename)?;
     write_exr(&mut file, img, (w, h))?;
     Ok(())
 }

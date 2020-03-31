@@ -399,7 +399,7 @@ pub struct PbrtHeader {
     pub camera_params: ParamSet,
     camera_tf: Transform,
     sampler_params: ParamSet,
-    film_params: ParamSet,
+    pub film_params: ParamSet,
 }
 
 impl PbrtHeader {
