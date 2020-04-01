@@ -369,8 +369,15 @@ pub fn estimate_direct(
 
             let incident_radiance = if let Some(si) = si {
                 si.primitive.unwrap().area_light()
-                    // TODO: make sure this actually works
-                    .filter(|l| std::ptr::eq(l.as_light(), light))
+                    .filter(|l| {
+                        // FIXME: Comparing trait object references also compares the vtable pointer
+                        //  (even though it should have a Light vtable?). This compares the data
+                        //  pointers which is what we want. Should have read the docs more carefully.
+                        std::ptr::eq(
+                            l.as_light() as *const dyn Light as *const u8,
+                            light as *const dyn Light as *const u8
+                        )
+                    })
                     // TODO: just call emitted on light?
                     .map_or(Spectrum::uniform(0.0), |_| si.emitted_radiance(-scatter.wi))
             } else {

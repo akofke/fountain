@@ -10,9 +10,9 @@ pub fn concentric_sample_disk(u: Point2f) -> Point2f {
     }
 
     let (theta, r) = if u_offset.x.abs() > u_offset.y.abs() {
-        (u_offset.x, f32::consts::FRAC_PI_4 * (u_offset.y / u_offset.x))
+        (f32::consts::FRAC_PI_4 * (u_offset.y / u_offset.x), u_offset.x)
     } else {
-        (u_offset.y, f32::consts::FRAC_PI_2 - f32::consts::FRAC_PI_4 * (u_offset.x / u_offset.y))
+        (f32::consts::FRAC_PI_2 - f32::consts::FRAC_PI_4 * (u_offset.x / u_offset.y), u_offset.y)
     };
 
     r * Point2f::new(theta.cos(), theta.sin())
@@ -182,6 +182,7 @@ impl Distribution2D {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use cgmath::{EuclideanSpace, InnerSpace};
 
     #[test]
     fn test_distribution_1d() {
@@ -193,6 +194,16 @@ mod tests {
             assert_eq!(idx, 2);
             assert_eq!(pdf, 4.0);
             assert!(x < 0.75 && x >= 0.5, "{}", x);
+        }
+    }
+
+    #[test]
+    fn test_concentric_sample_disk() {
+        for _ in 0..100 {
+            let u: Point2f = Point2f::new(rand::random(), rand::random());
+            let d = concentric_sample_disk(u);
+            let dist = d.to_vec().magnitude();
+            assert!(dist <= 1.0, "Sampled point outside unit disk: distance {}", dist);
         }
     }
 }

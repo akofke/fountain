@@ -71,7 +71,7 @@ impl<T: Borrow<Transform> + Sync + Send> Shape for Sphere<T> {
     }
 
     fn reverse_orientation(&self) -> bool {
-        false // TODO
+        self.reverse_orientation
     }
 
     fn area(&self) -> Float {
@@ -165,7 +165,7 @@ impl<T: Borrow<Transform> + Sync + Send> Shape for Sphere<T> {
         let F = dpdu.dot(dpdv);
         let G = dpdv.dot(dpdv);
 
-        let N = dpdu.cross(dpdv).normalize();
+        let mut N = dpdu.cross(dpdv).normalize();
 
         let e = N.dot(d2pduu);
         let f = N.dot(d2pduv);
@@ -178,6 +178,11 @@ impl<T: Borrow<Transform> + Sync + Send> Shape for Sphere<T> {
         let dndv = Normal3((g * F - f * G) * invEGF2 * dpdu + (f * F - g * E) * invEGF2 * dpdv);
 
         let p_err: Vec3f = gamma(5) * p_hit.to_vec().abs();
+
+        // FIXME
+        if self.reverse_orientation() {
+            N *= -1.0;
+        }
 
         let interact = SurfaceInteraction::new(
             p_hit,

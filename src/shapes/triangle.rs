@@ -214,11 +214,16 @@ impl Shape for Triangle {
         p2t.y += shear_y * p2t.z;
 
         // compute edge function coefficients
-        let e0 = p1t.x * p2t.y - p1t.y * p2t.x; // p1 to p2
-        let e1 = p2t.x * p0t.y - p2t.y * p0t.x; // p2 to p0
-        let e2 = p0t.x * p1t.y - p0t.y * p1t.x; // p0 to p1
+        let mut e0 = p1t.x * p2t.y - p1t.y * p2t.x; // p1 to p2
+        let mut e1 = p2t.x * p0t.y - p2t.y * p0t.x; // p2 to p0
+        let mut e2 = p0t.x * p1t.y - p0t.y * p1t.x; // p0 to p1
 
         // TODO: fall back on double precision
+        if e0 == 0.0 || e1 == 0.0 || e2 == 0.0 {
+            e0 = (p1t.x as f64 * p2t.y as f64 - p1t.y as f64 * p2t.x as f64) as Float; // p1 to p2
+            e1 = (p2t.x as f64 * p0t.y as f64 - p2t.y as f64 * p0t.x as f64) as Float; // p2 to p0
+            e2 = (p0t.x as f64 * p1t.y as f64 - p0t.y as f64 * p1t.x as f64) as Float; // p0 to p1
+        }
 
         // if one of the edge function signs differs, then the point (0, 0) is not on the same side
         // of all three edges so therefore is outside the triangle.
