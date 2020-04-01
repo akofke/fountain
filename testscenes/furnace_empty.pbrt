@@ -1,0 +1,29 @@
+
+Integrator "path" "integer maxdepth" [10]
+#Integrator "directlighting" "string strategy" "one"
+Sampler "random" "integer pixelsamples" [ 128 ]
+PixelFilter "box" "float xwidth" [ 0.5 ] "float ywidth" [ 0.5 ]
+Film "image" "integer xresolution" [ 16 ] "integer yresolution" [ 16 ] "string filename" [ "furnace.exr" ]
+
+LookAt 0 -2 0 0 0 0 0 0 1
+Camera "perspective" "float fov" [ 60 ]
+#Camera "orthographic"
+
+WorldBegin
+
+AttributeBegin
+Material "matte" "rgb Kd" [.5 .5 .5]
+AreaLightSource "diffuse" "rgb L" [1 1 1]
+ReverseOrientation
+Shape "sphere" "float radius" 100
+AttributeEnd
+
+AttributeBegin
+Material "matte" "rgb Kd" [1 1 1]
+#Shape "sphere" "float radius" 1.0
+
+#Scale 2 2 2
+#Shape "plymesh" "string filename" "cube_tri.ply"
+AttributeEnd
+
+WorldEnd
