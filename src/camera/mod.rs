@@ -90,7 +90,7 @@ impl PerspectiveCamera {
         focal_dist: Float,
         fov: Float
     ) -> Self {
-        let persp = Transform::perspective(fov, 0.001, 1000.0);
+        let persp = Transform::perspective(fov, 1.0e-2, 1000.0);
         let proj = CameraProjection::new(persp, full_resolution, screen_window);
         let mut p_min: Point3f = point3f!(0, 0, 0).transform(proj.raster_to_camera);
         let mut p_max: Point3f = point3f!(full_resolution.x, full_resolution.y, 0).transform(proj.raster_to_camera);

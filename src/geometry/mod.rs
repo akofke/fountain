@@ -123,7 +123,7 @@ pub struct RayDifferential {
 
 impl RayDifferential {
     pub fn scale_differentials(&mut self, s: Float) {
-        if let Some(mut diff) = self.diff {
+        if let Some(ref mut diff) = self.diff {
             diff.rx_origin = self.ray.origin + (diff.rx_origin - self.ray.origin) * s;
             diff.ry_origin = self.ray.origin + (diff.ry_origin - self.ray.origin) * s;
             diff.rx_dir = self.ray.dir + (diff.rx_dir - self.ray.dir) * s;
