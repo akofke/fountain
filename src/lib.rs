@@ -12,6 +12,8 @@
 
 #![deny(bare_trait_objects)]
 
+#![allow(clippy::float_cmp)]
+
 #[macro_use] pub mod macros; // must stay at the top
 pub mod camera;
 pub mod math;

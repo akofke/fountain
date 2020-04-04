@@ -9,7 +9,7 @@ use crate::loaders::{ParamSet, ParamVal, ParamError};
 use crate::spectrum::Spectrum;
 use std::collections::HashMap;
 use crate::texture::Texture;
-use crate::loaders::constructors::{make_sphere, make_matte, make_triangle_mesh, make_diffuse_area_light, ConstructError, make_checkerboard_spect, make_checkerboard_float, make_point_light, make_distant_light, make_imagemap_spect, make_infinite_area_light, make_triangle_mesh_from_ply, make_glass, make_metal_material, make_plastic_material, make_mirror_material};
+use crate::loaders::constructors::{make_sphere, make_matte, make_triangle_mesh, make_diffuse_area_light, ConstructError, make_checkerboard_spect, make_checkerboard_float, make_point_light, make_distant_light, make_imagemap_spect, make_infinite_area_light, make_triangle_mesh_from_ply, make_glass, make_metal_material, make_plastic_material, make_mirror_material, make_uv_spect};
 use crate::light::{AreaLightBuilder, Light};
 use crate::primitive::{GeometricPrimitive, Primitive};
 use crate::shapes::triangle::TriangleMesh;
@@ -357,6 +357,10 @@ impl PbrtSceneBuilder {
         match (ty, class) {
             ("spectrum", "checkerboard") | ("color", "checkerboard") => {
                 let tex = make_checkerboard_spect(params)?;
+                self.add_spect_tex(name.to_string(), tex);
+            },
+            ("spectrum", "uv") | ("color", "uv") => {
+                let tex = make_uv_spect(params)?;
                 self.add_spect_tex(name.to_string(), tex);
             },
             ("float", "checkerboard") => {

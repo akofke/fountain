@@ -8,7 +8,7 @@ use crate::spectrum::Spectrum;
 use crate::texture::checkerboard::{Checkerboard2DTexture};
 use crate::texture::mapping::{TexCoordsMap2D, UVMapping};
 use std::sync::Arc;
-use crate::texture::Texture;
+use crate::texture::{Texture, TextureRef};
 use crate::light::distant::DistantLight;
 use crate::light::point::PointLight;
 use crate::mipmap::ImageWrap;
@@ -19,6 +19,7 @@ use crate::material::glass::GlassMaterial;
 use crate::material::metal::{MetalMaterial, RoughnessTex};
 use crate::material::plastic::PlasticMaterial;
 use crate::material::mirror::MirrorMaterial;
+use crate::texture::uv::UVTexture;
 
 type ParamResult<T> = Result<T, ConstructError>;
 
@@ -61,7 +62,22 @@ pub fn make_triangle_mesh(mut params: ParamSet) -> ParamResult<TriangleMesh> {
     let normals = params.get_one("N").ok();
     let tangents = params.get_one("S").ok();
     // TODO: handle float array
-    let tex_coords = params.get_one("uv").or_else(|_| params.get_one("st")).ok();
+    let tex_coords = params.get_one("uv")
+        .or_else(|_| params.get_one("st"))
+        .ok()
+        .or_else(|| {
+            params
+                .get_one::<Vec<Float>>("uv")
+                .or_else(|_| params.get_one("st"))
+                .ok()
+                .filter(|v| v.len() % 2 == 0)
+                .map(|uvs| {
+                    uvs.chunks_exact(2)
+                        .map(|uv| Point2f::new(uv[0], uv[1]))
+                        .collect()
+                })
+        });
+    dbg!(&tex_coords);
     let reverse_orientation = params.reverse_orientation()?;
 
     let mesh = TriangleMesh::new(
@@ -239,6 +255,12 @@ pub fn make_checkerboard_spect(mut params: ParamSet) -> ParamResult<Arc<dyn Text
         tex2,
         mapping
     ));
+    Ok(tex)
+}
+
+pub fn make_uv_spect(mut params: ParamSet) -> ParamResult<TextureRef<Spectrum>> {
+    let mapping = make_tex_coords_map_2d(&mut params)?;
+    let tex = Arc::new(UVTexture::new(mapping));
     Ok(tex)
 }
 

@@ -171,7 +171,10 @@ impl ParamSet {
         self.params.remove(name)
             .ok_or_else(|| ParamError { expected_name: name, expected_ty: type_name::<T>()})?
             .try_into()
-            .map_err(|e: TryFromParamErr<_>| ParamError { expected_name: name, expected_ty: e.0 })
+            .map_err(|e: TryFromParamErr<_>| {
+                self.params.insert(name.to_string(), e.1);
+                ParamError { expected_name: name, expected_ty: e.0 }
+            })
 
     }
 

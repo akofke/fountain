@@ -80,7 +80,7 @@ impl Bounds2<i32> {
         let y1 = self.min.y;
         let y2 = self.max.y;
 
-        (x1..x2).flat_map(move |x| (y1..y2).map(move |y| (x, y)))
+        (y1..y2).flat_map(move |y| (x1..x2).map(move |x| (x, y)))
     }
 
     pub fn iter_tiles(self, tile_size: usize) -> impl Iterator<Item=Bounds2i> {
@@ -89,8 +89,8 @@ impl Bounds2<i32> {
         let ymin = self.min.y;
         let ymax = self.max.y;
 
-        (xmin..xmax).step_by(tile_size)
-            .flat_map(move |x| (ymin..ymax).step_by(tile_size).map(move |y| {
+        (ymin..ymax).step_by(tile_size)
+            .flat_map(move |y| (xmin..xmax).step_by(tile_size).map(move |x| {
                 let min = Point2i::new(x, y);
                 let max = Point2i::new(x + tile_size as i32, y + tile_size as i32).min(self.max);
                 Bounds2i::with_bounds(min, max)

@@ -1,6 +1,7 @@
 use std::mem::MaybeUninit;
 
 use crate::Float;
+use approx::AbsDiffEq;
 
 pub fn array<F: FnMut(usize) -> Float, const N: usize>(mut init: F) -> [Float; N] {
     let mut arr = MaybeUninit::<[Float; N]>::uninit();
@@ -301,6 +302,40 @@ impl_assign_op!(SubAssign, sub_assign, -=);
 impl_assign_op!(MulAssign, mul_assign, *=);
 impl_assign_op!(DivAssign, div_assign, /=);
 
+impl<const N: usize> approx::AbsDiffEq for CoefficientSpectrum<{N}> {
+    type Epsilon = <Float as AbsDiffEq>::Epsilon;
+
+    fn default_epsilon() -> Self::Epsilon {
+        Float::default_epsilon()
+    }
+
+    fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+        self.0.iter().zip(other.0.iter())
+            .all(|(x, y)| x.abs_diff_eq(y, epsilon))
+    }
+}
+
+impl<const N: usize> approx::RelativeEq for CoefficientSpectrum<{N}> {
+    fn default_max_relative() -> Self::Epsilon {
+        Float::default_max_relative()
+    }
+
+    fn relative_eq(&self, other: &Self, epsilon: Self::Epsilon, max_relative: Self::Epsilon) -> bool {
+        self.0.iter().zip(other.0.iter())
+            .all(|(x, y)| x.relative_eq(y, epsilon, max_relative))
+    }
+}
+
+impl<const N: usize> approx::UlpsEq for CoefficientSpectrum<{N}> {
+    fn default_max_ulps() -> u32 {
+        Float::default_max_ulps()
+    }
+
+    fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
+        self.0.iter().zip(other.0.iter())
+            .all(|(x, y)| x.ulps_eq(y, epsilon, max_ulps))
+    }
+}
 
 #[cfg(test)]
 mod tests {
