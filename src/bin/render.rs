@@ -7,11 +7,14 @@ use std::fs::File;
 use raytracer::imageio::exr::write_exr;
 use raytracer::integrator::whitted::WhittedIntegrator;
 use raytracer::integrator::path::PathIntegrator;
+use std::path::PathBuf;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> anyhow::Result<()> {
     let path = args().nth(1).unwrap();
 
-    let parsed = pbrt_parser::PbrtParser::parse_with_includes(path)?;
+    let path = PathBuf::from(path);
+    let base_path = path.parent().unwrap().to_path_buf();
+    let parsed = pbrt_parser::PbrtParser::parse_with_includes(&path)?;
 
     let mut header = PbrtHeader::new();
     for stmt in parsed.header {
@@ -20,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let filename = header.film_params.get_one("filename").unwrap_or("render.exr".to_string());
     assert!(filename.contains(".exr"));
 
-    let mut scene_builder = PbrtSceneBuilder::new();
+    let mut scene_builder = PbrtSceneBuilder::new(base_path);
     for stmt in parsed.world {
         scene_builder.exec_stmt(stmt)?;
     }

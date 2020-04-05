@@ -1,4 +1,4 @@
-use crate::loaders::{ParamSet, ParamError};
+use crate::loaders::{ParamSet, ParamError, Context};
 use crate::shapes::sphere::Sphere;
 use crate::{Transform, Float, Point3f, Normal3, Vec3f, Point2f};
 use crate::material::matte::MatteMaterial;
@@ -20,6 +20,7 @@ use crate::material::metal::{MetalMaterial, RoughnessTex};
 use crate::material::plastic::PlasticMaterial;
 use crate::material::mirror::MirrorMaterial;
 use crate::texture::uv::UVTexture;
+use std::path::PathBuf;
 
 type ParamResult<T> = Result<T, ConstructError>;
 
@@ -35,7 +36,7 @@ impl From<ParamError> for ConstructError {
     }
 }
 
-pub fn make_sphere(mut params: ParamSet) -> ParamResult<Sphere<Transform>> {
+pub fn make_sphere(mut params: ParamSet, ctx: &Context) -> ParamResult<Sphere<Transform>> {
     let radius = params.get_one("radius").unwrap_or(1.0);
     let zmin = params.get_one("zmin").unwrap_or(-radius);
     let zmax = params.get_one("zmax").unwrap_or(radius);
@@ -54,7 +55,7 @@ pub fn make_sphere(mut params: ParamSet) -> ParamResult<Sphere<Transform>> {
     ))
 }
 
-pub fn make_triangle_mesh(mut params: ParamSet) -> ParamResult<TriangleMesh> {
+pub fn make_triangle_mesh(mut params: ParamSet, ctx: &Context) -> ParamResult<TriangleMesh> {
     let tf = params.current_transform()?;
     let indices: Vec<i32> = params.get_one("indices")?;
     let indices = indices.into_iter().map(|i| i as u32).collect();
@@ -77,7 +78,6 @@ pub fn make_triangle_mesh(mut params: ParamSet) -> ParamResult<TriangleMesh> {
                         .collect()
                 })
         });
-    dbg!(&tex_coords);
     let reverse_orientation = params.reverse_orientation()?;
 
     let mesh = TriangleMesh::new(
@@ -92,14 +92,14 @@ pub fn make_triangle_mesh(mut params: ParamSet) -> ParamResult<TriangleMesh> {
     Ok(mesh)
 }
 
-pub fn make_triangle_mesh_from_ply(mut params: ParamSet) -> ParamResult<TriangleMesh> {
+pub fn make_triangle_mesh_from_ply(mut params: ParamSet, ctx: &Context) -> ParamResult<TriangleMesh> {
     use ply_rs as ply;
     use ply::ply::Property;
 
     let tf = params.current_transform()?;
     let rev = params.reverse_orientation()?;
     let filename: String = params.get_one("filename")?;
-    let mut f = std::fs::File::open(filename).unwrap();
+    let mut f = ctx.open_relative(filename).unwrap();
     let parser = ply::parser::Parser::<ply::ply::DefaultElement>::new();
     let plyfile = parser.read_ply(&mut f).unwrap();
 
@@ -161,13 +161,13 @@ pub fn make_triangle_mesh_from_ply(mut params: ParamSet) -> ParamResult<Triangle
     Ok(mesh)
 }
 
-pub fn make_matte(mut params: ParamSet) -> ParamResult<MatteMaterial> {
+pub fn make_matte(mut params: ParamSet, ctx: &Context) -> ParamResult<MatteMaterial> {
     let diffuse = params.get_texture_or_const("Kd")?;
     let sigma = params.get_texture_or_default("sigma", 0.0)?;
     Ok(MatteMaterial::new(diffuse, sigma))
 }
 
-pub fn make_glass(mut params: ParamSet) -> ParamResult<GlassMaterial> {
+pub fn make_glass(mut params: ParamSet, ctx: &Context) -> ParamResult<GlassMaterial> {
     let kr = params.get_texture_or_default("Kr", Spectrum::uniform(1.0))?;
     let kt = params.get_texture_or_default("Kt", Spectrum::uniform(1.0))?;
     let urough = params.get_texture_or_default("uroughness", 0.0)?;
@@ -177,12 +177,12 @@ pub fn make_glass(mut params: ParamSet) -> ParamResult<GlassMaterial> {
     Ok(GlassMaterial::new(kr, kt, urough, vrough,  eta, remap))
 }
 
-pub fn make_mirror_material(mut params: ParamSet) -> ParamResult<MirrorMaterial> {
+pub fn make_mirror_material(mut params: ParamSet, ctx: &Context) -> ParamResult<MirrorMaterial> {
     let kr = params.get_texture_or_default("Kr", Spectrum::uniform(0.9))?;
     Ok(MirrorMaterial::new(kr))
 }
 
-pub fn make_metal_material(mut params: ParamSet) -> ParamResult<MetalMaterial> {
+pub fn make_metal_material(mut params: ParamSet, ctx: &Context) -> ParamResult<MetalMaterial> {
     // TODO: defaults?
     let eta = params.get_texture_or_const("eta")?;
     let k = params.get_texture_or_const("k")?;
@@ -201,7 +201,7 @@ pub fn make_metal_material(mut params: ParamSet) -> ParamResult<MetalMaterial> {
     Ok(MetalMaterial::new(eta, k, rough_tex, remap))
 }
 
-pub fn make_plastic_material(mut params: ParamSet) -> ParamResult<PlasticMaterial> {
+pub fn make_plastic_material(mut params: ParamSet, ctx: &Context) -> ParamResult<PlasticMaterial> {
     let kd = params.get_texture_or_default("Kd", Spectrum::uniform(0.25))?;
     let ks = params.get_texture_or_default("ks", Spectrum::uniform(0.25))?;
     let roughness = params.get_texture_or_default("roughness", 0.1)?;
@@ -209,7 +209,7 @@ pub fn make_plastic_material(mut params: ParamSet) -> ParamResult<PlasticMateria
     Ok(PlasticMaterial::new(kd, ks, roughness, remap))
 }
 
-pub fn make_diffuse_area_light(mut params: ParamSet) -> ParamResult<DiffuseAreaLightBuilder> {
+pub fn make_diffuse_area_light(mut params: ParamSet, ctx: &Context) -> ParamResult<DiffuseAreaLightBuilder> {
     let emit = params.get_one("L").unwrap_or(Spectrum::uniform(1.0));
     let _two_sided = params.get_one("twosided").unwrap_or(false);
     let samples = params.get_one("samples").unwrap_or(1) as usize;
@@ -232,7 +232,7 @@ fn make_tex_coords_map_2d(params: &mut ParamSet) -> Result<Arc<dyn TexCoordsMap2
 
 }
 
-pub fn make_checkerboard_float(mut params: ParamSet) -> ParamResult<Arc<dyn Texture<Output=Float>>> {
+pub fn make_checkerboard_float(mut params: ParamSet, ctx: &Context) -> ParamResult<Arc<dyn Texture<Output=Float>>> {
     let mapping = make_tex_coords_map_2d(&mut params)?;
     let tex1 = params.get_texture_or_const::<Float>("tex1")?;
     let tex2 = params.get_texture_or_const::<Float>("tex2")?;
@@ -245,7 +245,7 @@ pub fn make_checkerboard_float(mut params: ParamSet) -> ParamResult<Arc<dyn Text
     Ok(tex)
 }
 
-pub fn make_checkerboard_spect(mut params: ParamSet) -> ParamResult<Arc<dyn Texture<Output=Spectrum>>> {
+pub fn make_checkerboard_spect(mut params: ParamSet, ctx: &Context) -> ParamResult<Arc<dyn Texture<Output=Spectrum>>> {
     let mapping = make_tex_coords_map_2d(&mut params)?;
     let tex1 = params.get_texture_or_const::<Spectrum>("tex1")?;
     let tex2 = params.get_texture_or_const::<Spectrum>("tex2")?;
@@ -258,14 +258,15 @@ pub fn make_checkerboard_spect(mut params: ParamSet) -> ParamResult<Arc<dyn Text
     Ok(tex)
 }
 
-pub fn make_uv_spect(mut params: ParamSet) -> ParamResult<TextureRef<Spectrum>> {
+pub fn make_uv_spect(mut params: ParamSet, ctx: &Context) -> ParamResult<TextureRef<Spectrum>> {
     let mapping = make_tex_coords_map_2d(&mut params)?;
     let tex = Arc::new(UVTexture::new(mapping));
     Ok(tex)
 }
 
-pub fn make_imagemap_spect(mut params: ParamSet) -> ParamResult<Arc<dyn Texture<Output=Spectrum>>> {
-    let filename = params.get_one("filename")?;
+pub fn make_imagemap_spect(mut params: ParamSet, ctx: &Context) -> ParamResult<Arc<dyn Texture<Output=Spectrum>>> {
+    let filename: String = params.get_one("filename")?;
+    let path = ctx.resolve(filename);
     let wrap_mode = params.get_one("wrap").or_else(|_| Ok("repeat".to_string())).and_then(|s| {
         match s.as_ref() {
             "repeat" => Ok(ImageWrap::Repeat),
@@ -278,7 +279,7 @@ pub fn make_imagemap_spect(mut params: ParamSet) -> ParamResult<Arc<dyn Texture<
     let scale = params.get_one("scale").unwrap_or(1.0);
     let gamma = true; // FIXME: depends on format
     let info = ImageTexInfo::new(
-        filename,
+        path,
         wrap_mode,
         scale,
         gamma
@@ -288,7 +289,7 @@ pub fn make_imagemap_spect(mut params: ParamSet) -> ParamResult<Arc<dyn Texture<
     Ok(tex)
 }
 
-pub fn make_distant_light(mut params: ParamSet) -> ParamResult<DistantLight> {
+pub fn make_distant_light(mut params: ParamSet, ctx: &Context) -> ParamResult<DistantLight> {
     let radiance = params.get_one("L").unwrap_or(Spectrum::uniform(1.0));
     let scale = params.get_one("scale").unwrap_or(Spectrum::uniform(1.0));
     let radiance = radiance * scale;
@@ -297,7 +298,7 @@ pub fn make_distant_light(mut params: ParamSet) -> ParamResult<DistantLight> {
     Ok(DistantLight::from_to(from, to, radiance))
 }
 
-pub fn make_point_light(mut params: ParamSet) -> ParamResult<PointLight> {
+pub fn make_point_light(mut params: ParamSet, ctx: &Context) -> ParamResult<PointLight> {
     let intensity = params.get_one("I").unwrap_or(Spectrum::uniform(1.0));
     let scale = params.get_one("scale").unwrap_or(Spectrum::uniform(1.0));
     let intensity = intensity * scale;
@@ -306,7 +307,7 @@ pub fn make_point_light(mut params: ParamSet) -> ParamResult<PointLight> {
     Ok(PointLight::new(light_to_world, intensity))
 }
 
-pub fn make_infinite_area_light(mut params: ParamSet) -> ParamResult<InfiniteAreaLight> {
+pub fn make_infinite_area_light(mut params: ParamSet, ctx: &Context) -> ParamResult<InfiniteAreaLight> {
     let radiance = params.get_one("L").unwrap_or(Spectrum::uniform(1.0));
     let filename = params.get_one::<String>("mapname");
     let l2w = params.current_transform()?;
@@ -314,7 +315,7 @@ pub fn make_infinite_area_light(mut params: ParamSet) -> ParamResult<InfiniteAre
         |_| InfiniteAreaLight::new_uniform(radiance, l2w),
         |filename| {
             let info = ImageTexInfo::new(
-                filename,
+                ctx.resolve(filename),
                 ImageWrap::Repeat,
                 1.0,
                 false, // TODO: pbrt never gamma corrects here

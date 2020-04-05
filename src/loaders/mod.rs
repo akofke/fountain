@@ -7,6 +7,8 @@ use std::sync::Arc;
 use crate::texture::{Texture, ConstantTexture};
 use crate::material::Material;
 use std::any::type_name;
+use std::path::{PathBuf, Path};
+use std::fs::File;
 
 pub mod pbrt;
 pub mod constructors;
@@ -238,6 +240,26 @@ impl ParamSet {
         self.get_one("reverse_orientation")
     }
 }
+
+pub struct Context {
+    base_path: PathBuf,
+}
+
+impl Context {
+    pub fn new(base_path: PathBuf) -> Self {
+        Context { base_path }
+    }
+
+    pub fn open_relative(&self, path: impl AsRef<Path>) -> std::io::Result<File> {
+        let absolute_path = self.base_path.join(path);
+        File::open(absolute_path)
+    }
+
+    pub fn resolve(&self, path: impl AsRef<Path>) -> PathBuf {
+        self.base_path.join(path)
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

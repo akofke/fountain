@@ -5,7 +5,7 @@ use crate::spectrum::{Spectrum, CoefficientSpectrum, spectrum_into_rgb8, spectru
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use image::io::Reader;
 use image::{DynamicImage, Pixel, GenericImageView, Rgb};
 use std::collections::hash_map::Entry;
@@ -17,7 +17,7 @@ pub mod exr;
 
 #[derive(PartialEq, Eq, Hash)]
 pub struct ImageTexInfo {
-    pub filename: String, // should probably be PathBuf
+    pub filename: PathBuf,
     pub wrap_mode: ImageWrap,
     // FIXME: ugly workaround
     pub scale_float_bits: u32,
@@ -25,10 +25,10 @@ pub struct ImageTexInfo {
 }
 
 impl ImageTexInfo {
-    pub fn new(filename: String, wrap_mode: ImageWrap, scale: Float, gamma: bool) -> Self {
+    pub fn new(filename: impl Into<PathBuf>, wrap_mode: ImageWrap, scale: Float, gamma: bool) -> Self {
         let scale_float_bits = scale.to_bits();
         Self {
-            filename,
+            filename: filename.into(),
             wrap_mode,
             scale_float_bits,
             gamma

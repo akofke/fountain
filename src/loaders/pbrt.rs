@@ -5,7 +5,7 @@ use crate::Float;
 use crate::light::diffuse::DiffuseAreaLightBuilder;
 use pbrt_parser as parser;
 use pbrt_parser::{WorldStmt, TransformStmt, HeaderStmt};
-use crate::loaders::{ParamSet, ParamVal, ParamError};
+use crate::loaders::{ParamSet, ParamVal, ParamError, Context};
 use crate::spectrum::Spectrum;
 use std::collections::HashMap;
 use crate::texture::Texture;
@@ -24,6 +24,7 @@ use crate::sampler::random::RandomSampler;
 use crate::film::Film;
 use cgmath::Deg;
 use std::fmt::{Formatter, Error};
+use std::path::PathBuf;
 
 pub struct PbrtSceneBuilder {
     graphics_state: Vec<GraphicsState>,
@@ -35,6 +36,8 @@ pub struct PbrtSceneBuilder {
     primitives: Vec<Box<dyn Primitive>>,
     meshes: Vec<Arc<TriangleMesh>>,
     lights: Vec<Arc<dyn Light>>,
+
+    ctx: Context,
 }
 
 #[derive(Clone)]
@@ -80,7 +83,7 @@ impl std::error::Error for PbrtEvalError {
 
 impl PbrtSceneBuilder {
 
-    pub fn new() -> Self {
+    pub fn new(base_path: PathBuf) -> Self {
         let state = GraphicsState {
             material: None,
             area_light: None,
@@ -96,7 +99,8 @@ impl PbrtSceneBuilder {
             named_materials: Default::default(),
             primitives: vec![],
             meshes: vec![],
-            lights: vec![]
+            lights: vec![],
+            ctx: Context::new(base_path),
         }
     }
 
@@ -252,7 +256,7 @@ impl PbrtSceneBuilder {
         let graphics_state = self.graphics_state.last_mut().unwrap();
         match name.as_ref() {
             "sphere" => {
-                let shape = make_sphere(params)?;
+                let shape = make_sphere(params, &self.ctx)?;
                 let shape = Arc::new(shape);
                 let light = graphics_state.area_light.clone()
                     .map(|builder| builder.create(shape.clone()));
@@ -266,7 +270,7 @@ impl PbrtSceneBuilder {
             },
 
             "trianglemesh" => {
-                let mesh = make_triangle_mesh(params)?;
+                let mesh = make_triangle_mesh(params, &self.ctx)?;
                 let mesh = Arc::new(mesh);
                 self.meshes.push(mesh.clone());
                 self.primitives.extend(mesh.iter_triangles()
@@ -287,7 +291,7 @@ impl PbrtSceneBuilder {
             },
 
             "plymesh" => {
-                let mesh = make_triangle_mesh_from_ply(params)?;
+                let mesh = make_triangle_mesh_from_ply(params, &self.ctx)?;
                 let mesh = Arc::new(mesh);
                 self.meshes.push(mesh.clone());
                 self.primitives.extend(mesh.iter_triangles()
@@ -317,19 +321,19 @@ impl PbrtSceneBuilder {
     fn material(&mut self, name: &str, params: ParamSet) -> Result<Arc<dyn Material>, PbrtEvalError> {
         let material: Arc<dyn Material> = match name {
             "matte" => {
-                Arc::new(make_matte(params)?)
+                Arc::new(make_matte(params, &self.ctx)?)
             },
             "glass" => {
-                Arc::new(make_glass(params)?)
+                Arc::new(make_glass(params, &self.ctx)?)
             },
             "mirror" => {
-                Arc::new(make_mirror_material(params)?)
+                Arc::new(make_mirror_material(params, &self.ctx)?)
             }
             "metal" => {
-                Arc::new(make_metal_material(params)?)
+                Arc::new(make_metal_material(params, &self.ctx)?)
             },
             "plastic" => {
-                Arc::new(make_plastic_material(params)?)
+                Arc::new(make_plastic_material(params, &self.ctx)?)
             }
             _ => {
                 return Err(PbrtEvalError::UnknownName(name.to_string()))
@@ -345,7 +349,7 @@ impl PbrtSceneBuilder {
     fn area_light(&mut self, name: Arc<str>, params: ParamSet) -> Result<(), PbrtEvalError> {
         match name.as_ref() {
             "diffuse" => {
-                let builder = make_diffuse_area_light(params)?;
+                let builder = make_diffuse_area_light(params, &self.ctx)?;
                 self.graphics_state_mut().area_light = Some(builder);
                 Ok(())
             },
@@ -356,19 +360,19 @@ impl PbrtSceneBuilder {
     fn texture(&mut self, name: &str, ty: &str, class: &str, params: ParamSet) -> Result<(), PbrtEvalError> {
         match (ty, class) {
             ("spectrum", "checkerboard") | ("color", "checkerboard") => {
-                let tex = make_checkerboard_spect(params)?;
+                let tex = make_checkerboard_spect(params, &self.ctx)?;
                 self.add_spect_tex(name.to_string(), tex);
             },
             ("spectrum", "uv") | ("color", "uv") => {
-                let tex = make_uv_spect(params)?;
+                let tex = make_uv_spect(params, &self.ctx)?;
                 self.add_spect_tex(name.to_string(), tex);
             },
             ("float", "checkerboard") => {
-                let tex = make_checkerboard_float(params)?;
+                let tex = make_checkerboard_float(params, &self.ctx)?;
                 self.add_float_tex(name.to_string(), tex);
             },
             ("spectrum", "imagemap") | ("color", "imagemap") => {
-                let tex = make_imagemap_spect(params)?;
+                let tex = make_imagemap_spect(params, &self.ctx)?;
                 self.add_spect_tex(name.to_string(), tex);
             }
             _ => {
@@ -381,15 +385,15 @@ impl PbrtSceneBuilder {
     fn light_source(&mut self, name: &str, params: ParamSet) -> Result<(), PbrtEvalError> {
         match name {
             "point" => {
-                let light = make_point_light(params)?;
+                let light = make_point_light(params, &self.ctx)?;
                 self.lights.push(Arc::new(light));
             },
             "distant" => {
-                let light = make_distant_light(params)?;
+                let light = make_distant_light(params, &self.ctx)?;
                 self.lights.push(Arc::new(light));
             },
             "infinite" => {
-                let light = make_infinite_area_light(params)?;
+                let light = make_infinite_area_light(params, &self.ctx)?;
                 self.lights.push(Arc::new(light));
             }
             _ => return Err(PbrtEvalError::UnknownName(name.to_string())),
