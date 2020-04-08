@@ -192,7 +192,7 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
     }
 
     pub fn render_with_pool(&mut self, scene: &Scene, film: &Film<BoxFilter>, sampler: impl Sampler, pool: &rayon::ThreadPool) {
-        pool.install(|| self.render(scene, film, sampler))
+        pool.install(|| self.render_parallel(scene, film, sampler))
     }
 
     pub fn iter_tiles(&self, sample_bounds: Bounds2i, sampler: impl Sampler) -> impl Iterator<Item=(Bounds2i, impl Sampler)> {

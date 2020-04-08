@@ -14,7 +14,7 @@ partition = "0.1.1"
 cgmath = "0.17.0"
 smallvec = "1.2.0"
 parking_lot = "0.8.0"
-bitflags = "1.1.0"
+bitflags = "1.2.1"
 arrayvec = "0.4.10"
 image = "0.23.0"
 approx = "0.3.2"
@@ -28,8 +28,10 @@ resize = "0.4.0"
 exr = "0.7.3"
 ply-rs = "0.1.2"
 
+clap = { git = "https://github.com/clap-rs/clap/" } # TODO separate deps for bins
+
 [dev-dependencies]
-criterion = "0.2.11"
+criterion = "0.3.1"
 pretty_assertions = "0.6.1"
 
 [profile.dev]

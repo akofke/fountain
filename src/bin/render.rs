@@ -9,12 +9,23 @@ use raytracer::integrator::whitted::WhittedIntegrator;
 use raytracer::integrator::path::PathIntegrator;
 use std::path::PathBuf;
 
-fn main() -> anyhow::Result<()> {
-    let path = args().nth(1).unwrap();
+use clap::Clap;
 
-    let path = PathBuf::from(path);
-    let base_path = path.parent().unwrap().to_path_buf();
-    let parsed = pbrt_parser::PbrtParser::parse_with_includes(&path)?;
+#[derive(Clap)]
+#[clap(version = "0.0.1")]
+struct Opts {
+    scene_file: PathBuf,
+
+    #[clap(short = "t", long = "threads", default_value = "0")]
+    threads: usize,
+}
+
+fn main() -> anyhow::Result<()> {
+    let opts: Opts = Opts::parse();
+
+    let base_path = opts.scene_file.parent().unwrap().to_path_buf();
+
+    let parsed = pbrt_parser::PbrtParser::parse_with_includes(&opts.scene_file)?;
 
     let mut header = PbrtHeader::new();
     for stmt in parsed.header {
@@ -22,6 +33,7 @@ fn main() -> anyhow::Result<()> {
     }
     let filename = header.film_params.get_one("filename").unwrap_or("render.exr".to_string());
     assert!(filename.contains(".exr"));
+
 
     let mut scene_builder = PbrtSceneBuilder::new(base_path);
     for stmt in parsed.world {
@@ -48,9 +60,11 @@ fn main() -> anyhow::Result<()> {
     };
 
     dbg!(&scene);
-    let parallel = true;
-    if parallel {
-        integrator.render_parallel(&scene, &film, sampler);
+    if opts.threads != 1 {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(opts.threads)
+            .build()?;
+        integrator.render_with_pool(&scene, &film, sampler, &pool);
     } else {
         integrator.render(&scene, &film, sampler);
     }
