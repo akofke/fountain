@@ -22,16 +22,18 @@ pub struct ImageTexInfo {
     // FIXME: ugly workaround
     pub scale_float_bits: u32,
     pub gamma: bool,
+    pub flip_y: bool,
 }
 
 impl ImageTexInfo {
-    pub fn new(filename: impl Into<PathBuf>, wrap_mode: ImageWrap, scale: Float, gamma: bool) -> Self {
+    pub fn new(filename: impl Into<PathBuf>, wrap_mode: ImageWrap, scale: Float, gamma: bool, flip_y: bool) -> Self {
         let scale_float_bits = scale.to_bits();
         Self {
             filename: filename.into(),
             wrap_mode,
             scale_float_bits,
-            gamma
+            gamma,
+            flip_y
         }
     }
 
@@ -69,6 +71,16 @@ pub fn load_mipmap(info: &ImageTexInfo) -> anyhow::Result<MIPMap<Spectrum>> {
             *s
         } * info.scale()
     });
+
+    if info.flip_y {
+        for y in 0..dims.1 / 2 {
+            for x in 0..dims.0 {
+                let idx1 = y * dims.0 + x;
+                let idx2 = (dims.1 - 1 - y) * dims.0 + x;
+                image.swap(idx1, idx2);
+            }
+        }
+    }
 
     let mipmap = MIPMap::new(
         (dims.0 as usize, dims.1 as usize),

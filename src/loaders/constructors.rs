@@ -282,7 +282,8 @@ pub fn make_imagemap_spect(mut params: ParamSet, ctx: &Context) -> ParamResult<A
         path,
         wrap_mode,
         scale,
-        gamma
+        gamma,
+        true
     );
     let mipmap = get_mipmap(info).unwrap(); // FIXME: propagate error
     let tex = Arc::new(ImageTexture::new(mapping, mipmap));
@@ -318,7 +319,8 @@ pub fn make_infinite_area_light(mut params: ParamSet, ctx: &Context) -> ParamRes
                 ctx.resolve(filename),
                 ImageWrap::Repeat,
                 1.0,
-                false, // TODO: pbrt never gamma corrects here
+                false, // TODO: pbrt never gamma corrects here,
+                false
             );
             let mipmap = get_mipmap(info).unwrap();
             InfiniteAreaLight::new_envmap(mipmap, l2w)
