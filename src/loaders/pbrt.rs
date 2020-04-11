@@ -84,8 +84,10 @@ impl std::error::Error for PbrtEvalError {
 impl PbrtSceneBuilder {
 
     pub fn new(base_path: PathBuf) -> Self {
+        let ctx = Context::new(base_path);
+        let default_material = make_matte(ParamSet::default(), &ctx).unwrap();
         let state = GraphicsState {
-            material: None,
+            material: Some(Arc::new(default_material)),
             area_light: None,
             rev_orientation: false,
         };
@@ -100,7 +102,7 @@ impl PbrtSceneBuilder {
             primitives: vec![],
             meshes: vec![],
             lights: vec![],
-            ctx: Context::new(base_path),
+            ctx,
         }
     }
 

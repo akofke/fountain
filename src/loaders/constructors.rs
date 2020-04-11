@@ -127,7 +127,7 @@ pub fn make_triangle_mesh_from_ply(mut params: ParamSet, ctx: &Context) -> Param
 
     let tex_coords: Option<Vec<Point2f>> = plyfile.payload["vertex"].iter()
         .map(|el| {
-            match (&el.get("v"), &el.get("v")) {
+            match (&el.get("u"), &el.get("v")) {
                 (Some(Property::Float(u)), Some(Property::Float(v))) => {
                     Some(Point2f::new(*u, *v))
                 },
@@ -162,7 +162,7 @@ pub fn make_triangle_mesh_from_ply(mut params: ParamSet, ctx: &Context) -> Param
 }
 
 pub fn make_matte(mut params: ParamSet, ctx: &Context) -> ParamResult<MatteMaterial> {
-    let diffuse = params.get_texture_or_const("Kd")?;
+    let diffuse = params.get_texture_or_default("Kd", Spectrum::uniform(0.5))?;
     let sigma = params.get_texture_or_default("sigma", 0.0)?;
     Ok(MatteMaterial::new(diffuse, sigma))
 }
