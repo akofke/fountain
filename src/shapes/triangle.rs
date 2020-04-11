@@ -326,6 +326,11 @@ impl Shape for Triangle {
             diff_geom
         );
 
+        if self.flip_normals() {
+            isect.hit.n *= -1.0;
+            isect.shading_n *= -1.0;
+        }
+
         if self.mesh.normals.is_some() || self.mesh.tangents.is_some() {
             // compute shading normal
             let ns = if let Some(normals) = &self.mesh.normals {
@@ -382,9 +387,6 @@ impl Shape for Triangle {
             isect.shading_geom = shading_geom;
 
             isect.shading_n = ns;
-            if self.flip_normals() {
-                isect.shading_n = -isect.shading_n;
-            }
 
             // TODO: clean up orientation
             isect.hit.n = Normal3(faceforward(isect.hit.n.0, isect.shading_n.0));
@@ -397,10 +399,15 @@ impl Shape for Triangle {
         let [p0, p1, p2] = self.get_vertices_as_vectors();
         let sample_p = b[0] * p0 + b[1] * p1 + (1.0 - b[0] - b[1]) * p2;
 
+        let n = Normal3((p1 - p0).cross(p2 - p0).normalize());
+
         let sample_n = if let Some([n0, n1, n2]) = self.get_normals() {
-            Normal3((b[0] * n0 + b[1] * n1 + (1.0 - b[0] - b[1]) * n2).normalize())
+            let ns = Normal3((b[0] * n0 + b[1] * n1 + (1.0 - b[0] - b[1]) * n2).normalize());
+            faceforward(n.0, ns.0).into()
+        } else if self.flip_normals() {
+            n * -1.0
         } else {
-            Normal3((p1 - p0).cross(p2 - p0).normalize())
+            n
         };
 
         let p_abs_sum = (b[0] * p0).abs() + (b[1] * p1).abs() + ((1.0 - b[0] - b[1]) * p2).abs();
