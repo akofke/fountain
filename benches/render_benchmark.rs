@@ -1,35 +1,49 @@
-use criterion::{Criterion, criterion_group, criterion_main, BatchSize};
-use raytracer::renderer_old::Renderer;
-use raytracer::scene::Scene;
-use raytracer::camera::Camera;
-use raytracer::camera::Lens;
-use raytracer::geom::Sphere;
-use raytracer::material::*;
-use raytracer::{Vec3f, v3};
-use raytracer::cover_example_scene;
-use std::time::Duration;
+use criterion::{Criterion, criterion_main, criterion_group, Throughput};
+use raytracer::loaders::constructors::make_triangle_mesh_from_ply;
+use std::path::PathBuf;
+use raytracer::loaders::pbrt::{PbrtHeader, PbrtSceneBuilder};
+use raytracer::sampler::random::RandomSampler;
+use raytracer::Point2i;
+use rand::Rng;
+use raytracer::sampler::Sampler;
 
 fn bench(c: &mut Criterion) {
-    c.bench_function("cover_scene_time_per_pixel", |b| {
-        let w = 500;
-        let h = 250;
-        let r = get_renderer(w, h);
-        let mut pixels = r.iter_pixels(w, h);
+    let path = PathBuf::from("/Users/alex/scenes/pbrt-v3-scenes/ganesha/ganesha.pbrt");
+    let base_path = path.parent().unwrap().to_path_buf();
+    let parsed = pbrt_parser::PbrtParser::parse_with_includes(&path).unwrap();
+    let mut header = PbrtHeader::new();
+    for stmt in parsed.header {
+        header.exec_stmt(stmt).unwrap();
+    }
+
+    let mut scene_builder = PbrtSceneBuilder::new(base_path);
+    for stmt in parsed.world {
+        scene_builder.exec_stmt(stmt).unwrap();
+    }
+
+    let scene = scene_builder.create_scene();
+    let camera = header.make_camera().unwrap();
+
+    let mut sampler = RandomSampler::new_with_seed(512, 1);
+    let mut rng = rand::thread_rng();
+    let full_res = header.make_film().unwrap().full_resolution;
+
+    let mut group = c.benchmark_group("Ganesha");
+    group.throughput(Throughput::Elements(1));
+    group.bench_function("scene intersect", |b| {
         b.iter(|| {
-            pixels.next()
+            let pixel = Point2i::new(rng.gen_range(0, full_res.x), rng.gen_range(0, full_res.y));
+            sampler.start_pixel(pixel);
+            let camera_sample = sampler.get_camera_sample(pixel);
+            let (wt, mut ray) = camera.generate_ray(camera_sample);
+            scene.intersect(&mut ray);
         })
     });
+    group.finish();
+
+
 }
 
-criterion_group!{
-    name = benches;
-    config = Criterion::default().measurement_time(Duration::from_secs(10));
-    targets = bench
-}
+criterion_group!(benches, bench);
 criterion_main!(benches);
 
-fn get_renderer(w: usize, h: usize) -> Renderer {
-    let aspect = w as f32 / h as f32;
-    let (s, c) = cover_example_scene(aspect);
-    Renderer::new(s, c)
-}

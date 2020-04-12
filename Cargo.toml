@@ -43,8 +43,9 @@ debug=true
 #codegen-units=1
 
 [profile.bench]
-lto=true
-codegen-units=1
+debug=true
+#lto=true
+#codegen-units=1
 
 [[bench]]
 name = "render_benchmark"
