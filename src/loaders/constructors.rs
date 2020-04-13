@@ -96,9 +96,13 @@ pub fn make_triangle_mesh_from_ply(mut params: ParamSet, ctx: &Context) -> Param
     use ply_rs as ply;
     use ply::ply::Property;
 
+    let start = std::time::Instant::now();
+    let filename: String = params.get_one("filename")?;
+    let span = tracing::debug_span!("load_ply_file", filename = %filename);
+    let _enter = span.enter();
+
     let tf = params.current_transform()?;
     let rev = params.reverse_orientation()?;
-    let filename: String = params.get_one("filename")?;
     let mut f = ctx.open_relative(filename).unwrap();
     let parser = ply::parser::Parser::<ply::ply::DefaultElement>::new();
     let plyfile = parser.read_ply(&mut f).unwrap();
@@ -158,6 +162,8 @@ pub fn make_triangle_mesh_from_ply(mut params: ParamSet, ctx: &Context) -> Param
         tex_coords,
         rev
     );
+    let elapsed = start.elapsed().as_millis();
+    tracing::debug!("Loaded in {} ms", elapsed);
     Ok(mesh)
 }
 

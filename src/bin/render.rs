@@ -18,10 +18,17 @@ struct Opts {
 
     #[clap(short = "t", long = "threads", default_value = "0")]
     threads: usize,
+
+    #[clap(short = "o", long = "output")]
+    image_name: Option<String>,
 }
 
 fn main() -> anyhow::Result<()> {
     let opts: Opts = Opts::parse();
+
+    let subscriber = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .init();
 
     let base_path = opts.scene_file.parent().unwrap().to_path_buf();
 
@@ -31,7 +38,9 @@ fn main() -> anyhow::Result<()> {
     for stmt in parsed.header {
         header.exec_stmt(stmt)?;
     }
-    let filename = header.film_params.get_one("filename").unwrap_or("render.exr".to_string());
+    let filename = opts.image_name
+        .or_else(|| header.film_params.get_one("filename").ok())
+        .unwrap_or("render.exr".to_string());
     assert!(filename.contains(".exr"));
 
 
