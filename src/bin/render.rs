@@ -10,6 +10,7 @@ use raytracer::integrator::path::PathIntegrator;
 use std::path::PathBuf;
 
 use clap::Clap;
+use std::time::Instant;
 
 #[derive(Clap)]
 #[clap(version = "0.0.1")]
@@ -69,6 +70,8 @@ fn main() -> anyhow::Result<()> {
     };
 
     dbg!(&scene);
+    tracing::info!(?scene, "Starting integration");
+    let start = Instant::now();
     if opts.threads != 1 {
         let pool = rayon::ThreadPoolBuilder::new()
             .num_threads(opts.threads)
@@ -77,6 +80,7 @@ fn main() -> anyhow::Result<()> {
     } else {
         integrator.render(&scene, &film, sampler);
     }
+    tracing::info!("Completed rendering in {} s", start.elapsed().as_secs_f64());
 
     let (img, (w, h)) = film.into_spectrum_buffer();
     let mut file = File::create(filename)?;

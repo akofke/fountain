@@ -473,7 +473,12 @@ impl PbrtHeader {
                 let sampler = RandomSampler::new_with_seed(spp as usize, 0);
                 Ok(sampler)
             },
-            _ => Err(PbrtEvalError::UnknownName(name))
+            name @ _ => {
+                tracing::warn!("Unsupported sampler {}, falling back to random", name);
+                let sampler = RandomSampler::new_with_seed(spp as usize, 0);
+                Ok(sampler)
+            }
+            // _ => Err(PbrtEvalError::UnknownName(name))
         }
     }
 

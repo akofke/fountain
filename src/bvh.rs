@@ -7,6 +7,7 @@ use crate::{Ray, SurfaceInteraction};
 use crate::geometry::bounds::Bounds3f;
 use crate::Point3f;
 use crate::primitive::Primitive;
+use std::time::Instant;
 
 #[derive(Copy, Clone)]
 pub enum SplitMethod {
@@ -22,8 +23,11 @@ pub struct BVH<P: AsRef<dyn Primitive> = Box<dyn Primitive>> {
 }
 
 impl<P: AsRef<dyn Primitive>> BVH<P> {
+    #[tracing::instrument(skip(prims))]
     pub fn build(mut prims: Vec<P>) -> Self {
         // TODO: figure out prims type. Rc or Box?
+
+        let start = Instant::now();
 
         if prims.is_empty() {
             return BVH { prims, bounds: Bounds3f::empty(), nodes: Vec::new() }
@@ -51,6 +55,7 @@ impl<P: AsRef<dyn Primitive>> BVH<P> {
 
         let tree_len = Self::flatten_tree(&mut flat_nodes, root);
         assert_eq!(flat_nodes.len(), tree_len);
+        tracing::info!("BVH built in {} ms", start.elapsed().as_millis());
         BVH {
             prims,
             bounds: world_bound,

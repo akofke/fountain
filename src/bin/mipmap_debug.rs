@@ -8,7 +8,7 @@ use raytracer::spectrum::Spectrum;
 fn main() -> anyhow::Result<()> {
     let path = std::env::args().nth(1).unwrap();
     let fname = Path::new(&path).file_stem().unwrap().to_str().unwrap();
-    let info = ImageTexInfo::new(path.clone(), ImageWrap::Repeat, 1.0, true);
+    let info = ImageTexInfo::new(path.clone(), ImageWrap::Repeat, 1.0, true, false);
     let mipmap = imageio::get_mipmap(info)?;
 
     for blocked_img in mipmap.pyramid() {
