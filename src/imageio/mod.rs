@@ -1,7 +1,7 @@
 use crate::mipmap::{ImageWrap, MIPMap};
 use crate::Float;
 use std::sync::Arc;
-use crate::spectrum::{Spectrum, CoefficientSpectrum, spectrum_into_rgb8, spectrum_from_rgb8};
+use crate::spectrum::{Spectrum};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::collections::HashMap;
@@ -101,12 +101,12 @@ pub fn load_image(path: impl AsRef<Path>) -> anyhow::Result<(Vec<Spectrum>, (usi
     let image: Vec<Spectrum> = match image {
         DynamicImage::ImageRgb8(img) => {
             img.pixels().map(|p| {
-                spectrum_from_rgb8(p.to_rgb().0)
+                Spectrum::from_rgb8(p.to_rgb().0)
             }).collect()
         },
         DynamicImage::ImageRgba8(img) => {
             img.pixels().map(|p| {
-                spectrum_from_rgb8(p.to_rgb().0)
+                Spectrum::from_rgb8(p.to_rgb().0)
             }).collect()
         },
         _ => unimplemented!()
@@ -117,7 +117,7 @@ pub fn load_image(path: impl AsRef<Path>) -> anyhow::Result<(Vec<Spectrum>, (usi
 pub fn spectrum_to_image(img: &[Spectrum], (w, h): (usize, usize)) -> image::RgbImage {
     let rgb_buf: Vec<u8> = img.iter()
         .flat_map(|s| {
-            let rgb = spectrum_into_rgb8(s.map(|v| gamma_correct(v)));
+            let rgb = s.map(gamma_correct).to_rgb8();
             ArrayVec::from(rgb).into_iter() // TODO
         })
         .collect();
