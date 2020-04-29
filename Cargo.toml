@@ -37,9 +37,6 @@ tracing-subscriber = "0.2.4"
 criterion = "0.3.1"
 pretty_assertions = "0.6.1"
 
-[profile.dev]
-incremental=false  # needed to avoid const generics ICE
-
 [profile.release]
 debug=true
 #lto=true
