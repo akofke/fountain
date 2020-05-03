@@ -21,6 +21,7 @@ use crate::material::plastic::PlasticMaterial;
 use crate::material::mirror::MirrorMaterial;
 use crate::texture::uv::UVTexture;
 use std::path::PathBuf;
+use plydough::PropertyData;
 
 type ParamResult<T> = Result<T, ConstructError>;
 
@@ -93,8 +94,9 @@ pub fn make_triangle_mesh(mut params: ParamSet, ctx: &Context) -> ParamResult<Tr
 }
 
 pub fn make_triangle_mesh_from_ply(mut params: ParamSet, ctx: &Context) -> ParamResult<TriangleMesh> {
-    use ply_rs as ply;
-    use ply::ply::Property;
+    use plydough;
+    use plydough::PropertyData::*;
+    use plydough::ElementData;
 
     let start = std::time::Instant::now();
     let filename: String = params.get_one("filename")?;
@@ -103,55 +105,67 @@ pub fn make_triangle_mesh_from_ply(mut params: ParamSet, ctx: &Context) -> Param
 
     let tf = params.current_transform()?;
     let rev = params.reverse_orientation()?;
-    let mut f = ctx.open_relative(filename).unwrap();
-    let parser = ply::parser::Parser::<ply::ply::DefaultElement>::new();
-    let plyfile = parser.read_ply(&mut f).unwrap();
+    let path = ctx.resolve(filename);
+    let bytes = std::fs::read(path).unwrap();
+    let ply_data = plydough::PlyData::parse_complete(&bytes).unwrap(); // TODO: errors...
 
-    let vertices: Vec<Point3f> = plyfile.payload["vertex"].iter()
-        .map(|el| {
-            match (&el["x"], &el["y"], &el["z"]) {
-                (Property::Float(x), Property::Float(y), Property::Float(z)) => {
-                    Point3f::new(*x, *y, *z)
+
+    let (vertices, normals, tex_coords) = match ply_data.elements.get("vertex") {
+        Some(ElementData{ properties: props}) => {
+            let vertices = match (props.get("x"), props.get("y"), props.get("z")) {
+                (Some(Float(x)), Some(Float(y)), Some(Float(z))) => {
+                    x.iter().zip(y.iter()).zip(z.iter())
+                        .map(|((&x, &y), &z)| Point3f::new(x, y, z))
+                        .collect()
                 },
-                _ => panic!(),
+                _ => panic!("Ply file is missing vertex coordinates")
+            };
+
+            let normals = match (props.get("nx"), props.get("ny"), props.get("nz")) {
+                (Some(Float(x)), Some(Float(y)), Some(Float(z))) => {
+                    x.iter().zip(y.iter()).zip(z.iter())
+                        .map(|((&x, &y), &z)| Normal3(Vec3f::new(x, y, z)))
+                        .collect::<Vec<_>>()
+                        .into()
+                },
+                _ => None
+            };
+
+            let tex_coords = match (props.get("u"), props.get("v")) {
+                (Some(Float(u)), Some(Float(v))) => {
+                    u.iter().zip(v.iter())
+                        .map(|(&u, &v)| Point2f::new(u, v))
+                        .collect::<Vec<_>>()
+                        .into()
+                },
+                _ => None
+            };
+            (vertices, normals, tex_coords)
+        }
+
+        _ => panic!("Ply file is missing vertices")
+    };
+
+    let indices = ply_data
+        .elements
+        .get("face")
+        .and_then(|el| el.properties.get("vertex_indices"))
+        .map(|verts| {
+            match verts {
+                ListInt(v) => {
+                    v.iter()
+                        .flat_map(|face| {
+                            if face.len() != 3 {
+                                panic!("Face with supported vertex count {} found", face.len())
+                            }
+                            face.iter().map(|i| *i as u32)
+                        })
+                        .collect()
+                },
+                _ => panic!("Unsupported vertex indices type")
             }
         })
-        .collect();
-
-    let normals: Option<Vec<Normal3>> = plyfile.payload["vertex"].iter()
-        .map(|el| {
-            match (&el.get("nx"), &el.get("ny"), &el.get("nz")) {
-                (Some(Property::Float(x)), Some(Property::Float(y)), Some(Property::Float(z))) => {
-                    Some(Normal3(Vec3f::new(*x, *y, *z)))
-                },
-                _ => None,
-            }
-        })
-        .collect();
-
-    let tex_coords: Option<Vec<Point2f>> = plyfile.payload["vertex"].iter()
-        .map(|el| {
-            match (&el.get("u"), &el.get("v")) {
-                (Some(Property::Float(u)), Some(Property::Float(v))) => {
-                    Some(Point2f::new(*u, *v))
-                },
-                _ => None,
-            }
-        })
-        .collect();
-
-    let indices: Vec<u32> = plyfile.payload["face"].iter()
-        .flat_map(|el| {
-            match &el["vertex_indices"] {
-                Property::ListInt(v) if v.len() == 3 => {
-                    v
-                },
-                Property::ListInt(v) => panic!("Face with unsupported vertex count {} found", v.len()),
-                p @ _ => panic!("{:?}", p)
-            }
-        })
-        .map(|i| *i as u32)
-        .collect();
+        .expect("Ply file is missing vertex indices");
 
     let mesh = TriangleMesh::new(
         tf,

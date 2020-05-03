@@ -12,7 +12,7 @@ rayon = "1.0.3"
 bumpalo = "2.4.3"
 partition = "0.1.1"
 cgmath = "0.17.0"
-smallvec = "1.2.0"
+smallvec = "1.4.0"
 parking_lot = "0.8.0"
 bitflags = "1.2.1"
 arrayvec = "0.4.10"
@@ -26,7 +26,7 @@ ndarray = "0.13.0"
 pbrt-parser = { path = "../pbrt-parser" }
 resize = "0.4.0"
 exr = "0.7.3"
-ply-rs = "0.1.2"
+plydough = { git = "https://github.com/akofke/plydough" }
 
 clap = { git = "https://github.com/clap-rs/clap/" } # TODO separate deps for bins
 
