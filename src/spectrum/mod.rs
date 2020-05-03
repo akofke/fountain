@@ -2,6 +2,7 @@ use std::mem::MaybeUninit;
 
 use crate::Float;
 use approx::AbsDiffEq;
+use std::ops::Add;
 
 pub fn array<F: FnMut(usize) -> Float, const N: usize>(mut init: F) -> [Float; N] {
     let mut arr = MaybeUninit::<[Float; N]>::uninit();
@@ -192,7 +193,7 @@ impl<const N: usize> From<CoefficientSpectrum<{N}>> for [Float; N] {
 
 impl<const N: usize> std::iter::Sum for CoefficientSpectrum<{N}> {
     fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
-        iter.fold(Self::uniform(0.0), std::ops::Add::add)
+        iter.fold(Self::uniform(0.0), Add::add)
     }
 }
 
