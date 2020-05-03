@@ -17,7 +17,6 @@
 #[macro_use] pub mod macros; // must stay at the top
 pub mod camera;
 pub mod math;
-pub mod fast_rand;
 pub mod image;
 pub mod scene;
 pub mod bvh;
@@ -39,7 +38,6 @@ pub mod material;
 pub mod texture;
 pub mod sampling;
 pub mod light;
-pub mod pbrt_loader;
 pub mod loaders;
 pub mod id_arena;
 pub mod mipmap;
