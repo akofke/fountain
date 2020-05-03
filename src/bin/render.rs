@@ -22,6 +22,9 @@ struct Opts {
 
     #[clap(short = "o", long = "output")]
     image_name: Option<String>,
+
+    #[clap(long = "samples")]
+    samples: Option<usize>
 }
 
 fn main() -> anyhow::Result<()> {
@@ -53,7 +56,7 @@ fn main() -> anyhow::Result<()> {
     let scene = scene_builder.create_scene();
 
     let camera = header.make_camera()?;
-    let sampler = header.make_sampler()?;
+    let sampler = header.make_sampler(opts.samples)?;
     let film = header.make_film()?;
 
     let mut integrator = SamplerIntegrator {

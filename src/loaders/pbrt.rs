@@ -465,17 +465,19 @@ impl PbrtHeader {
         }
     }
 
-    pub fn make_sampler(&mut self) -> Result<RandomSampler, PbrtEvalError> {
+    pub fn make_sampler(&mut self, override_samples: Option<usize>) -> Result<RandomSampler, PbrtEvalError> {
         let name: String = self.sampler_params.get_one("name")?;
-        let spp = self.sampler_params.get_one("pixelsamples").unwrap_or(16);
+        let spp = override_samples.unwrap_or_else(|| {
+            self.sampler_params.get_one("pixelsamples").unwrap_or(16) as usize
+        });
         match name.as_ref() {
             "random" => {
-                let sampler = RandomSampler::new_with_seed(spp as usize, 0);
+                let sampler = RandomSampler::new_with_seed(spp, 0);
                 Ok(sampler)
             },
             name @ _ => {
                 tracing::warn!("Unsupported sampler {}, falling back to random", name);
-                let sampler = RandomSampler::new_with_seed(spp as usize, 0);
+                let sampler = RandomSampler::new_with_seed(spp, 0);
                 Ok(sampler)
             }
             // _ => Err(PbrtEvalError::UnknownName(name))
