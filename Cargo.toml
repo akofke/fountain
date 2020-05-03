@@ -50,3 +50,7 @@ debug=true
 [[bench]]
 name = "render_benchmark"
 harness = false
+
+[[bench]]
+name = "bench_blocked_array"
+harness = false

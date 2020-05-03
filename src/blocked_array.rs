@@ -116,7 +116,7 @@ impl<T: Default + Copy, const LOG_BLOCK_SIZE: usize> BlockedArray<T, {LOG_BLOCK_
     }
 }
 
-impl<T: Copy> BlockedArray<T, {2}> {
+impl<T: Copy> BlockedArray<T, 2> {
     pub fn with_default_block_size(data: &[T], u_size: usize, v_size: usize) -> Self {
         Self::new(data, u_size, v_size)
     }
