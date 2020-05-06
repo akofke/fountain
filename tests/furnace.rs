@@ -70,7 +70,7 @@ fn do_render(integrator: impl IntegratorRadiance, fname: impl AsRef<Path>) -> an
     let filename = header.film_params.get_one("filename").unwrap_or("render.exr".to_string());
     assert!(filename.contains(".exr"));
 
-    let mut scene_builder = PbrtSceneBuilder::new();
+    let mut scene_builder = PbrtSceneBuilder::new(env!("CARGO_MANIFEST_DIR").into());
     for stmt in parsed.world {
         scene_builder.exec_stmt(stmt)?;
     }
@@ -78,7 +78,7 @@ fn do_render(integrator: impl IntegratorRadiance, fname: impl AsRef<Path>) -> an
     let scene = scene_builder.create_scene();
 
     let camera = header.make_camera()?;
-    let sampler = header.make_sampler()?;
+    let sampler = header.make_sampler(None)?;
     let film = header.make_film()?;
 
     let mut integrator = SamplerIntegrator {

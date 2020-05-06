@@ -260,7 +260,7 @@ mod test {
     fn test_bounds_iter() {
         let bounds = Bounds2i::with_bounds(Point2i::new(-1, -2), Point2i::new(1, 1));
         let points: Vec<_> = bounds.iter_points().collect();
-        let expected = vec![(-1, -2), (-1, -1), (-1, 0), (0, -2), (0, -1), (0, 0)];
+        let expected = vec![(-1, -2), (0, -2), (-1, -1), (0, -1), (-1, 0), (0, 0)];
         assert_eq!(expected, points);
     }
 
@@ -270,8 +270,8 @@ mod test {
 
         let single_tiles = vec![
             Bounds2i::with_bounds((0, 0).into(), (1, 1).into()),
-            Bounds2i::with_bounds((0, 1).into(), (1, 2).into()),
             Bounds2i::with_bounds((1, 0).into(), (2, 1).into()),
+            Bounds2i::with_bounds((0, 1).into(), (1, 2).into()),
             Bounds2i::with_bounds((1, 1).into(), (2, 2).into()),
         ];
 

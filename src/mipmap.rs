@@ -343,20 +343,21 @@ impl<T: Texel> MIPMap<T> {
 mod tests {
     use super::*;
     use ndarray::prelude::*;
-    use approx::assert_ulps_eq;
+    use approx::{assert_ulps_eq, assert_relative_eq};
+    use crate::imageio::{get_mipmap, ImageTexInfo, load_image};
 
     #[test]
     fn test_mipmap_creation() {
         let img = vec![Spectrum::from(0.5); 256];
         let dims = (16, 16);
-        let mipmap = MIPMap::new(dims, img, ImageWrap::Repeat);
+        let _mipmap = MIPMap::new(dims, img, ImageWrap::Repeat);
     }
 
     #[test]
     fn test_mipmap_creation_non_pow2() {
         let img = vec![Spectrum::from(0.5); 200];
         let dims = (20, 10);
-        let mipmap = MIPMap::new(dims, img, ImageWrap::Repeat);
+        let _mipmap = MIPMap::new(dims, img, ImageWrap::Repeat);
     }
 
     #[test]
@@ -377,5 +378,30 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    #[ignore]
+    fn test_mipmap_image_sample() -> anyhow::Result<()> {
+        let info = ImageTexInfo::new(
+            "uvgrid.exr".to_string(),
+            ImageWrap::Repeat,
+            1.0,
+            false,
+            false,
+        );
+        let mipmap = get_mipmap(info)?;
+        let (image, (w, h)) = load_image("uvgrid.exr")?;
+
+        for i in 0..w {
+            for j in 0..h {
+                let s = i as Float / w as Float;
+                let t = j as Float / h as Float;
+                let filtered = mipmap.lookup_trilinear_width(Point2f::new(s, t), 0.0);
+                let expected = image[j * w + i];
+                assert_relative_eq!(filtered, expected, max_relative = 0.01)
+            }
+        }
+        Ok(())
     }
 }
