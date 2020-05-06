@@ -39,7 +39,7 @@ pub trait Shape: Sync + Send {
     /// surface area.
     fn sample(&self, u: Point2f) -> SurfaceHit;
 
-    fn pdf(&self, hit: &SurfaceHit) -> Float {
+    fn pdf(&self, _hit: &SurfaceHit) -> Float {
         1.0 / self.area()
     }
 
@@ -47,7 +47,7 @@ pub trait Shape: Sync + Send {
     /// being integrated over. Uses a density with respect to solid angle from the reference point.
     ///
     /// The default implementation ignores the reference point and calls `sample`.
-    fn sample_from_ref(&self, reference: &SurfaceHit, u: Point2f) -> SurfaceHit {
+    fn sample_from_ref(&self, _reference: &SurfaceHit, u: Point2f) -> SurfaceHit {
         self.sample(u)
     }
 

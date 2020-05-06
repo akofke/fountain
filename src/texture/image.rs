@@ -1,6 +1,5 @@
-use crate::mipmap::{Texel, MIPMap, ImageWrap};
+use crate::mipmap::{Texel, MIPMap};
 use crate::texture::mapping::{TexCoordsMap2D, TexCoords};
-use crate::Float;
 use std::sync::Arc;
 use crate::texture::Texture;
 use crate::spectrum::Spectrum;

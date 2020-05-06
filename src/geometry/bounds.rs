@@ -6,7 +6,6 @@ use crate::geometry::Ray;
 use std::mem::swap;
 use crate::err_float::gamma;
 use arrayvec::ArrayVec;
-use cgmath::num_traits::real::Real;
 
 pub type Bounds2f = Bounds2<f32>;
 pub type Bounds2i = Bounds2<i32>;
@@ -233,7 +232,7 @@ impl Bounds3<Float> {
         Some((t0, t1))
     }
 
-    pub fn intersect_test_fast(&self, ray: &Ray) -> Option<(Float, Float)> {
+    pub fn intersect_test_fast(&self, _ray: &Ray) -> Option<(Float, Float)> {
         unimplemented!();
     }
 
@@ -251,7 +250,6 @@ impl<S: Scalar> std::fmt::Debug for Bounds3<S>{
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::geometry::bounds::Bounds3f;
     use crate::geometry::Ray;
     use crate::{Point2i, Point2f};
     use cgmath::assert_abs_diff_eq;

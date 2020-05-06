@@ -5,9 +5,7 @@ use crate::{Float, Normal3, Point2f, Point3f, Transform, Vec3f};
 use crate::bvh::BVH;
 use crate::interaction::SurfaceHit;
 use crate::light::{Light, LightFlags, LiSample, VisibilityTester};
-use crate::scene::Scene;
 use crate::spectrum::Spectrum;
-use std::cell::Cell;
 
 pub struct DistantLight {
     radiance: Spectrum,
@@ -25,8 +23,8 @@ impl DistantLight {
         Self {
             radiance,
             dir_to_light,
-            world_center: Point3f::new(0.0, 0.0, 0.0).into(),
-            world_radius: 0.0.into(),
+            world_center: Point3f::new(0.0, 0.0, 0.0),
+            world_radius: 0.0,
         }
     }
 }
@@ -73,7 +71,7 @@ impl Light for DistantLight {
         }
     }
 
-    fn pdf_incident_radiance(&self, reference: &SurfaceHit, wi: Vec3f) -> f32 {
+    fn pdf_incident_radiance(&self, _reference: &SurfaceHit, _wi: Vec3f) -> f32 {
         0.0
     }
 }

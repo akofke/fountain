@@ -1,6 +1,5 @@
 use crate::{Point3f, Transform, Bounds3f, Ray, Float, SurfaceInteraction, Normal3, Vec3f, Point2f, ComponentWiseExt, max_dimension, permute_vec, permute_point, coordinate_system, faceforward};
 use std::sync::Arc;
-use std::convert::TryInto;
 use crate::shapes::Shape;
 use cgmath::{EuclideanSpace, InnerSpace};
 use crate::interaction::{DiffGeom, SurfaceHit};
@@ -33,7 +32,7 @@ impl TriangleMesh {
         mut vertices: Vec<Point3f>,
         mut normals: Option<Vec<Normal3>>,
         mut tangents: Option<Vec<Vec3f>>,
-        mut tex_coords: Option<Vec<Point2f>>,
+        tex_coords: Option<Vec<Point2f>>,
         reverse_orientation: bool,
     ) -> Self {
         assert_eq!(vertex_indices.len() % 3, 0);
@@ -88,8 +87,6 @@ pub struct Triangle {
 
 impl Triangle {
     pub fn new(mesh: Arc<TriangleMesh>, tri_id: u32) -> Self {
-        let idx = tri_id as usize;
-
         Self {
             mesh,
             tri_id,
@@ -237,9 +234,10 @@ impl Shape for Triangle {
         p1t.z *= shear_z;
         p2t.z *= shear_z;
         let t_scaled = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
-        if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max * det) { // TODO: can probably optimize (is_sign_pos)
-            return None;
-        } else if det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max * det) {
+        if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max * det)
+            || det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max * det)
+        {
+            // TODO: can probably optimize (is_sign_pos)
             return None;
         }
 

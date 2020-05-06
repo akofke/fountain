@@ -13,7 +13,7 @@ pub struct BoxFilter {
 }
 
 impl Filter for BoxFilter {
-    fn evaluate(&self, p: Point2f) -> Float {
+    fn evaluate(&self, _p: Point2f) -> Float {
         1.0
     }
 

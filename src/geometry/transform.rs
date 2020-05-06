@@ -1,5 +1,5 @@
 use crate::{Float, Point3f, Vec3f, Normal3, Bounds3f, Ray, SurfaceInteraction, ComponentWiseExt, RayDifferential, Differential};
-use cgmath::{Matrix4, SquareMatrix, InnerSpace, Transform as cgTransform, Zero, Rad, Angle, Matrix};
+use cgmath::{Matrix4, SquareMatrix, InnerSpace, Transform as cgTransform, Rad};
 use crate::err_float::gamma;
 use crate::interaction::{SurfaceHit, DiffGeom, TextureDifferentials};
 
@@ -298,7 +298,7 @@ impl TransformableErr for Ray {
         (ray_t, (o_err, dir_err))
     }
 
-    fn tf_err_to_err(&self, err: Self::Err, t: Transform) -> (Self, Self::Err) {
+    fn tf_err_to_err(&self, _err: Self::Err, _t: Transform) -> (Self, Self::Err) {
         unimplemented!()
     }
 }
@@ -387,7 +387,7 @@ impl Transformable for SurfaceInteraction<'_> {
 mod tests {
     use super::*;
     use cgmath::vec3;
-    use cgmath::{assert_abs_diff_eq, assert_ulps_eq};
+    use cgmath::{assert_abs_diff_eq};
 
     #[test]
     fn test_look_at() {

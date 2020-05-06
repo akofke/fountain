@@ -2,9 +2,6 @@ use crate::{Point2i, Point2f, Float};
 use rand_xoshiro::Xoshiro256Plus;
 use rand::{SeedableRng, Rng};
 use crate::sampler::{Sampler, SamplerState, SampleArrayId};
-use cgmath::Point2;
-use crate::spectrum::xyz_to_rgb;
-use std::sync::Arc;
 
 pub struct RandomSampler {
     rng: Xoshiro256Plus,

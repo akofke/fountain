@@ -11,7 +11,6 @@ use crate::reflection::BxDFType;
 use crate::sampler::Sampler;
 use crate::scene::Scene;
 use crate::spectrum::{Spectrum};
-use std::sync::Arc;
 use crate::light::Light;
 use crate::sampling::power_heuristic;
 
@@ -210,7 +209,7 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
 //        let progress = indicatif::ProgressBar::new(total_samples as u64);
         let progress = Self::make_progress_bar(film.sample_bounds().area() as u64);
         self.iter_tiles(film.sample_bounds(), sampler)
-            .for_each(|(tile, mut tile_sampler)| {
+            .for_each(|(tile, tile_sampler)| {
                 self.render_tile(scene, film, tile_sampler, tile, &progress)
             });
        progress.finish();
@@ -221,7 +220,7 @@ impl<R: IntegratorRadiance> SamplerIntegrator<R> {
         let tiles: Vec<_> = self.iter_tiles(film.sample_bounds(), sampler).collect();
         let progress = Self::make_progress_bar(film.sample_bounds().area() as u64);
         let prog_ref = &progress; // because of move
-        tiles.into_par_iter().for_each(move |(tile, mut tile_sampler)| {
+        tiles.into_par_iter().for_each(move |(tile, tile_sampler)| {
             self.render_tile(scene, film, tile_sampler, tile, &prog_ref);
         });
         progress.finish()
@@ -312,7 +311,7 @@ pub fn estimate_direct(
     light: &dyn Light,
     u_light: Point2f,
     scene: &Scene,
-    arena: &Bump,
+    _arena: &Bump,
 //    sampler: &mut dyn Sampler,
 ) -> Spectrum {
     let bsdf_flags = BxDFType::all() & !BxDFType::SPECULAR;

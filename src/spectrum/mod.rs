@@ -45,7 +45,7 @@ pub fn rgb_to_xyz(rgb: [Float; 3]) -> [Float; 3] {
 #[derive(Clone, Copy)]
 pub struct CoefficientSpectrum<const N: usize>([Float; N]);
 
-pub type Spectrum = CoefficientSpectrum<{3}>;
+pub type Spectrum = CoefficientSpectrum<3>;
 
 impl<const N: usize> CoefficientSpectrum<{N}> {
 

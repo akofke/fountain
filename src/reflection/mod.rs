@@ -191,7 +191,7 @@ impl<F: Fresnel> BxDF for SpecularReflection<F> {
         Some(ScatterSample{f: reflected, wi, pdf, sampled_type: self.get_type()})
     }
 
-    fn pdf(&self, wo: Vec3f, wi: Vec3f) -> Float {
+    fn pdf(&self, _wo: Vec3f, _wi: Vec3f) -> Float {
         0.0
     }
 }
@@ -218,7 +218,7 @@ impl BxDF for SpecularTransmission {
         BxDFType::TRANSMISSION | BxDFType::SPECULAR
     }
 
-    fn f(&self, wo: Vec3f, wi: Vec3f) -> Spectrum {
+    fn f(&self, _wo: Vec3f, _wi: Vec3f) -> Spectrum {
         Spectrum::uniform(0.0)
     }
 

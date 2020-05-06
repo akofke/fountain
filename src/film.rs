@@ -27,7 +27,7 @@ pub struct Film<F: Filter> {
 
 #[derive(Debug, Clone, Copy, Default)]
 struct FilmTilePixel {
-    contrib_sum: CoefficientSpectrum<{3}>,
+    contrib_sum: CoefficientSpectrum<3>,
     filter_weight_sum: Float,
 }
 
@@ -93,7 +93,6 @@ impl<F: Filter> Film<F> {
     }
 
     pub fn get_film_tile(&self, sample_bounds: Bounds2i) -> FilmTile {
-        let half_pixel = Vec2f::new(0.5, 0.5);
         let p0x = (sample_bounds.min.x as Float - 0.5 - self.filter.radius().0.x).ceil() as i32;
         let p0y = (sample_bounds.min.y as Float - 0.5 - self.filter.radius().0.y).ceil() as i32;
 

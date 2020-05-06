@@ -1,14 +1,11 @@
 use crate::integrator::{IntegratorRadiance, uniform_sample_one_light};
 use crate::sampler::Sampler;
 use bumpalo::Bump;
-use crate::{RayDifferential, SurfaceInteraction, Point2f, abs_dot, Float};
+use crate::{RayDifferential, SurfaceInteraction};
 use crate::spectrum::{Spectrum};
 use crate::scene::Scene;
 use crate::material::TransportMode;
 use crate::reflection::bsdf::Bsdf;
-use crate::reflection::BxDFType;
-use crate::light::Light;
-use crate::sampling::power_heuristic;
 
 pub enum LightStrategy {
 
@@ -59,9 +56,6 @@ impl IntegratorRadiance for DirectLightingIntegrator {
             },
 
             Some(mut intersect) => {
-                let n = intersect.shading_n;
-                let wo = intersect.wo;
-
                 let bsdf = intersect.compute_scattering_functions(
                     ray,
                     arena,

@@ -94,15 +94,13 @@ impl<P: AsRef<dyn Primitive>> BVH<P> {
 
         let ax = centroid_bounds.maximum_extent() as usize;
 
-        let mid = prim_info.len() / 2;
-
         let (part1, part2) = match split_method {
             SplitMethod::Middle => {
                 let midpoint = (centroid_bounds.min[ax] + centroid_bounds.max[ax]) / 2.0;
                 let (part1, part2) = partition(prim_info, |prim| {
                     prim.centroid[ax] < midpoint
                 });
-                if part1.len() == 0 || part2.len() == 0 {
+                if part1.is_empty() || part2.is_empty() {
                     Self::partition_equal_counts(prim_info, ax)
                 } else {
                     (part1, part2)
@@ -221,7 +219,6 @@ impl<P: AsRef<dyn Primitive>> BVH<P> {
             return false;
         }
 
-        let inverse_dir = 1.0 / ray.dir;
         let dir_is_neg = [ray.dir.x < 0.0, ray.dir.y < 0.0, ray.dir.z < 0.0];
 
         let mut nodes_to_visit = ArrayVec::<[usize; 64]>::new();  // used as a stack
@@ -378,19 +375,16 @@ fn apply_permutation<T>(items: &mut [T], indices: &mut [isize]) {
 
 #[cfg(test)]
 mod tests {
-    use cgmath::{vec3, Vector3};
-    use pretty_assertions as pa;
-    use rand::{Rng, thread_rng};
-    use rand::distributions::{Standard, Uniform, UnitSphereSurface};
+    use cgmath::{Vector3};
+    use rand::{Rng};
+    use rand::distributions::{Uniform, UnitSphereSurface};
     use rand::prelude::*;
 
     use crate::{Transform, Vec3f};
-    use crate::material::Material;
     use crate::primitive::GeometricPrimitive;
     use crate::shapes::sphere::Sphere;
 
     use super::*;
-    use crate::light::AreaLight;
     use std::sync::Arc;
 
     #[test]
@@ -401,58 +395,6 @@ mod tests {
         apply_permutation(&mut items, &mut perm);
 
         assert_eq!(items, vec!["c", "d", "a", "b", "e"])
-    }
-
-//    #[test]
-//    fn test_bvh() {
-//        let prim1 = MockPrim(Bounds3f::with_bounds(Point3f::new(1.0, 1.0, 1.0), Point3f::new(2.0, 2.0, 2.0)));
-//        let prim2 = MockPrim(Bounds3f::with_bounds(Point3f::new(1.0, -1.0, 1.0), Point3f::new(2.0, -2.0, 2.0)));
-//        let prim1 =
-//
-//        let prims: Vec<&dyn Primitive> = vec![&prim1, &prim2];
-//
-//        let bvh = BVH::build(prims);
-//
-//        let node1 = LinearBVHNode::new_interior(
-//            prim1.0.join(&prim2.0),
-//            2,
-//            1 // y
-//        );
-//
-//        let node2 = LinearBVHNode {
-//            bounds: prim2.0,
-//            kind: LinearNodeKind::Leaf {
-//                first_prim_idx: 0,
-//                n_prims: 1
-//            }
-//        };
-//
-//        let node3 = LinearBVHNode {
-//            bounds: prim1.0,
-//            kind: LinearNodeKind::Leaf {
-//                first_prim_idx: 1,
-//                n_prims: 1
-//            }
-//        };
-//
-//        let expected_tree = vec![node1, node2, node3];
-//
-//        pa::assert_eq!(bvh.nodes, expected_tree);
-//    }
-
-    #[test]
-    fn test_bvh_intersect() {
-        let o2w = Transform::translate(vec3(5.0, 5.0, 5.0));
-        let sphere1 = Sphere::whole(&o2w, &o2w.inverse(), 1.0);
-
-        let o2w = Transform::translate(vec3(5.0, 5.0, -5.0));
-        let sphere2 = Sphere::whole(&o2w, &o2w.inverse(), 1.0);
-
-        let o2w = Transform::translate(vec3(5.0, -5.0, -5.0));
-        let sphere3 = Sphere::whole(&o2w, &o2w.inverse(), 1.0);
-
-        let o2w = Transform::translate(vec3(-5.0, -5.0, -5.0));
-        let sphere4 = Sphere::whole(&o2w, &o2w.inverse(), 1.0);
     }
 
     #[test]
@@ -470,7 +412,7 @@ mod tests {
         let mut prims2 = vec![];
         let prims: Vec<Box<dyn Primitive>> = tfs.iter()
             .map(|(o2w, w2o)| {
-                let sphere = Sphere::whole(o2w.clone(), w2o.clone(), rng.gen_range(0.5, 3.0));
+                let sphere = Sphere::whole(*o2w, *w2o, rng.gen_range(0.5, 3.0));
                 let sphere = Arc::new(sphere);
                 let prim2 = GeometricPrimitive { shape: sphere.clone(), material: None, light: None };
                 prims2.push(Box::new(prim2) as Box<dyn Primitive>);
@@ -481,13 +423,13 @@ mod tests {
 
         let bvh = BVH::build(prims);
 
-        let mut sphere_surf = UnitSphereSurface::new();
+        let sphere_surf = UnitSphereSurface::new();
         for i in 0..500 {
             let dir = sphere_surf.sample(&mut rng);
             let dir: Vec3f = Vector3::from(dir).cast().unwrap();
             let mut ray = Ray::new((0.0, 0.0, 0.0).into(), dir);
 
-            let mut bvh_ray = ray.clone();
+            let mut bvh_ray = ray;
             let bvh_isect_test = bvh.intersect_test(&bvh_ray);
             let bvh_isect = bvh.intersect(&mut bvh_ray);
 

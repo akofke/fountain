@@ -25,7 +25,7 @@ pub trait MicrofacetDistribution {
     /// Sample from the distribution of normal vectors visible from direction `wo`.
     fn sample_wh(&self, wo: Vec3f, u: Point2f) -> Vec3f;
 
-    fn pdf(&self, wo: Vec3f, wh: Vec3f) -> Float {
+    fn pdf(&self, _wo: Vec3f, wh: Vec3f) -> Float {
         // TODO: change when sampling visible area
         self.d(wh) * abs_cos_theta(wh)
     }

@@ -132,8 +132,14 @@ macro_rules! impl_basic_conversions {
         }
 
         impl From<Vec<$into_ty>> for ParamVal {
-            fn from(value: Vec<$into_ty>) -> ParamVal {
+            fn from(value: Vec<$into_ty>) -> Self {
                 ParamVal::$param_variant(SmallVec::from_vec(value))
+            }
+        }
+
+        impl From<$into_ty> for ParamVal {
+            fn from(value: $into_ty) -> Self {
+                ParamVal::$param_variant(smallvec::SmallVec::from_buf([value]))
             }
         }
     };
@@ -238,6 +244,13 @@ impl ParamSet {
 
     pub fn reverse_orientation(&mut self) -> Result<bool, ParamError> {
         self.get_one("reverse_orientation")
+    }
+
+    pub fn with<T: Into<ParamVal>, S: Into<String>>(&mut self, key: S, val: T) -> &mut Self {
+        let key = key.into();
+        let val = val.into();
+        self.params.insert(key, val);
+        self
     }
 }
 

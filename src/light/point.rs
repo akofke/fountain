@@ -1,7 +1,7 @@
-use cgmath::{InnerSpace, MetricSpace};
+use cgmath::{InnerSpace};
 use num::Zero;
 
-use crate::{Float, Normal3, Point2f, Point3f, Transform, Vec3f};
+use crate::{Normal3, Point2f, Point3f, Transform, Vec3f};
 use crate::interaction::SurfaceHit;
 use crate::light::{Light, LightFlags, LiSample, VisibilityTester};
 use crate::spectrum::Spectrum;
@@ -62,7 +62,7 @@ impl Light for PointLight {
         }
     }
 
-    fn pdf_incident_radiance(&self, reference: &SurfaceHit, wi: Vec3f) -> f32 {
+    fn pdf_incident_radiance(&self, _reference: &SurfaceHit, _wi: Vec3f) -> f32 {
         0.0
     }
 }
