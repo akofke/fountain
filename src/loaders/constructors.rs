@@ -20,8 +20,6 @@ use crate::material::metal::{MetalMaterial, RoughnessTex};
 use crate::material::plastic::PlasticMaterial;
 use crate::material::mirror::MirrorMaterial;
 use crate::texture::uv::UVTexture;
-use std::path::PathBuf;
-use plydough::PropertyData;
 
 type ParamResult<T> = Result<T, ConstructError>;
 
@@ -94,7 +92,6 @@ pub fn make_triangle_mesh(mut params: ParamSet, ctx: &Context) -> ParamResult<Tr
 }
 
 pub fn make_triangle_mesh_from_ply(mut params: ParamSet, ctx: &Context) -> ParamResult<TriangleMesh> {
-    use plydough;
     use plydough::PropertyData::*;
     use plydough::ElementData;
 
@@ -162,6 +159,17 @@ pub fn make_triangle_mesh_from_ply(mut params: ParamSet, ctx: &Context) -> Param
                         })
                         .collect()
                 },
+                ListUint(v) => {
+                    v.iter()
+                        .inspect(|face| {
+                            if face.len() != 3 {
+                                panic!("Face with supported vertex count {} found", face.len())
+                            }
+                        })
+                        .flatten()
+                        .copied()
+                        .collect()
+                }
                 _ => panic!("Unsupported vertex indices type")
             }
         })
