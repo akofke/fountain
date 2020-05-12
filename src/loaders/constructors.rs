@@ -305,7 +305,7 @@ pub fn make_imagemap_spect(mut params: ParamSet, ctx: &Context) -> ParamResult<A
     })?;
     let mapping = make_tex_coords_map_2d(&mut params)?;
     let scale = params.get_one("scale").unwrap_or(1.0);
-    let gamma = true; // FIXME: depends on format
+    let gamma =  params.get_one("gamma").ok();
     let info = ImageTexInfo::new(
         path,
         wrap_mode,
@@ -338,6 +338,7 @@ pub fn make_point_light(mut params: ParamSet, ctx: &Context) -> ParamResult<Poin
 
 pub fn make_infinite_area_light(mut params: ParamSet, ctx: &Context) -> ParamResult<InfiniteAreaLight> {
     let radiance = params.get_one("L").unwrap_or(Spectrum::uniform(1.0));
+    let scale = params.get_one("scale").unwrap_or(Spectrum::uniform(1.0));
     let filename = params.get_one::<String>("mapname");
     let l2w = params.current_transform()?;
     let light = filename.map_or_else(
@@ -346,8 +347,8 @@ pub fn make_infinite_area_light(mut params: ParamSet, ctx: &Context) -> ParamRes
             let info = ImageTexInfo::new(
                 ctx.resolve(filename),
                 ImageWrap::Repeat,
-                1.0,
-                false, // TODO: pbrt never gamma corrects here,
+                scale[0], // TODO: scale by nonuniform spectrum
+                Some(false), // TODO: pbrt never gamma corrects here,
                 false
             );
             let mipmap = get_mipmap(info).unwrap();

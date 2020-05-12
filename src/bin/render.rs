@@ -12,6 +12,8 @@ use std::path::PathBuf;
 use clap::Clap;
 use std::time::Instant;
 
+use tracing_subscriber::{layer::SubscriberExt, Layer};
+
 #[derive(Clap)]
 #[clap(version = "0.0.1")]
 struct Opts {
@@ -30,9 +32,11 @@ struct Opts {
 fn main() -> anyhow::Result<()> {
     let opts: Opts = Opts::parse();
 
-    let subscriber = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
-        .init();
+    let subscriber = tracing_subscriber::registry().with(tracing_tree::HierarchicalLayer::new(2));
+    tracing::subscriber::set_global_default(subscriber).unwrap();
+    // let subscriber = tracing_subscriber::fmt()
+    //     .with_max_level(tracing::Level::DEBUG)
+    //     .init();
 
     let base_path = opts.scene_file.parent().unwrap().to_path_buf();
 

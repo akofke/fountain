@@ -12,6 +12,8 @@ use std::collections::hash_map::Entry;
 use core::iter;
 use arrayvec::ArrayVec;
 use crate::imageio::exr::read_exr;
+use std::fmt::{Formatter, Debug};
+use std::time::Instant;
 
 pub mod exr;
 
@@ -21,12 +23,12 @@ pub struct ImageTexInfo {
     pub wrap_mode: ImageWrap,
     // FIXME: ugly workaround
     pub scale_float_bits: u32,
-    pub gamma: bool,
+    pub gamma: Option<bool>,
     pub flip_y: bool,
 }
 
 impl ImageTexInfo {
-    pub fn new(filename: impl Into<PathBuf>, wrap_mode: ImageWrap, scale: Float, gamma: bool, flip_y: bool) -> Self {
+    pub fn new(filename: impl Into<PathBuf>, wrap_mode: ImageWrap, scale: Float, gamma: Option<bool>, flip_y: bool) -> Self {
         let scale_float_bits = scale.to_bits();
         Self {
             filename: filename.into(),
@@ -42,11 +44,25 @@ impl ImageTexInfo {
     }
 }
 
+impl Debug for ImageTexInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ImageTexInfo")
+            .field("filename", &self.filename)
+            .field("wrap_mode", &self.wrap_mode)
+            .field("scale", &f32::from_bits(self.scale_float_bits))
+            .field("gamma", &self.gamma)
+            .field("flip_y", &self.flip_y)
+            .finish()
+    }
+}
+
+#[tracing::instrument(skip(info))]
 pub fn get_mipmap(info: ImageTexInfo) -> anyhow::Result<Arc<MIPMap<Spectrum>>> {
     // Global cache of mipmaps that have been loaded.
     static MIPMAPS: Lazy<Mutex<HashMap<ImageTexInfo, Arc<MIPMap<Spectrum>>>>> = Lazy::new(|| {
         Mutex::new(HashMap::new())
     });
+    tracing::debug!(?info, "Requested mipmap");
 
     let mut cache = MIPMAPS.lock();
     match cache.entry(info) {
@@ -61,12 +77,29 @@ pub fn get_mipmap(info: ImageTexInfo) -> anyhow::Result<Arc<MIPMap<Spectrum>>> {
     }
 }
 
+#[tracing::instrument(skip(info))]
 pub fn load_mipmap(info: &ImageTexInfo) -> anyhow::Result<MIPMap<Spectrum>> {
+    let start = Instant::now();
     let (mut image, dims) = load_image(&info.filename)?;
 
+    // TODO: more robust handling of gamma correction/color spaces
+    let gamma = match info.gamma {
+        Some(g) => g,
+        None => {
+            if let Some(ext) = info.filename.extension() {
+                match ext {
+                    s if s == "exr" => false,
+                    _ => true
+                }
+            } else {
+                anyhow::bail!("No extension on image file {:?}", &info.filename)
+            }
+        }
+    };
+
     image.iter_mut().for_each(|s| {
-        *s = if info.gamma {
-            s.map(|x| inverse_gamma_correct(x))
+        *s = if gamma {
+            s.map(inverse_gamma_correct)
         } else {
             *s
         } * info.scale()
@@ -87,6 +120,7 @@ pub fn load_mipmap(info: &ImageTexInfo) -> anyhow::Result<MIPMap<Spectrum>> {
         image,
         info.wrap_mode
     );
+    tracing::debug!(time = ?start.elapsed().as_millis(), gamma, scale = ?info.scale());
     Ok(mipmap)
 }
 
