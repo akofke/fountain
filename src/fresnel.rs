@@ -10,8 +10,8 @@ fn fresnel_dielectric(cos_theta_i: Float, mut eta_i: Float, mut eta_t: Float) ->
     }
 
     // compute cos_theta_t using snell's law
-    let sin_theta_t = Float::sqrt((1.0 - cos_theta_i * cos_theta_i).max(0.0));
-    let sin_theta_t = eta_i / eta_t * sin_theta_t;
+    let sin_theta_i = Float::sqrt((1.0 - cos_theta_i * cos_theta_i).max(0.0));
+    let sin_theta_t = eta_i / eta_t * sin_theta_i;
     if sin_theta_t >= 1.0 { return 1.0 } // total internal reflection
     let cos_theta_t = Float::sqrt((1.0 - sin_theta_t * sin_theta_t).max(0.0));
 
