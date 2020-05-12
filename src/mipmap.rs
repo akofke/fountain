@@ -387,7 +387,7 @@ mod tests {
             "uvgrid.exr".to_string(),
             ImageWrap::Repeat,
             1.0,
-            false,
+            Some(false),
             false,
         );
         let mipmap = get_mipmap(info)?;
