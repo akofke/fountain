@@ -2,6 +2,7 @@ use cgmath::{InnerSpace, EuclideanSpace};
 
 use crate::{Bounds2f, Differential, Float, Lerp, INFINITY, Point2f, Point2i, Point3f, Ray, RayDifferential, Transformable, Vec2f, Vec3f};
 use crate::geometry::Transform;
+use crate::sampling::concentric_sample_disk;
 
 #[derive(Clone, Copy, Debug)]
 pub struct CameraSample {
@@ -120,11 +121,23 @@ impl Camera for PerspectiveCamera {
 
         let origin = Point3f::new(0.0, 0.0, 0.0);
         let dir = (p_camera - origin).normalize();
-
-        // TODO: depth of field
-
         let time = Float::lerp(sample.time, self.shutter_interval.0, self.shutter_interval.1);
-        let ray = Ray { origin, dir, time, t_max: INFINITY };
+        let mut ray = Ray { origin, dir, time, t_max: INFINITY };
+
+        // Modify ray for depth of field
+        if self.lens_radius > 0.0 {
+            // Sample point on lens
+            let p_lens = self.lens_radius * concentric_sample_disk(sample.p_lens);
+
+            // Compute point on plane of focus
+            let ft = self.focal_dist / ray.dir.z;
+            let p_focus = ray.at(ft);
+
+            // Update ray for effect of lens
+            ray.origin = Point3f::new(p_lens.x, p_lens.y, 0.0);
+            ray.dir = (p_focus - ray.origin).normalize();
+        }
+
         let ray = ray.transform(self.camera_to_world);
         (1.0, ray)
     }
@@ -136,17 +149,33 @@ impl Camera for PerspectiveCamera {
 
         let origin = Point3f::new(0.0, 0.0, 0.0);
         let dir = (p_camera - origin).normalize();
-        let ray = Ray { origin, dir, time, t_max: INFINITY};
+        let mut ray = Ray { origin, dir, time, t_max: INFINITY};
 
-        if self.lens_radius > 0.0 {
-            unimplemented!()
-        } else {
-            let rx_origin = origin;
-            let ry_origin = origin;
-            let rx_dir = (p_camera.to_vec() + self.dx_camera).normalize();
-            let ry_dir = (p_camera.to_vec() + self.dy_camera).normalize();
+        let ray_diff = if self.lens_radius > 0.0 {
+            // Sample point on lens
+            let p_lens = self.lens_radius * concentric_sample_disk(sample.p_lens);
 
-            let ray_diff = RayDifferential {
+            // Compute point on plane of focus
+            let ft = self.focal_dist / ray.dir.z;
+            let p_focus = ray.at(ft);
+
+            // Update ray for effect of lens
+            ray.origin = Point3f::new(p_lens.x, p_lens.y, 0.0);
+            ray.dir = (p_focus - ray.origin).normalize();
+
+            // Compute ray differentials accounting for lens
+            let dx = (p_camera + self.dx_camera).to_vec().normalize();
+            let ft = self.focal_dist / dx.z;
+            let p_focus = Point3f::origin() + (ft * dx);
+            let rx_origin = Point3f::new(p_lens.x, p_lens.y, 0.0);
+            let rx_dir = (p_focus - rx_origin).normalize();
+
+            let dy = (p_camera + self.dx_camera).to_vec().normalize();
+            let ft = self.focal_dist / dy.z;
+            let p_focus = Point3f::origin() + (ft * dy);
+            let ry_origin = Point3f::new(p_lens.x, p_lens.y, 0.0);
+            let ry_dir = (p_focus - ry_origin).normalize();
+            RayDifferential {
                 ray,
                 diff: Some(Differential {
                     rx_origin,
@@ -154,11 +183,25 @@ impl Camera for PerspectiveCamera {
                     rx_dir,
                     ry_dir
                 })
-            };
-            let ray_diff = ray_diff.transform(self.camera_to_world);
-            (1.0, ray_diff)
-        }
+            }
+        } else {
+            let rx_origin = origin;
+            let ry_origin = origin;
+            let rx_dir = (p_camera.to_vec() + self.dx_camera).normalize();
+            let ry_dir = (p_camera.to_vec() + self.dy_camera).normalize();
 
+            RayDifferential {
+                ray,
+                diff: Some(Differential {
+                    rx_origin,
+                    ry_origin,
+                    rx_dir,
+                    ry_dir
+                })
+            }
+        };
+        let ray_diff = ray_diff.transform(self.camera_to_world);
+        (1.0, ray_diff)
     }
 }
 
