@@ -49,6 +49,10 @@ pub type Spectrum = CoefficientSpectrum<3>;
 
 impl<const N: usize> CoefficientSpectrum<{N}> {
 
+    pub const fn new(arr: [Float; N]) -> Self {
+        Self(arr)
+    }
+
     #[inline]
     pub fn new_with<F: FnMut(usize) -> Float>(init: F) -> Self {
         let arr = array(init);
@@ -61,8 +65,8 @@ impl<const N: usize> CoefficientSpectrum<{N}> {
         Self(arr)
     }
 
-    pub fn uniform(val: Float) -> Self {
-        Self::new_with(|_| val)
+    pub const fn uniform(val: Float) -> Self {
+        Self::new([val; N])
     }
 
     pub fn map<F: Fn(Float) -> Float>(&self, f: F) -> Self {
@@ -94,9 +98,7 @@ impl<const N: usize> CoefficientSpectrum<{N}> {
     }
 
     pub fn max_component_value(&self) -> Float {
-        // FIXME
-        // this is so stupid
-        *self.0.iter().max_by(|x, y| x.partial_cmp(y).unwrap()).unwrap()
+        *self.0.iter().max_by(|x, y| x.total_cmp(y)).unwrap()
     }
 
     pub fn luminance(&self) -> Float {

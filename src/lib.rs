@@ -1,10 +1,11 @@
-#![feature(const_generics)]
-#![allow(incomplete_features)]
+#![feature(min_const_generics)]
+#![feature(array_value_iter)]
 
 #![feature(clamp)]
+#![feature(total_cmp)]
 #![feature(const_fn)]
+#![feature(const_fn_floating_point_arithmetic)]
 #![feature(slice_partition_at_index)]
-#![feature(inner_deref)]
 #![feature(trait_alias)]
 #![feature(maybe_uninit_ref)]
 
