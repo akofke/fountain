@@ -128,7 +128,7 @@ impl<T: Copy, const LOG_BLOCK_SIZE: usize> Index<(usize, usize)> for BlockedArra
     fn index(&self, index: (usize, usize)) -> &Self::Output {
         let (u, v) = index;
         let idx = Self::get_index(u, v, self.u_blocks);
-        unsafe { self.contents[idx].get_ref() }
+        unsafe { self.contents[idx].assume_init_ref() }
     }
 }
 
@@ -136,7 +136,7 @@ impl<T: Copy, const LOG_BLOCK_SIZE: usize> IndexMut<(usize, usize)> for BlockedA
     fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
         let (u, v) = index;
         let idx = Self::get_index(u, v, self.u_blocks);
-        unsafe { self.contents[idx].get_mut() }
+        unsafe { self.contents[idx].assume_init_mut() }
     }
 }
 
