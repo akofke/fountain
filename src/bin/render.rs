@@ -19,10 +19,10 @@ use tracing_subscriber::{layer::SubscriberExt, Layer};
 struct Opts {
     scene_file: PathBuf,
 
-    #[clap(short = "t", long = "threads", default_value = "0")]
+    #[clap(short = 't', long = "threads", default_value = "0")]
     threads: usize,
 
-    #[clap(short = "o", long = "output")]
+    #[clap(short = 'o', long = "output")]
     image_name: Option<String>,
 
     #[clap(long = "samples")]
