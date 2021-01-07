@@ -5,6 +5,7 @@ use crate::interaction::{SurfaceInteraction, SurfaceHit};
 
 pub mod sphere;
 pub mod triangle;
+pub mod loop_subdiv;
 
 pub trait Shape: Sync + Send {
     fn object_bound(&self) -> Bounds3f;

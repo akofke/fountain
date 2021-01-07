@@ -45,4 +45,12 @@ impl<T> IdArena<T> {
         unsafe { self.items.get_unchecked_mut(idx) }
     }
 
+    pub fn try_index(&self, index: usize) -> Option<&T> {
+        if index == 0 {
+            None
+        } else {
+            self.items.get(index)
+        }
+    }
+
 }

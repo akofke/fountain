@@ -1,5 +1,7 @@
 #![feature(min_const_generics)]
 #![feature(array_value_iter)]
+#![feature(array_chunks)]
+#![feature(slice_as_chunks)]
 
 #![feature(clamp)]
 #![feature(total_cmp)]

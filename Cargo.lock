@@ -112,15 +112,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "2.4.3"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84dca3afd8e01b9526818b7963e5b4916063b3cdf9f10cf6b73ef0bd0ec37aa5"
-
-[[package]]
-name = "bumpalo"
-version = "3.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12ae9db68ad7fac5fe51304d20f016c911539251075a214f8e663babefa35187"
+checksum = "2e8c087f005730276d1096a652e92a8bacee2e2472bcc9715a74d2bec38b5820"
 
 [[package]]
 name = "bytemuck"
@@ -1161,7 +1155,7 @@ dependencies = [
  "approx",
  "arrayvec 0.4.10",
  "bitflags",
- "bumpalo 2.4.3",
+ "bumpalo",
  "cgmath",
  "clap 3.0.0-beta.2",
  "criterion",
@@ -1619,7 +1613,7 @@ version = "0.2.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d967d37bf6c16cca2973ca3af071d0a2523392e4a594548155d89a678f4237cd"
 dependencies = [
- "bumpalo 3.2.1",
+ "bumpalo",
  "lazy_static",
  "log",
  "proc-macro2 1.0.10",
