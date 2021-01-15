@@ -1,10 +1,57 @@
 use std::num::NonZeroU32;
 use std::marker::PhantomData;
+use std::cmp::Ordering;
+use std::hash::{Hash, Hasher};
+use std::ops::{Index, IndexMut};
+use std::fmt::{Debug, Formatter};
 
-#[derive(Copy, Clone)]
 pub struct Id<T> {
     idx: NonZeroU32,
     _ty: PhantomData<T>
+}
+
+// #[derive] bug means we have to impl these manually because of PhantomData
+impl<T> Clone for Id<T> {
+    fn clone(&self) -> Self {
+        Id {
+            idx: self.idx.clone(),
+            _ty: PhantomData
+        }
+    }
+}
+
+impl<T> Copy for Id<T> {}
+
+impl<T> PartialEq for Id<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.idx == other.idx
+    }
+}
+
+impl<T> Eq for Id<T> {}
+
+impl<T> PartialOrd for Id<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.idx.partial_cmp(&other.idx)
+    }
+}
+
+impl<T> Ord for Id<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.idx.cmp(&other.idx)
+    }
+}
+
+impl<T> Hash for Id<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.idx.hash(state)
+    }
+}
+
+impl<T> Debug for Id<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        self.idx.fmt(f)
+    }
 }
 
 impl<T> Id<T> {
@@ -53,4 +100,18 @@ impl<T> IdArena<T> {
         }
     }
 
+}
+
+impl<T> Index<Id<T>> for IdArena<T> {
+    type Output = T;
+
+    fn index(&self, index: Id<T>) -> &Self::Output {
+        self.get(index)
+    }
+}
+
+impl<T> IndexMut<Id<T>> for IdArena<T> {
+    fn index_mut(&mut self, index: Id<T>) -> &mut Self::Output {
+        self.get_mut(index)
+    }
 }
