@@ -5,7 +5,6 @@
 
 #![feature(clamp)]
 #![feature(total_cmp)]
-#![feature(const_fn)]
 #![feature(const_fn_floating_point_arithmetic)]
 #![feature(slice_partition_at_index)]
 #![feature(trait_alias)]

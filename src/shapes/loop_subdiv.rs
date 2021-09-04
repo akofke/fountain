@@ -1,9 +1,9 @@
-use crate::{Transform, Point3f};
+use crate::{Float, Point3f, Transform, Vec3f};
 use crate::shapes::triangle::TriangleMesh;
-use bumpalo::Bump;
+use smallvec::SmallVec;
 use crate::id_arena::{Id, IdArena};
 use std::collections::HashMap;
-use cgmath::Array;
+use cgmath::{Array, EuclideanSpace};
 use arrayvec::ArrayVec;
 
 struct SDVertex {
@@ -86,6 +86,14 @@ fn prev(i: usize) -> usize {
     (i + 2) % 3
 }
 
+fn beta(valence: usize) -> Float {
+    if valence == 3 {
+        3.0 / 16.0
+    } else {
+        3.0 / (8.0 * valence as Float)
+    }
+}
+
 struct SDData {
     vertices: IdArena<SDVertex>,
     faces: IdArena<SDFace>,
@@ -125,6 +133,50 @@ impl SDData {
                 + 1
         }
     }
+
+    pub fn vertex_one_ring(&self, vert_id: Id<SDVertex>) -> SmallVec<[Id<SDVertex>; 16]> {
+        let mut verts = SmallVec::new();
+        let start_face = self.vertices.get(vert_id).start_face.unwrap();
+        let boundary = self.vertices.get(vert_id).boundary;
+
+        if !boundary {
+            let iter = self.iter_adjacent_faces_forward(vert_id)
+                .skip(1)
+                .take_while(|&face| face != start_face)
+                .map(|face| self.faces.get(face).next_vert(vert_id));
+            verts.extend(iter);
+        } else {
+            let mut face = self.iter_adjacent_faces_forward(vert_id).last().unwrap();
+            verts.push(self.faces.get(face).next_vert(vert_id));
+            loop {
+                verts.push(self.faces.get(face).prev_vert(vert_id));
+                let next_face = self.faces.get(face).prev_face(vert_id);
+                if let Some(f) = next_face {
+                    face = f
+                } else {
+                    break;
+                }
+            }
+        }
+
+        verts
+    }
+
+    pub fn weight_one_ring(&self, vert_id: Id<SDVertex>, beta: Float) -> Point3f {
+        let valence = self.vertex_valence(vert_id) as Float;
+        let p = (1.0 - valence * beta) * self.vertices.get(vert_id).p;
+        let start_face = self.vertices.get(vert_id).start_face.unwrap();
+        let p = p.to_vec() + self.iter_adjacent_faces_forward(vert_id)
+            .skip(1)
+            .take_while(|&face| face != start_face)
+            .map(|face| {
+                let v = self.faces.get(face).next_vert(vert_id);
+                self.vertices.get(v).p.to_vec() * beta
+            })
+            .sum::<Vec3f>();
+        Point3f::origin() + p
+    }
+
 }
 
 pub fn loop_subdivide(
